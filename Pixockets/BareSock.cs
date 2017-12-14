@@ -7,6 +7,8 @@ namespace Pixockets
 {
     public class BareSock
     {
+        private static readonly IPEndPoint anyEndPoint = new IPEndPoint(IPAddress.Any, 0);
+
         public Socket SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
         private SocketAsyncEventArgs eSend = new SocketAsyncEventArgs();
@@ -33,8 +35,6 @@ namespace Pixockets
         public void ReceiveFrom()
         {
             eReceive.SetBuffer(new byte[4096], 0, 4096);
-            // Strange but works
-            eReceive.RemoteEndPoint = SysSock.LocalEndPoint;
 
             Receive();
         }
@@ -116,7 +116,7 @@ namespace Pixockets
 
         private void Receive()
         {
-            eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+            eReceive.RemoteEndPoint = anyEndPoint;
             eReceive.SetBuffer(0, 4096);
             bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(eReceive);
             if (!willRaiseEvent)
