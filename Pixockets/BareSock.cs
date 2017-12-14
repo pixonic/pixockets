@@ -19,6 +19,8 @@ namespace Pixockets
         private ReceiverBase callbacks;
 
         ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
+        Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
+
 
         public BareSock(ReceiverBase callbacks)
         {
@@ -65,13 +67,13 @@ namespace Pixockets
                 return;
             }
 
-            sendQueue.Enqueue(new PacketToSend
-            {
-                EndPoint = endPoint,
-                Buffer = buffer,
-                Offset = offset,
-                Length = length
-            });
+            var packet = _packetsToSend.Get();
+            packet.EndPoint = endPoint;
+            packet.Buffer = buffer;
+            packet.Offset = offset;
+            packet.Length = length;
+
+            sendQueue.Enqueue(packet);
         }
 
         public void Send(int port, byte[] buffer, int offset, int length)
@@ -142,6 +144,7 @@ namespace Pixockets
             if (sendQueue.TryDequeue(out packet))
             {
                 Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length);
+                _packetsToSend.Put(packet);
             }
             else
             {

@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="BareSock.cs" />
     <Compile Include="PacketToSend.cs" />
+    <Compile Include="Pool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReceiverBase.cs" />
   </ItemGroup>
