@@ -30,7 +30,7 @@ namespace UnitTests
             udpClient.Connect(IPAddress.Loopback, 23456);
             udpClient.Send(BitConverter.GetBytes(123456789), 4);
 
-            WaitOnReceive(cbs);
+            Utils.WaitOnReceive(cbs);
 
             Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
@@ -67,22 +67,12 @@ namespace UnitTests
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)sock.SysSock.LocalEndPoint);
 
-            WaitOnReceive(cbs);
+            Utils.WaitOnReceive(cbs);
 
             Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
             Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
-        }
-
-        private static void WaitOnReceive(MockCallbacks cbs)
-        {
-            for (int i = 0; i < 1000; ++i)
-            {
-                Thread.Sleep(1);
-                if (cbs.OnReceiveCalls.Count > 0)
-                    break;
-            }
         }
     }
 }

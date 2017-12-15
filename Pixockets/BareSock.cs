@@ -7,6 +7,7 @@ namespace Pixockets
 {
     public class BareSock
     {
+        public const int MTU = 1200;
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
         // TODO: support IPV6
@@ -35,7 +36,7 @@ namespace Pixockets
 
         public void ReceiveFrom()
         {
-            eReceive.SetBuffer(new byte[4096], 0, 4096);
+            eReceive.SetBuffer(new byte[MTU], 0, MTU);
 
             eReceive.RemoteEndPoint = AnyEndPoint;
 
@@ -44,7 +45,7 @@ namespace Pixockets
 
         public void Receive(int port)
         {
-            eReceive.SetBuffer(new byte[4096], 0, 4096);
+            eReceive.SetBuffer(new byte[MTU], 0, MTU);
             eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
             SysSock.Bind(eReceive.RemoteEndPoint);
 
@@ -53,6 +54,12 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
+            if (length > MTU)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "length", length, string.Format("Length should be less then MTU ({0})", MTU));
+            }
+
             // TODO: make it atomic
             if (ReadyToSend)
             {
@@ -113,7 +120,7 @@ namespace Pixockets
 
         private void Receive()
         {
-            eReceive.SetBuffer(0, 4096);
+            eReceive.SetBuffer(0, MTU);
             bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(eReceive);
             if (!willRaiseEvent)
             {
