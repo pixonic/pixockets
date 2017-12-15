@@ -30,17 +30,18 @@ namespace TestServer
                 clients.Add(endPoint, timer.ElapsedTicks);
             }
 
-
-
             var str = Encoding.UTF8.GetString(buffer, offset, length);
             Console.WriteLine("Receive: {0}:{1}:{2}", endPoint.Address, endPoint.Port, str);
 
+            var sendBuffer = Encoding.UTF8.GetBytes("#: " + str);
+            Broadcast(sendBuffer, 0, sendBuffer.Length);
+        }
+
+        public void Broadcast(byte[] buffer, int offset, int length)
+        {
             foreach (var client in clients)
             {
-                Console.WriteLine("Send: {0}:{1}", client.Key.Address, client.Key.Port);
-                // Send response
-                var sendBuffer = Encoding.UTF8.GetBytes("#: " + str);
-                servSock.Send(client.Key, sendBuffer, 0, sendBuffer.Length);
+                servSock.Send(client.Key, buffer, offset, length);
             }
         }
     }
