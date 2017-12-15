@@ -7,20 +7,19 @@ namespace Pixockets
 {
     public class BareSock
     {
-        private static readonly IPEndPoint anyEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
+        // TODO: support IPV6
         public Socket SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
         private SocketAsyncEventArgs eSend = new SocketAsyncEventArgs();
         private SocketAsyncEventArgs eReceive = new SocketAsyncEventArgs();
 
-        public volatile bool ReadyToSend = true;
-
+        private volatile bool ReadyToSend = true;
         private ReceiverBase callbacks;
 
         ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
         Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
-
 
         public BareSock(ReceiverBase callbacks)
         {
@@ -37,6 +36,8 @@ namespace Pixockets
         public void ReceiveFrom()
         {
             eReceive.SetBuffer(new byte[4096], 0, 4096);
+
+            eReceive.RemoteEndPoint = AnyEndPoint;
 
             Receive();
         }
@@ -55,15 +56,7 @@ namespace Pixockets
             // TODO: make it atomic
             if (ReadyToSend)
             {
-                ReadyToSend = false;
-                eSend.SetBuffer(buffer, offset, length);
-                eSend.RemoteEndPoint = endPoint;
-
-                bool willRaiseEvent = SysSock.SendToAsync(eSend);
-                if (!willRaiseEvent)
-                {
-                    OnPacketSent(eSend);
-                }
+                ActualSend(endPoint, buffer, offset, length);
                 return;
             }
 
@@ -74,6 +67,19 @@ namespace Pixockets
             packet.Length = length;
 
             sendQueue.Enqueue(packet);
+        }
+
+        private void ActualSend(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        {
+            ReadyToSend = false;
+            eSend.SetBuffer(buffer, offset, length);
+            eSend.RemoteEndPoint = endPoint;
+
+            bool willRaiseEvent = SysSock.SendToAsync(eSend);
+            if (!willRaiseEvent)
+            {
+                OnPacketSent(eSend);
+            }
         }
 
         public void Send(int port, byte[] buffer, int offset, int length)
@@ -102,11 +108,7 @@ namespace Pixockets
 
         private void OnReceiveCompleted(object sender, SocketAsyncEventArgs e)
         {
-            if (e.LastOperation == SocketAsyncOperation.ReceiveFrom)
-            {
-                OnPacketReceived(e);
-            }
-            else if (e.LastOperation == SocketAsyncOperation.ReceiveMessageFrom)
+            if (e.LastOperation == SocketAsyncOperation.ReceiveMessageFrom)
             {
                 OnPacketReceived(e);
             }
@@ -118,7 +120,6 @@ namespace Pixockets
 
         private void Receive()
         {
-            eReceive.RemoteEndPoint = anyEndPoint;
             eReceive.SetBuffer(0, 4096);
             bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(eReceive);
             if (!willRaiseEvent)
@@ -143,7 +144,7 @@ namespace Pixockets
 
             if (sendQueue.TryDequeue(out packet))
             {
-                Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length);
+                ActualSend(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length);
                 _packetsToSend.Put(packet);
             }
             else
