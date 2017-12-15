@@ -82,13 +82,6 @@ namespace Pixockets
             }
         }
 
-        public void Send(int port, byte[] buffer, int offset, int length)
-        {
-            var endPoint = new IPEndPoint(IPAddress.Loopback, port);
-
-            Send(endPoint, buffer, offset, length);
-        }
-
         public void SendTo(byte[] buffer, int offset, int length)
         {
             Send((IPEndPoint)SysSock.RemoteEndPoint, buffer, offset, length);

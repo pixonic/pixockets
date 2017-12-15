@@ -46,7 +46,8 @@ namespace UnitTests
 
             MockCallbacks cbs = new MockCallbacks();
             BareSock sock = new BareSock(cbs);
-            sock.Send(23457, BitConverter.GetBytes(123456789), 0, 4);
+
+            sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4);
 
             receiveTask.Wait(1000);
 
