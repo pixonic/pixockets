@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Pixockets
 {
-    public class Pool<T> where T: class, new()
+    public class Pool<T> where T: class, IPoolable, new()
     {
         private ConcurrentStack<T> _stack = new ConcurrentStack<T>();
         public T Get()
@@ -23,6 +23,7 @@ namespace Pixockets
 
         public void Put(T obj)
         {
+            obj.Strip();
             _stack.Push(obj);
         }
     }

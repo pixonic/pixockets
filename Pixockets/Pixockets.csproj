@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BareSock.cs" />
+    <Compile Include="IPoolable.cs" />
     <Compile Include="PacketToSend.cs" />
     <Compile Include="Pool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
