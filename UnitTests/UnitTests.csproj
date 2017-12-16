@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="Mock\MockCallbacks.cs" />
     <Compile Include="MTUTests.cs" />
+    <Compile Include="PacketHeaderTests.cs" />
     <Compile Include="QueueTests.cs" />
     <Compile Include="SockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -30,12 +30,12 @@ namespace UnitTests
 
             receiveTask.Wait(1000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
-            Assert.AreEqual(1, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+            Assert.LessOrEqual(1, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
 
             receiveTask = udpClient.ReceiveAsync();
             receiveTask.Wait(1000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
-            Assert.AreEqual(2, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+            Assert.LessOrEqual(2, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
 
             receiveTask = udpClient.ReceiveAsync();
             receiveTask.Wait(1000);
