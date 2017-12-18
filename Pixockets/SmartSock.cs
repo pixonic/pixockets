@@ -19,9 +19,9 @@ namespace Pixockets
             _callbacks = callbacks;
         }
 
-        public void Connect(int port)
+        public void Connect(IPAddress address, int port)
         {
-            SubSock.Connect(port);
+            SubSock.Connect(address, port);
         }
 
         public void ReceiveFrom()

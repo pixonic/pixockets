@@ -29,7 +29,7 @@ namespace Pixockets
             eReceive.Completed += OnReceiveCompleted;
         }
 
-        public void Connect(int port)
+        public void Connect(IPAddress address, int port)
         {
             SysSock.Connect(IPAddress.Loopback, port);
         }

@@ -1,5 +1,6 @@
 ﻿using Pixockets;
 using System;
+using System.Net;
 using System.Text;
 
 namespace TestClient
@@ -11,7 +12,7 @@ namespace TestClient
             var callbacks = new PrintingReceiver();
             var sock = new BareSock(callbacks);
 
-            sock.Connect(2345);
+            sock.Connect(IPAddress.Loopback, 2345);
             sock.ReceiveFrom();
 
             while (true)
