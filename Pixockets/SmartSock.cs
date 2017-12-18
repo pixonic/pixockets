@@ -26,7 +26,16 @@ namespace Pixockets
 
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
         {
-            
+            var header = new PacketHeader(buffer, offset);
+            if (length == header.Length)
+            {
+                _callbacks.OnReceive(
+                    buffer,
+                    offset + PacketHeader.HeaderLength,
+                    length - PacketHeader.HeaderLength,
+                    endPoint);
+            }
+            //else // Wrong packet
         }
     }
 }

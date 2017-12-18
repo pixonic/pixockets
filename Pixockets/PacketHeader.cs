@@ -4,6 +4,7 @@ namespace Pixockets
 {
     public struct PacketHeader
     {
+        public const int HeaderLength = 2;
         public ushort Length;
 
         public PacketHeader(ushort length)
