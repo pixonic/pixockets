@@ -1,9 +1,11 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace Pixockets
 {
     public class SmartSock : ReceiverBase
     {
+        // TODO: invert dependency
         public readonly BareSock SubSock;
 
         private ReceiverBase _callbacks;
@@ -36,6 +38,18 @@ namespace Pixockets
                     endPoint);
             }
             //else // Wrong packet
+        }
+
+        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        {
+            var fullBuffer = new byte[length + PacketHeader.HeaderLength];
+            var header = new PacketHeader((ushort)fullBuffer.Length);
+            // TODO: pool them
+            header.WriteTo(fullBuffer, 0);
+            // TODO: find more optimal way
+            Array.Copy(buffer, offset, fullBuffer, PacketHeader.HeaderLength, length);
+
+            SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
         }
     }
 }
