@@ -1,11 +1,8 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using UnitTests.Mock;
 
@@ -37,6 +34,7 @@ namespace UnitTests
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.LessOrEqual(2, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
 
+            // This test is flaky...
             receiveTask = udpClient.ReceiveAsync();
             receiveTask.Wait(2000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);

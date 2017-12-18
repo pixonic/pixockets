@@ -9,25 +9,25 @@ namespace TestServer
 {
     public class EchoServ : ReceiverBase
     {
-        BareSock servSock;
-        Dictionary<IPEndPoint, long> clients = new Dictionary<IPEndPoint, long>();
-        Stopwatch timer = new Stopwatch();
+        private BareSock _servSock;
+        private Dictionary<IPEndPoint, long> _clients = new Dictionary<IPEndPoint, long>();
+        private Stopwatch _timer = new Stopwatch();
 
         public EchoServ()
         {
-            timer.Start();
+            _timer.Start();
         }
 
         public void SetSocket(BareSock socket)
         {
-            servSock = socket;
+            _servSock = socket;
         }
 
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
         {
-            if (!clients.ContainsKey(endPoint))
+            if (!_clients.ContainsKey(endPoint))
             {
-                clients.Add(endPoint, timer.ElapsedTicks);
+                _clients.Add(endPoint, _timer.ElapsedTicks);
             }
 
             var str = Encoding.UTF8.GetString(buffer, offset, length);
@@ -39,9 +39,9 @@ namespace TestServer
 
         public void Broadcast(byte[] buffer, int offset, int length)
         {
-            foreach (var client in clients)
+            foreach (var client in _clients)
             {
-                servSock.Send(client.Key, buffer, offset, length);
+                _servSock.Send(client.Key, buffer, offset, length);
             }
         }
     }

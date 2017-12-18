@@ -9,24 +9,22 @@ namespace Pixockets
     {
         public const int MTU = 1200;
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
         // TODO: support IPV6
         public Socket SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
-        private SocketAsyncEventArgs eSend = new SocketAsyncEventArgs();
-        private SocketAsyncEventArgs eReceive = new SocketAsyncEventArgs();
+        private SocketAsyncEventArgs _eSend = new SocketAsyncEventArgs();
+        private SocketAsyncEventArgs _eReceive = new SocketAsyncEventArgs();
 
-        private volatile bool ReadyToSend = true;
-        private ReceiverBase callbacks;
-
-        ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
-        Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
+        private volatile bool _readyToSend = true;
+        private ReceiverBase _callbacks;
+        private ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
+        private Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
 
         public BareSock(ReceiverBase callbacks)
         {
-            this.callbacks = callbacks;
-            eSend.Completed += OnSendCompleted;
-            eReceive.Completed += OnReceiveCompleted;
+            this._callbacks = callbacks;
+            _eSend.Completed += OnSendCompleted;
+            _eReceive.Completed += OnReceiveCompleted;
         }
 
         public void Connect(IPAddress address, int port)
@@ -36,18 +34,18 @@ namespace Pixockets
 
         public void ReceiveFrom()
         {
-            eReceive.SetBuffer(new byte[MTU], 0, MTU);
+            _eReceive.SetBuffer(new byte[MTU], 0, MTU);
 
-            eReceive.RemoteEndPoint = AnyEndPoint;
+            _eReceive.RemoteEndPoint = AnyEndPoint;
 
             Receive();
         }
 
         public void Receive(int port)
         {
-            eReceive.SetBuffer(new byte[MTU], 0, MTU);
-            eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
-            SysSock.Bind(eReceive.RemoteEndPoint);
+            _eReceive.SetBuffer(new byte[MTU], 0, MTU);
+            _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
+            SysSock.Bind(_eReceive.RemoteEndPoint);
 
             Receive();
         }
@@ -61,7 +59,7 @@ namespace Pixockets
             }
 
             // TODO: make it atomic
-            if (ReadyToSend)
+            if (_readyToSend)
             {
                 ActualSend(endPoint, buffer, offset, length);
                 return;
@@ -76,22 +74,22 @@ namespace Pixockets
             sendQueue.Enqueue(packet);
         }
 
-        private void ActualSend(IPEndPoint endPoint, byte[] buffer, int offset, int length)
-        {
-            ReadyToSend = false;
-            eSend.SetBuffer(buffer, offset, length);
-            eSend.RemoteEndPoint = endPoint;
-
-            bool willRaiseEvent = SysSock.SendToAsync(eSend);
-            if (!willRaiseEvent)
-            {
-                OnPacketSent(eSend);
-            }
-        }
-
         public void SendTo(byte[] buffer, int offset, int length)
         {
             Send((IPEndPoint)SysSock.RemoteEndPoint, buffer, offset, length);
+        }
+
+        private void ActualSend(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        {
+            _readyToSend = false;
+            _eSend.SetBuffer(buffer, offset, length);
+            _eSend.RemoteEndPoint = endPoint;
+
+            bool willRaiseEvent = SysSock.SendToAsync(_eSend);
+            if (!willRaiseEvent)
+            {
+                OnPacketSent(_eSend);
+            }
         }
 
         private void OnSendCompleted(object sender, SocketAsyncEventArgs e)
@@ -120,11 +118,11 @@ namespace Pixockets
 
         private void Receive()
         {
-            eReceive.SetBuffer(0, MTU);
-            bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(eReceive);
+            _eReceive.SetBuffer(0, MTU);
+            bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(_eReceive);
             if (!willRaiseEvent)
             {
-                OnPacketReceived(eReceive);
+                OnPacketReceived(_eReceive);
             }
         }
 
@@ -133,7 +131,7 @@ namespace Pixockets
             if (e.BytesTransferred <= 0)
                 return;
 
-            callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
+            _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
 
             Receive();
         }
@@ -149,7 +147,7 @@ namespace Pixockets
             }
             else
             {
-                ReadyToSend = true;
+                _readyToSend = true;
             }
         }
     }
