@@ -42,14 +42,27 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
+            var fullBuffer = Wrap(buffer, offset, length);
+
+            SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+        }
+
+        public void SendTo(byte[] buffer, int offset, int length)
+        {
+            var fullBuffer = Wrap(buffer, offset, length);
+
+            SendTo(fullBuffer, offset, fullBuffer.Length);
+        }
+
+        private static byte[] Wrap(byte[] buffer, int offset, int length)
+        {
             var fullBuffer = new byte[length + PacketHeader.HeaderLength];
             var header = new PacketHeader((ushort)fullBuffer.Length);
             // TODO: pool them
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, PacketHeader.HeaderLength, length);
-
-            SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+            return fullBuffer;
         }
     }
 }
