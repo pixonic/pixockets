@@ -20,7 +20,7 @@ namespace UnitTests
             var cbs = new MockCallbacks();
             var sock = new SmartSock(cbs);
             sock.Connect(IPAddress.Loopback, 23451);
-            sock.ReceiveFrom();
+            sock.Receive();
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)6), 0, 2);

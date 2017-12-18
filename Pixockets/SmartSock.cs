@@ -21,9 +21,9 @@ namespace Pixockets
             SubSock.Connect(address, port);
         }
 
-        public void ReceiveFrom()
+        public void Receive()
         {
-            SubSock.ReceiveFrom();
+            SubSock.Receive();
         }
 
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
@@ -47,11 +47,11 @@ namespace Pixockets
             SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
         }
 
-        public void SendTo(byte[] buffer, int offset, int length)
+        public void Send(byte[] buffer, int offset, int length)
         {
             var fullBuffer = Wrap(buffer, offset, length);
 
-            SendTo(fullBuffer, offset, fullBuffer.Length);
+            Send(fullBuffer, offset, fullBuffer.Length);
         }
 
         private static byte[] Wrap(byte[] buffer, int offset, int length)

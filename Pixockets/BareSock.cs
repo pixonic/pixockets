@@ -32,13 +32,13 @@ namespace Pixockets
             SysSock.Connect(IPAddress.Loopback, port);
         }
 
-        public void ReceiveFrom()
+        public void Receive()
         {
             _eReceive.SetBuffer(new byte[MTU], 0, MTU);
 
             _eReceive.RemoteEndPoint = AnyEndPoint;
 
-            Receive();
+            ActualReceive();
         }
 
         public void Receive(int port)
@@ -47,7 +47,7 @@ namespace Pixockets
             _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
             SysSock.Bind(_eReceive.RemoteEndPoint);
 
-            Receive();
+            ActualReceive();
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
@@ -116,7 +116,7 @@ namespace Pixockets
             }
         }
 
-        private void Receive()
+        private void ActualReceive()
         {
             _eReceive.SetBuffer(0, MTU);
             bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(_eReceive);
@@ -133,7 +133,7 @@ namespace Pixockets
 
             _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
 
-            Receive();
+            ActualReceive();
         }
 
         private void OnPacketSent(SocketAsyncEventArgs e)

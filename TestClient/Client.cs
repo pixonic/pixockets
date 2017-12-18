@@ -13,7 +13,7 @@ namespace TestClient
             var sock = new BareSock(callbacks);
 
             sock.Connect(IPAddress.Loopback, 2345);
-            sock.ReceiveFrom();
+            sock.Receive();
 
             while (true)
             {

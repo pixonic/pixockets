@@ -62,7 +62,7 @@ namespace UnitTests
             MockCallbacks cbs = new MockCallbacks();
             BareSock sock = new BareSock(cbs);
             sock.Connect(IPAddress.Loopback, 23458);
-            sock.ReceiveFrom();
+            sock.Receive();
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)sock.SysSock.LocalEndPoint);
 
