@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
+using System.IO;
 
 namespace UnitTests
 {
@@ -10,7 +11,10 @@ namespace UnitTests
         [Test]
         public void SerializeHeader()
         {
-            var buffer = BitConverter.GetBytes((ushort)54321);
+            var ms = new MemoryStream();
+            ms.Write(BitConverter.GetBytes((ushort)54321), 0, 2);
+            ms.WriteByte(0);
+            var buffer = ms.ToArray();
             var header = new PacketHeader(buffer, 0);
 
             Assert.AreEqual(54321, header.Length);
@@ -21,10 +25,15 @@ namespace UnitTests
         {
             var header = new PacketHeader(54321);
 
-            var buffer = new byte[2];
+            var buffer = new byte[PacketHeader.MinHeaderLength];
             header.WriteTo(buffer, 0);
 
-            CollectionAssert.AreEqual(BitConverter.GetBytes((ushort)54321), buffer);
+            var ms = new MemoryStream();
+            ms.Write(BitConverter.GetBytes((ushort)54321), 0, 2);
+            ms.WriteByte(0);
+            var expectedBuffer = ms.ToArray();
+
+            CollectionAssert.AreEqual(expectedBuffer, buffer);
         }
     }
 }

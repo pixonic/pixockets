@@ -23,7 +23,8 @@ namespace UnitTests
             sock.Receive();
 
             var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes((ushort)6), 0, 2);
+            ms.Write(BitConverter.GetBytes((ushort)7), 0, 2);
+            ms.WriteByte(0);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
             udpClient.Send(buffer, buffer.Length, (IPEndPoint)sock.SubSock.SysSock.LocalEndPoint);
@@ -31,8 +32,8 @@ namespace UnitTests
             Utils.WaitOnReceive(cbs);
 
             Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, PacketHeader.HeaderLength));
-            Assert.AreEqual(PacketHeader.HeaderLength, cbs.OnReceiveCalls[0].Offset);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, PacketHeader.MinHeaderLength));
+            Assert.AreEqual(PacketHeader.MinHeaderLength, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
         }
 
@@ -55,8 +56,8 @@ namespace UnitTests
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
 
             var header = new PacketHeader(receiveTask.Result.Buffer, 0);
-            Assert.AreEqual(6, header.Length);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, PacketHeader.HeaderLength));
+            Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, PacketHeader.MinHeaderLength));
         }
     }
 }

@@ -1,12 +1,26 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 
 namespace Pixockets
 {
+    public class SequenceState
+    {
+        public ushort SeqNum;
+        public List<ushort> Acks;
+
+        public void AddAck(ushort ack)
+        {
+
+        }
+    }
+
     public class SmartSock : ReceiverBase
     {
         // TODO: invert dependency
         public readonly BareSock SubSock;
+
+        private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
 
         private ReceiverBase _callbacks;
 
@@ -31,10 +45,12 @@ namespace Pixockets
             var header = new PacketHeader(buffer, offset);
             if (length == header.Length)
             {
+                var headerLen = header.HeaderLength;
+
                 _callbacks.OnReceive(
                     buffer,
-                    offset + PacketHeader.HeaderLength,
-                    length - PacketHeader.HeaderLength,
+                    offset + headerLen,
+                    length - headerLen,
                     endPoint);
             }
             //else // Wrong packet
@@ -55,13 +71,15 @@ namespace Pixockets
         }
 
         private static byte[] Wrap(byte[] buffer, int offset, int length)
-        {
-            var fullBuffer = new byte[length + PacketHeader.HeaderLength];
-            var header = new PacketHeader((ushort)fullBuffer.Length);
-            // TODO: pool them
+        {            
+            // TODO: pool byte arrays
+            var header = new PacketHeader();
+            var headLen = header.HeaderLength;
+            header.Length = (ushort)(headLen + length);
+            var fullBuffer = new byte[length + headLen];
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, PacketHeader.HeaderLength, length);
+            Array.Copy(buffer, offset, fullBuffer, headLen, length);
             return fullBuffer;
         }
     }

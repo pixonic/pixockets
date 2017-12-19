@@ -14,5 +14,15 @@ namespace UnitTests
                     break;
             }
         }
+
+        public static void WaitOnReceive(MockCallbacks cbs, int count)
+        {
+            for (int i = 0; i < 1000; ++i)
+            {
+                Thread.Sleep(1);
+                if (cbs.OnReceiveCalls.Count >= count)
+                    break;
+            }
+        }
     }
 }
