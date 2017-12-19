@@ -18,7 +18,7 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23451);            
 
             var cbs = new MockCallbacks();
-            var sock = new SmartSock(cbs);
+            var sock = new SmartSock(new BareSock(), cbs);
             sock.Connect(IPAddress.Loopback, 23451);
             sock.Receive();
 
@@ -27,7 +27,7 @@ namespace UnitTests
             ms.WriteByte(0);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            udpClient.Send(buffer, buffer.Length, (IPEndPoint)sock.SubSock.SysSock.LocalEndPoint);
+            udpClient.Send(buffer, buffer.Length, sock.LocalEndPoint);
 
             Utils.WaitOnReceive(cbs);
 
@@ -44,7 +44,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             var cbs = new MockCallbacks();
-            var sock = new SmartSock(cbs);
+            var sock = new SmartSock(new BareSock(), cbs);
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);

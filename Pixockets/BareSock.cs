@@ -5,7 +5,7 @@ using System.Net.Sockets;
 
 namespace Pixockets
 {
-    public class BareSock
+    public class BareSock : SockBase
     {
         public const int MTU = 1200;
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
@@ -20,19 +20,25 @@ namespace Pixockets
         private ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
         private Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
 
-        public BareSock(ReceiverBase callbacks)
+        public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
+
+        public BareSock()
         {
-            this._callbacks = callbacks;
             _eSend.Completed += OnSendCompleted;
             _eReceive.Completed += OnReceiveCompleted;
         }
 
-        public void Connect(IPAddress address, int port)
+        public override void SetCallbacks(ReceiverBase callbacks)
+        {
+            _callbacks = callbacks;
+        }
+
+        public override void Connect(IPAddress address, int port)
         {
             SysSock.Connect(IPAddress.Loopback, port);
         }
 
-        public void Receive()
+        public override void Receive()
         {
             _eReceive.SetBuffer(new byte[MTU], 0, MTU);
 
@@ -41,7 +47,7 @@ namespace Pixockets
             ActualReceive();
         }
 
-        public void Receive(int port)
+        public override void Receive(int port)
         {
             _eReceive.SetBuffer(new byte[MTU], 0, MTU);
             _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
@@ -50,7 +56,7 @@ namespace Pixockets
             ActualReceive();
         }
 
-        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
             if (length > MTU)
             {
@@ -74,7 +80,7 @@ namespace Pixockets
             sendQueue.Enqueue(packet);
         }
 
-        public void SendTo(byte[] buffer, int offset, int length)
+        public override void Send(byte[] buffer, int offset, int length)
         {
             Send((IPEndPoint)SysSock.RemoteEndPoint, buffer, offset, length);
         }

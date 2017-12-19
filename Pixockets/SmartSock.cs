@@ -4,29 +4,20 @@ using System.Net;
 
 namespace Pixockets
 {
-    public class SequenceState
-    {
-        public ushort SeqNum;
-        public List<ushort> Acks;
-
-        public void AddAck(ushort ack)
-        {
-
-        }
-    }
-
     public class SmartSock : ReceiverBase
     {
-        // TODO: invert dependency
-        public readonly BareSock SubSock;
+        public IPEndPoint LocalEndPoint { get { return SubSock.LocalEndPoint; } }
+
+        public readonly SockBase SubSock;
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
 
         private ReceiverBase _callbacks;
 
-        public SmartSock(ReceiverBase callbacks)
+        public SmartSock(SockBase subSock, ReceiverBase callbacks)
         {
-            SubSock = new BareSock(this);
+            subSock.SetCallbacks(this);
+            SubSock = subSock;
             _callbacks = callbacks;
         }
 
@@ -67,7 +58,7 @@ namespace Pixockets
         {
             var fullBuffer = Wrap(buffer, offset, length);
 
-            Send(fullBuffer, offset, fullBuffer.Length);
+            SubSock.Send(fullBuffer, offset, fullBuffer.Length);
         }
 
         private static byte[] Wrap(byte[] buffer, int offset, int length)

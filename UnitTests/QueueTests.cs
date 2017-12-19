@@ -18,12 +18,13 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            BareSock sock = new BareSock();
+            sock.SetCallbacks(cbs);
 
             sock.Connect(IPAddress.Loopback, 23450);
-            sock.SendTo(BitConverter.GetBytes(1), 0, 4);
-            sock.SendTo(BitConverter.GetBytes(2), 0, 4);
-            sock.SendTo(BitConverter.GetBytes(3), 0, 4);
+            sock.Send(BitConverter.GetBytes(1), 0, 4);
+            sock.Send(BitConverter.GetBytes(2), 0, 4);
+            sock.Send(BitConverter.GetBytes(3), 0, 4);
 
             receiveTask.Wait(2000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);

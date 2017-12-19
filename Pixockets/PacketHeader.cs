@@ -30,6 +30,8 @@ namespace Pixockets
         private const byte ContainSeq = 0x1;
         private const byte ContainAcks = 0x2;
         private const byte ContainFrag = 0x4;
+        private const byte Reserved1 = 0x8;
+        public const byte NeedAck = 0x10;
 
         public byte Flags;
         // We need this to detect truncated datagrams

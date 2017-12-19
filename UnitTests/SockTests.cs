@@ -14,15 +14,15 @@ namespace UnitTests
         [Test]
         public void SocketCreated()
         {
-            MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            var sock = new BareSock();
         }
 
         [Test]
         public void SockReceive()
         {
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            BareSock sock = new BareSock();
+            sock.SetCallbacks(cbs);
             sock.Receive(23456);
 
             UdpClient udpClient = new UdpClient();
@@ -44,7 +44,8 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            BareSock sock = new BareSock();
+            sock.SetCallbacks(cbs);
 
             sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4);
 
@@ -60,7 +61,8 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23458);
 
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            BareSock sock = new BareSock();
+            sock.SetCallbacks(cbs);
             sock.Connect(IPAddress.Loopback, 23458);
             sock.Receive();
 

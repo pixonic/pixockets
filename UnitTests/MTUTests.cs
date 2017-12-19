@@ -13,7 +13,8 @@ namespace UnitTests
         public void SendMoreThanMTUClamped()
         {
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock(cbs);
+            BareSock sock = new BareSock();
+            sock.SetCallbacks(cbs);
             sock.Receive(23459);
 
             UdpClient udpClient = new UdpClient();

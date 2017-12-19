@@ -10,7 +10,8 @@ namespace TestClient
         static void Main(string[] args)
         {
             var callbacks = new PrintingReceiver();
-            var sock = new BareSock(callbacks);
+            var sock = new BareSock();
+            sock.SetCallbacks(callbacks);
 
             sock.Connect(IPAddress.Loopback, 2345);
             sock.Receive();
@@ -20,7 +21,7 @@ namespace TestClient
                 var msg = Console.ReadLine();
 
                 var buffer = Encoding.UTF8.GetBytes(msg);
-                sock.SendTo(buffer, 0, buffer.Length);
+                sock.Send(buffer, 0, buffer.Length);
             }
         }
     }
