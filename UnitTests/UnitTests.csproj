@@ -49,6 +49,7 @@
     <Compile Include="MTUTests.cs" />
     <Compile Include="PacketHeaderTests.cs" />
     <Compile Include="QueueTests.cs" />
+    <Compile Include="ReliableSendTests.cs" />
     <Compile Include="SmartSockTests.cs" />
     <Compile Include="SockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

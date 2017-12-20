@@ -21,6 +21,7 @@ namespace Pixockets
         private Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
+        public override IPEndPoint RemoteEndPoint { get { return (IPEndPoint)SysSock.RemoteEndPoint; } }
 
         public BareSock()
         {

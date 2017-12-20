@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Pixockets
 {
@@ -10,15 +11,15 @@ namespace Pixockets
             get
             {
                 int res = MinHeaderLength;
-                if ((Flags & ContainSeq) != 0)
+                if ((Flags & ContainsSeq) != 0)
                 {
                     res += 2;
                 }
-                if ((Flags & ContainAcks) != 0)
+                if ((Flags & ContainsAck) != 0)
                 {
                     res += 4;
                 }
-                if ((Flags & ContainFrag) != 0)
+                if ((Flags & ContainsFrag) != 0)
                 {
                     res += 5;
                 }
@@ -27,18 +28,17 @@ namespace Pixockets
             }
         }
 
-        private const byte ContainSeq = 0x1;
-        private const byte ContainAcks = 0x2;
-        private const byte ContainFrag = 0x4;
+        private const byte ContainsSeq = 0x1;
+        public const byte ContainsAck = 0x2;
+        private const byte ContainsFrag = 0x4;
         private const byte Reserved1 = 0x8;
-        public const byte NeedAck = 0x10;
+        public const byte NeedsAck = 0x10;
 
         public byte Flags;
         // We need this to detect truncated datagrams
         public ushort Length;
         public ushort SeqNum;
-        public ushort Ack;  // First acked SeqNum
-        public ushort Acks;  // bits of other Acks
+        public ushort Ack;  // Acked SeqNum
         public byte FragId;  // Id of this fragment
         public ushort FragNum;  // Number of this fragment
         public ushort FragCount;  // Count of fragments in this sequence
@@ -56,8 +56,25 @@ namespace Pixockets
 
         public void SetSeqNum(ushort seqNum)
         {
-            Flags |= ContainSeq;
+            Flags |= ContainsSeq;
             SeqNum = seqNum;
+        }
+
+        public void SetAck(ushort seqNum)
+        {
+            Flags |= ContainsAck;
+            Ack = seqNum;
+        }
+
+
+        public void SetNeedAck()
+        {
+            Flags |= NeedsAck;
+        }
+
+        public bool GetNeedAck()
+        {
+            return (Flags & NeedsAck) != 0;
         }
 
         public PacketHeader(byte[] buffer, int offset)
@@ -65,18 +82,17 @@ namespace Pixockets
             Length = BitConverter.ToUInt16(buffer, offset);
             Flags = buffer[offset+2];
             int pos = offset + 3;
-            if ((Flags & ContainSeq) != 0)
+            if ((Flags & ContainsSeq) != 0)
             {
                 SeqNum = BitConverter.ToUInt16(buffer, pos);
                 pos += 2;
             }
-            if ((Flags & ContainAcks) != 0)
+            if ((Flags & ContainsAck) != 0)
             {
                 Ack = BitConverter.ToUInt16(buffer, pos);
-                Acks = BitConverter.ToUInt16(buffer, pos+2);
-                pos += 4;
+                pos += 2;
             }
-            if ((Flags & ContainFrag) != 0)
+            if ((Flags & ContainsFrag) != 0)
             {
                 FragId = buffer[pos++];
                 FragNum = BitConverter.ToUInt16(buffer, pos+2);
@@ -85,21 +101,28 @@ namespace Pixockets
             }
         }
 
+        // For unit-testing only
+        public void WriteTo(Stream stream)
+        {
+            var buffer = new byte[64];
+            WriteTo(buffer, 0);
+            stream.Write(buffer, 0, HeaderLength);
+        }
+
         public void WriteTo(byte[] buffer, int offset)
         {
             int pos = offset;
             pos = WriteUInt16(Length, buffer, pos);
             buffer[pos++] = Flags;
-            if ((Flags & ContainSeq) != 0)
+            if ((Flags & ContainsSeq) != 0)
             {
                 pos = WriteUInt16(SeqNum, buffer, pos);
             }
-            if ((Flags & ContainAcks) != 0)
+            if ((Flags & ContainsAck) != 0)
             {
                 pos = WriteUInt16(Ack, buffer, pos);
-                pos = WriteUInt16(Acks, buffer, pos);
             }
-            if ((Flags & ContainFrag) != 0)
+            if ((Flags & ContainsFrag) != 0)
             {
                 buffer[pos++] = FragId;
                 pos = WriteUInt16(FragNum, buffer, pos);

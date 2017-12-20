@@ -5,6 +5,7 @@ namespace Pixockets
     public abstract class SockBase
     {
         public virtual IPEndPoint LocalEndPoint { get; }
+        public virtual IPEndPoint RemoteEndPoint { get; }
 
         public abstract void SetCallbacks(ReceiverBase callbacks);
 
