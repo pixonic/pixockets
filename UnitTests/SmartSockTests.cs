@@ -3,8 +3,6 @@ using Pixockets;
 using System;
 using System.IO;
 using System.Net;
-using System.Net.Sockets;
-using System.Threading.Tasks;
 using UnitTests.Mock;
 
 namespace UnitTests
@@ -15,10 +13,9 @@ namespace UnitTests
         [Test]
         public void SmartSockReceive()
         {
-            UdpClient udpClient = new UdpClient(23451);            
-
             var cbs = new MockCallbacks();
-            var sock = new SmartSock(new BareSock(), cbs);
+            var bareSock = new MockSock();
+            var sock = new SmartSock(bareSock, cbs);
             sock.Connect(IPAddress.Loopback, 23451);
             sock.Receive();
 
@@ -27,7 +24,9 @@ namespace UnitTests
             ms.WriteByte(0);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            udpClient.Send(buffer, buffer.Length, sock.LocalEndPoint);
+
+            // Simulate send from UdpClient
+            bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
             Utils.WaitOnReceive(cbs);
 
@@ -40,24 +39,20 @@ namespace UnitTests
         [Test]
         public void SmartSockSend()
         {
-            UdpClient udpClient = new UdpClient(23452);
-            var receiveTask = udpClient.ReceiveAsync();
-
             var cbs = new MockCallbacks();
-            var sock = new SmartSock(new BareSock(), cbs);
+            var bareSock = new MockSock();
+            var sock = new SmartSock(bareSock, cbs);
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
             sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            
+            Assert.AreEqual(1, bareSock.Sends.Count);
 
-            receiveTask.Wait(1000);
-
-            Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
-
-            var header = new PacketHeader(receiveTask.Result.Buffer, 0);
+            var header = new PacketHeader(bareSock.Sends[0].Buffer, bareSock.Sends[0].Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, PacketHeader.MinHeaderLength));
+            Assert.AreEqual(123456789, BitConverter.ToInt32(bareSock.Sends[0].Buffer, PacketHeader.MinHeaderLength));
         }
     }
 }
