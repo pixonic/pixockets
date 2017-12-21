@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NotAckedPacket.cs" />
     <Compile Include="SequenceState.cs" />
     <Compile Include="SockBase.cs" />
     <Compile Include="BareSock.cs" />

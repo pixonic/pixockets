@@ -6,11 +6,12 @@ namespace Pixockets
     public class SequenceState
     {
         public ushort SeqNum;
-        public List<ushort> Acks = new List<ushort>();
+        public readonly List<NotAckedPacket> NotAcked = new List<NotAckedPacket>();
+        public int LastActive;
 
-        public void AddAck(ushort ack)
+        public SequenceState()
         {
-            Acks.Add(ack);
+            LastActive = Environment.TickCount;
         }
     }
 }
