@@ -108,7 +108,7 @@ namespace Pixockets
                     var packet = notAcked[i];
                     if (now - packet.SendTicks > AckTimeout)
                     {
-                        Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
+                        SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
                         packet.SendTicks = now;
                     }
                 }
