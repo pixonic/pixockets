@@ -6,18 +6,18 @@ namespace Pixockets
 {
     public class SmartSock : ReceiverBase
     {
+        public int ConnectionTimeout = 10000;
+        public int AckTimeout = 1000;
+
+        private const int DeltaThreshold = 1000000000;
+
         public IPEndPoint LocalEndPoint { get { return SubSock.LocalEndPoint; } }
 
         public readonly SockBase SubSock;
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
-
         private ReceiverBase _callbacks;
-
-        public int ConnectionTimeout = 10000;
-        public int AckTimeout = 1000;
-
-        private const int DeltaThreshold = 1000000000;
+        private object syncObj = new object();
 
         public SmartSock(SockBase subSock, ReceiverBase callbacks)
         {
@@ -57,9 +57,12 @@ namespace Pixockets
                 length - headerLen,
                 endPoint);
 
-            if ((header.Flags & PacketHeader.ContainsAck) != 0)
+            lock (syncObj)
             {
-                ReceiveAck(endPoint, seqState, header.Ack);
+                if ((header.Flags & PacketHeader.ContainsAck) != 0)
+                {
+                    ReceiveAck(endPoint, seqState, header.Ack);
+                }
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
@@ -91,25 +94,28 @@ namespace Pixockets
 
         public void Tick()
         {
-            var now = Environment.TickCount;
-            var toDelete = new List<IPEndPoint>();
-            foreach (var seqState in _seqStates)
+            lock (syncObj)
             {
-                if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
+                var now = Environment.TickCount;
+                var toDelete = new List<IPEndPoint>();
+                foreach (var seqState in _seqStates)
                 {
-                    toDelete.Add(seqState.Key);
-                    continue;
-                }
-
-                var notAcked = seqState.Value.NotAcked;
-                var notAckedCount = notAcked.Count;
-                for (int i = 0; i < notAckedCount; ++i)
-                {
-                    var packet = notAcked[i];
-                    if (now - packet.SendTicks > AckTimeout)
+                    if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
                     {
-                        SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
-                        packet.SendTicks = now;
+                        toDelete.Add(seqState.Key);
+                        continue;
+                    }
+
+                    var notAcked = seqState.Value.NotAcked;
+                    var notAckedCount = notAcked.Count;
+                    for (int i = 0; i < notAckedCount; ++i)
+                    {
+                        var packet = notAcked[i];
+                        if (now - packet.SendTicks > AckTimeout)
+                        {
+                            SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
+                            packet.SendTicks = now;
+                        }
                     }
                 }
             }

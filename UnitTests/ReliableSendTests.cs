@@ -75,7 +75,7 @@ namespace UnitTests
             var buffer = ms.ToArray();
             sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
 
-            Thread.Sleep(10);
+            Thread.Sleep(20);
             sock.Tick();
 
             Assert.AreEqual(2, bareSock.Sends.Count);
@@ -111,7 +111,7 @@ namespace UnitTests
             buffer = ms.ToArray();
             bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
-            Thread.Sleep(10);
+            Thread.Sleep(20);
             sock.Tick();
 
             Assert.AreEqual(1, bareSock.Sends.Count);
