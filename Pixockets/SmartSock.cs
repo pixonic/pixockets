@@ -70,7 +70,7 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
-            var fullBuffer = Wrap(buffer, offset, length);
+            var fullBuffer = Wrap(endPoint, buffer, offset, length);
 
             SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
         }
@@ -84,11 +84,10 @@ namespace Pixockets
 
         public void Send(byte[] buffer, int offset, int length)
         {
-            var fullBuffer = Wrap(buffer, offset, length);
-
-            SubSock.Send(fullBuffer, offset, fullBuffer.Length);
+            var endPoint = SubSock.RemoteEndPoint;
+            Send(endPoint, buffer, offset, length);
         }
-
+ 
         public void Tick()
         {
             lock (syncObj)
@@ -136,11 +135,27 @@ namespace Pixockets
             }
             return delta;
         }
-
+/*
         private static byte[] Wrap(byte[] buffer, int offset, int length)
         {
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
+            var headLen = header.HeaderLength;
+            header.Length = (ushort)(headLen + length);
+            var fullBuffer = new byte[length + headLen];
+            header.WriteTo(fullBuffer, 0);
+            // TODO: find more optimal way
+            Array.Copy(buffer, offset, fullBuffer, headLen, length);
+            return fullBuffer;
+        }
+*/
+        private byte[] Wrap(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        {
+            var seqState = GetSeqState(endPoint);
+            ushort seqNum = seqState.NextSeqNum();
+            // TODO: pool byte arrays and PacketHeaders
+            var header = new PacketHeader();
+            header.SetSeqNum(seqNum);
             var headLen = header.HeaderLength;
             header.Length = (ushort)(headLen + length);
             var fullBuffer = new byte[length + headLen];
@@ -155,12 +170,8 @@ namespace Pixockets
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
             header.SetNeedAck();
-            ushort seqNum;
             var seqState = GetSeqState(endPoint);
-            lock (seqState.SyncObj)
-            {
-                seqNum = seqState.SeqNum++;
-            }
+            ushort seqNum = seqState.NextSeqNum();
             // TODO: pool them
             header.SetSeqNum(seqNum);
             var headLen = header.HeaderLength;

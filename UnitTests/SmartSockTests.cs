@@ -52,7 +52,7 @@ namespace UnitTests
 
             var header = new PacketHeader(bareSock.Sends[0].Buffer, bareSock.Sends[0].Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(bareSock.Sends[0].Buffer, PacketHeader.MinHeaderLength));
+            Assert.AreEqual(123456789, BitConverter.ToInt32(bareSock.Sends[0].Buffer, header.HeaderLength));
         }
     }
 }

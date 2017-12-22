@@ -14,5 +14,16 @@ namespace Pixockets
         {
             LastActive = Environment.TickCount;
         }
+
+        public ushort NextSeqNum()
+        {
+            ushort seqNum;
+            lock (SyncObj)
+            {
+                seqNum = SeqNum++;
+            }
+
+            return seqNum;
+        }
     }
 }
