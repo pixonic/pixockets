@@ -57,12 +57,9 @@ namespace Pixockets
                 length - headerLen,
                 endPoint);
 
-            lock (syncObj)
+            if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
-                if ((header.Flags & PacketHeader.ContainsAck) != 0)
-                {
-                    ReceiveAck(endPoint, seqState, header.Ack);
-                }
+                ReceiveAck(endPoint, header.Ack);
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
@@ -100,23 +97,32 @@ namespace Pixockets
                 var toDelete = new List<IPEndPoint>();
                 foreach (var seqState in _seqStates)
                 {
-                    if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
+                    lock (seqState.Value.SyncObj)
                     {
-                        toDelete.Add(seqState.Key);
-                        continue;
-                    }
-
-                    var notAcked = seqState.Value.NotAcked;
-                    var notAckedCount = notAcked.Count;
-                    for (int i = 0; i < notAckedCount; ++i)
-                    {
-                        var packet = notAcked[i];
-                        if (now - packet.SendTicks > AckTimeout)
+                        if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
                         {
-                            SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
-                            packet.SendTicks = now;
+                            toDelete.Add(seqState.Key);
+                            continue;
+                        }
+
+                        var notAcked = seqState.Value.NotAcked;
+                        var notAckedCount = notAcked.Count;
+                        for (int i = 0; i < notAckedCount; ++i)
+                        {
+                            var packet = notAcked[i];
+                            if (now - packet.SendTicks > AckTimeout)
+                            {
+                                SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
+                                packet.SendTicks = now;
+                            }
                         }
                     }
+                }
+
+                var toDeleteCount = toDelete.Count;
+                for (int i = 0; i < toDeleteCount; ++i)
+                {
+                    _seqStates.Remove(toDelete[i]);
                 }
             }
         }
@@ -149,8 +155,12 @@ namespace Pixockets
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
             header.SetNeedAck();
+            ushort seqNum;
             var seqState = GetSeqState(endPoint);
-            var seqNum = seqState.SeqNum++;
+            lock (seqState.SyncObj)
+            {
+                seqNum = seqState.SeqNum++;
+            }
             // TODO: pool them
             header.SetSeqNum(seqNum);
             var headLen = header.HeaderLength;
@@ -166,8 +176,10 @@ namespace Pixockets
             notAcked.Length = fullBuffer.Length;
             notAcked.SendTicks = Environment.TickCount;
             notAcked.SeqNum = seqNum;
-            seqState.NotAcked.Add(notAcked);
-
+            lock (seqState.SyncObj)
+            {
+                seqState.NotAcked.Add(notAcked);
+            }
             return fullBuffer;
         }
 
@@ -183,29 +195,36 @@ namespace Pixockets
             SubSock.Send(endPoint, buffer, 0, buffer.Length);
         }
 
-        private void ReceiveAck(IPEndPoint endPoint, SequenceState seqState, ushort ack)
+        private void ReceiveAck(IPEndPoint endPoint, ushort ack)
         {
-            var notAcked = seqState.NotAcked;
-            var notAckedCount = notAcked.Count;
-            for (int i = 0; i < notAckedCount; ++i)
+            lock (syncObj)
             {
-                var packet = notAcked[i];
-                if (packet.SeqNum == ack)
+                var seqState = GetSeqState(endPoint);
+                var notAcked = seqState.NotAcked;
+                var notAckedCount = notAcked.Count;
+                for (int i = 0; i < notAckedCount; ++i)
                 {
-                    notAcked.RemoveAt(i);
-                    break;
+                    var packet = notAcked[i];
+                    if (packet.SeqNum == ack)
+                    {
+                        notAcked.RemoveAt(i);
+                        break;
+                    }
                 }
             }
         }
 
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
-            if (!_seqStates.ContainsKey(endPoint))
+            lock (syncObj)
             {
-                _seqStates.Add(endPoint, new SequenceState());
-            }
+                if (!_seqStates.ContainsKey(endPoint))
+                {
+                    _seqStates.Add(endPoint, new SequenceState());
+                }
 
-            return _seqStates[endPoint];
+                return _seqStates[endPoint];
+            }
         }
     }
 }
