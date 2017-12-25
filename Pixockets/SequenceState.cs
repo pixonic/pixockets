@@ -8,7 +8,9 @@ namespace Pixockets
         public ushort SeqNum;
         public readonly List<NotAckedPacket> NotAcked = new List<NotAckedPacket>();
         public int LastActive;
+        public byte FragId;
         public object SyncObj = new object();
+        
 
         public SequenceState()
         {

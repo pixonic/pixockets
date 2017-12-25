@@ -17,7 +17,7 @@ namespace Pixockets
                 }
                 if ((Flags & ContainsAck) != 0)
                 {
-                    res += 4;
+                    res += 2;
                 }
                 if ((Flags & ContainsFrag) != 0)
                 {
@@ -30,7 +30,7 @@ namespace Pixockets
 
         private const byte ContainsSeq = 0x1;
         public const byte ContainsAck = 0x2;
-        private const byte ContainsFrag = 0x4;
+        public const byte ContainsFrag = 0x4;
         private const byte Reserved1 = 0x8;
         public const byte NeedsAck = 0x10;
 
@@ -75,6 +75,14 @@ namespace Pixockets
         public bool GetNeedAck()
         {
             return (Flags & NeedsAck) != 0;
+        }
+
+        public void SetFrag(byte fragId, ushort fragNum, ushort fragCount)
+        {
+            FragId = fragId;
+            FragNum = fragNum;
+            FragCount = fragCount;
+            Flags |= ContainsFrag;
         }
 
         public PacketHeader(byte[] buffer, int offset)

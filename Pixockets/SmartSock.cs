@@ -8,6 +8,7 @@ namespace Pixockets
     {
         public int ConnectionTimeout = 10000;
         public int AckTimeout = 1000;
+        public int MaxPayload = BareSock.MTU - 100;
 
         private const int DeltaThreshold = 1000000000;
 
@@ -49,13 +50,14 @@ namespace Pixockets
                 return;
             }
 
-            var headerLen = header.HeaderLength;
-
-            _callbacks.OnReceive(
-                buffer,
-                offset + headerLen,
-                length - headerLen,
-                endPoint);
+            if ((header.Flags & PacketHeader.ContainsFrag) != 0)
+            {
+                OnReceiveFragment(buffer, offset, length, endPoint, header);
+            }
+            else
+            {
+                OnReceiveComplete(buffer, offset, length, endPoint, header);
+            }
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
@@ -70,9 +72,36 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
-            var fullBuffer = Wrap(endPoint, buffer, offset, length);
+            // TODO: move constant to more appropriate place?
+            if (length > MaxPayload)
+            {
+                var seqState = GetSeqState(endPoint);
+                byte fragId;
+                lock (seqState.SyncObj)
+                {
+                    fragId = seqState.FragId++;
+                }
+                // Cut packet
+                var fragmentCount = (length + MaxPayload) / MaxPayload;
+                var tailSize = length;
+                for (int i = 0; i < fragmentCount; ++i)
+                {
+                    // TODO: pool them
+                    var fragmentBuffer = new byte[MaxPayload];
+                    Array.Copy(buffer, offset + i * MaxPayload, fragmentBuffer, 0, Math.Min(MaxPayload, tailSize));
+                    tailSize -= MaxPayload;
 
-            SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                    var fullBuffer = WrapFragment(endPoint, buffer, offset, length, fragId, (ushort)i, (ushort)fragmentCount);
+
+                    SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                }
+            }
+            else
+            {
+                var fullBuffer = Wrap(endPoint, buffer, offset, length);
+
+                SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+            }
         }
 
         public void SendReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
@@ -126,6 +155,27 @@ namespace Pixockets
             }
         }
 
+        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
+        {
+            var headerLen = header.HeaderLength;
+
+            var payloadLength = length - headerLen;
+            if (payloadLength > 0)
+            {
+                _callbacks.OnReceive(
+                    buffer,
+                    offset + headerLen,
+                    payloadLength,
+                    endPoint);
+            }
+        }
+
+        private void OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
+        {
+            // TODO: implement
+            throw new NotImplementedException();
+        }
+
         private static int TimeDelta(int t1, int t2)
         {
             var delta = Math.Abs(t1 - t2);
@@ -135,20 +185,7 @@ namespace Pixockets
             }
             return delta;
         }
-/*
-        private static byte[] Wrap(byte[] buffer, int offset, int length)
-        {
-            // TODO: pool byte arrays and PacketHeaders
-            var header = new PacketHeader();
-            var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
-            header.WriteTo(fullBuffer, 0);
-            // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, headLen, length);
-            return fullBuffer;
-        }
-*/
+
         private byte[] Wrap(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
             var seqState = GetSeqState(endPoint);
@@ -191,6 +228,24 @@ namespace Pixockets
             {
                 seqState.NotAcked.Add(notAcked);
             }
+            return fullBuffer;
+        }
+
+
+        private byte[] WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, byte fragId, ushort fragNum, ushort fragCount)
+        {
+            var seqState = GetSeqState(endPoint);
+            ushort seqNum = seqState.NextSeqNum();
+            // TODO: pool byte arrays and PacketHeaders
+            var header = new PacketHeader();
+            header.SetSeqNum(seqNum);  // TODO: do we really need it?
+            header.SetFrag(fragId, fragNum, fragCount);
+            var headLen = header.HeaderLength;
+            header.Length = (ushort)(headLen + length);
+            var fullBuffer = new byte[length + headLen];
+            header.WriteTo(fullBuffer, 0);
+            // TODO: find more optimal way
+            Array.Copy(buffer, offset, fullBuffer, headLen, length);
             return fullBuffer;
         }
 
