@@ -83,16 +83,17 @@ namespace Pixockets
                     fragId = seqState.FragId++;
                 }
                 // Cut packet
-                var fragmentCount = (length + MaxPayload) / MaxPayload;
+                var fragmentCount = (length + MaxPayload - 1) / MaxPayload;
                 var tailSize = length;
                 for (int i = 0; i < fragmentCount; ++i)
                 {
                     // TODO: pool them
-                    var fragmentBuffer = new byte[MaxPayload];
-                    Array.Copy(buffer, offset + i * MaxPayload, fragmentBuffer, 0, Math.Min(MaxPayload, tailSize));
+                    var fragmentSize = Math.Min(MaxPayload, tailSize);
+                    var fragmentBuffer = new byte[fragmentSize];
+                    Array.Copy(buffer, offset + i * MaxPayload, fragmentBuffer, 0, fragmentSize);
                     tailSize -= MaxPayload;
 
-                    var fullBuffer = WrapFragment(endPoint, buffer, offset, length, fragId, (ushort)i, (ushort)fragmentCount);
+                    var fullBuffer = WrapFragment(endPoint, fragmentBuffer, 0, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
                     SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
                 }

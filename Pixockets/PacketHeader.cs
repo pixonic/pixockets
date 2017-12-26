@@ -102,9 +102,9 @@ namespace Pixockets
             }
             if ((Flags & ContainsFrag) != 0)
             {
-                FragId = buffer[pos++];
-                FragNum = BitConverter.ToUInt16(buffer, pos+2);
-                FragCount = BitConverter.ToUInt16(buffer, pos+4);
+                FragId = buffer[pos];
+                FragNum = BitConverter.ToUInt16(buffer, pos+1);
+                FragCount = BitConverter.ToUInt16(buffer, pos+3);
                 pos += 5;
             }
         }
