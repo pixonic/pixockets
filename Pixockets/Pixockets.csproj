@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FragmentBuffer.cs" />
+    <Compile Include="FragmentedPacket.cs" />
     <Compile Include="NotAckedPacket.cs" />
     <Compile Include="SequenceState.cs" />
     <Compile Include="SockBase.cs" />

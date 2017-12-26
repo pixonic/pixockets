@@ -172,8 +172,9 @@ namespace Pixockets
 
         private void OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
         {
-            // TODO: implement
-            throw new NotImplementedException();
+            var seqState = GetSeqState(endPoint);
+            seqState.AddFragment(buffer, offset, length, header);
+            seqState.CombineIfFull(header, endPoint, _callbacks);
         }
 
         private static int TimeDelta(int t1, int t2)
