@@ -21,7 +21,7 @@ namespace Pixockets
                 }
                 if ((Flags & ContainsFrag) != 0)
                 {
-                    res += 5;
+                    res += 6;
                 }
 
                 return res;
@@ -39,7 +39,7 @@ namespace Pixockets
         public ushort Length;
         public ushort SeqNum;
         public ushort Ack;  // Acked SeqNum
-        public byte FragId;  // Id of this fragment
+        public ushort FragId;  // Id of this fragment
         public ushort FragNum;  // Number of this fragment
         public ushort FragCount;  // Count of fragments in this sequence
 
@@ -77,7 +77,7 @@ namespace Pixockets
             return (Flags & NeedsAck) != 0;
         }
 
-        public void SetFrag(byte fragId, ushort fragNum, ushort fragCount)
+        public void SetFrag(ushort fragId, ushort fragNum, ushort fragCount)
         {
             FragId = fragId;
             FragNum = fragNum;
@@ -102,10 +102,10 @@ namespace Pixockets
             }
             if ((Flags & ContainsFrag) != 0)
             {
-                FragId = buffer[pos];
-                FragNum = BitConverter.ToUInt16(buffer, pos+1);
-                FragCount = BitConverter.ToUInt16(buffer, pos+3);
-                pos += 5;
+                FragId = BitConverter.ToUInt16(buffer, pos);
+                FragNum = BitConverter.ToUInt16(buffer, pos + 2);
+                FragCount = BitConverter.ToUInt16(buffer, pos + 4);
+                pos += 6;
             }
         }
 
@@ -132,7 +132,7 @@ namespace Pixockets
             }
             if ((Flags & ContainsFrag) != 0)
             {
-                buffer[pos++] = FragId;
+                pos = WriteUInt16(FragId, buffer, pos);
                 pos = WriteUInt16(FragNum, buffer, pos);
                 pos = WriteUInt16(FragCount, buffer, pos);
             }

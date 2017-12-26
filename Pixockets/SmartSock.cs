@@ -77,7 +77,7 @@ namespace Pixockets
             if (length > MaxPayload)
             {
                 var seqState = GetSeqState(endPoint);
-                byte fragId;
+                ushort fragId;
                 lock (seqState.SyncObj)
                 {
                     fragId = seqState.FragId++;
@@ -223,7 +223,7 @@ namespace Pixockets
         }
 
 
-        private byte[] WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, byte fragId, ushort fragNum, ushort fragCount)
+        private byte[] WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
         {
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
