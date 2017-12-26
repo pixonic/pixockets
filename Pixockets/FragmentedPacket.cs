@@ -6,5 +6,6 @@ namespace Pixockets
     {
         public byte FragId;
         public List<FragmentBuffer> Buffers = new List<FragmentBuffer>();
+        public int LastActive;
     }
 }

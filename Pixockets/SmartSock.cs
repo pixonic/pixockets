@@ -9,6 +9,7 @@ namespace Pixockets
         public int ConnectionTimeout = 10000;
         public int AckTimeout = 1000;
         public int MaxPayload = BareSock.MTU - 100;
+        public int FragmentTimeout = 1000;
 
         private const int DeltaThreshold = 1000000000;
 
@@ -125,26 +126,13 @@ namespace Pixockets
                 var toDelete = new List<IPEndPoint>();
                 foreach (var seqState in _seqStates)
                 {
-                    lock (seqState.Value.SyncObj)
+                    if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
                     {
-                        if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
-                        {
-                            toDelete.Add(seqState.Key);
-                            continue;
-                        }
-
-                        var notAcked = seqState.Value.NotAcked;
-                        var notAckedCount = notAcked.Count;
-                        for (int i = 0; i < notAckedCount; ++i)
-                        {
-                            var packet = notAcked[i];
-                            if (now - packet.SendTicks > AckTimeout)
-                            {
-                                SubSock.Send(seqState.Key, packet.Buffer, packet.Offset, packet.Length);
-                                packet.SendTicks = now;
-                            }
-                        }
+                        toDelete.Add(seqState.Key);
+                        continue;
                     }
+
+                    seqState.Value.Tick(seqState.Key, SubSock, now, AckTimeout, FragmentTimeout);
                 }
 
                 var toDeleteCount = toDelete.Count;
@@ -177,7 +165,8 @@ namespace Pixockets
             seqState.CombineIfFull(header, endPoint, _callbacks);
         }
 
-        private static int TimeDelta(int t1, int t2)
+        // TODO: move it to some common class
+        public static int TimeDelta(int t1, int t2)
         {
             var delta = Math.Abs(t1 - t2);
             if (delta > DeltaThreshold)

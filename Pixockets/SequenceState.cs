@@ -43,6 +43,7 @@ namespace Pixockets
             lock (SyncObj)
             {
                 var frag = GetFragmentedPacket(header);
+                frag.LastActive = Environment.TickCount;
 
                 // add fragment buffer to it
                 frag.Buffers.Add(fragBuffer);
@@ -98,6 +99,34 @@ namespace Pixockets
             }
 
             cbs.OnReceive(combinedBuffer, 0, fullLength, endPoint);
+        }
+
+        public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)
+        {
+            lock (SyncObj)
+            {
+                var notAcked = NotAcked;
+                var notAckedCount = notAcked.Count;
+                for (int i = 0; i < notAckedCount; ++i)
+                {
+                    var packet = notAcked[i];
+                    if (now - packet.SendTicks > ackTimeout)
+                    {
+                        sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length);
+                        packet.SendTicks = now;
+                    }
+                }
+
+                var packetsCount = _frags.Count;
+                for (int i = packetsCount - 1; i >= 0; --i)
+                {
+                    var frag = _frags[i];
+                    if (SmartSock.TimeDelta(frag.LastActive, now) > fragmentTimeout)
+                    {
+                        _frags.RemoveAt(i);
+                    }
+                }
+            }
         }
 
         private void Exch(FragmentedPacket frag, int i, int j)
