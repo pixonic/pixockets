@@ -35,8 +35,8 @@ namespace Pixockets
             var fragBuffer = new FragmentBuffer
             {
                 Buffer = buffer,
-                Offset = offset,
-                Length = length,
+                Offset = offset + header.HeaderLength,  // payload offset
+                Length = length - header.HeaderLength,  // payload length
                 Header = header,
             };
 
@@ -159,7 +159,10 @@ namespace Pixockets
             else
             {
                 // TODO: pool them
-                return new FragmentedPacket();
+                var frag = new FragmentedPacket();
+                frag.FragId = header.FragId;
+                _frags.Add(frag);
+                return frag;
             }
         }
     }

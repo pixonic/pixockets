@@ -30,8 +30,8 @@ namespace UnitTests
 
             Utils.WaitOnReceive(cbs);
 
-            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, PacketHeader.MinHeaderLength));
+            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);            
+            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, cbs.OnReceiveCalls[0].Offset));
             Assert.AreEqual(PacketHeader.MinHeaderLength, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
         }
