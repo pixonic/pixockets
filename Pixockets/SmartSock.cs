@@ -19,7 +19,8 @@ namespace Pixockets
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
         private ReceiverBase _callbacks;
-        private object syncObj = new object();
+        private object _syncObj = new object();
+        private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
 
         public SmartSock(SockBase subSock, ReceiverBase callbacks)
         {
@@ -121,7 +122,7 @@ namespace Pixockets
  
         public void Tick()
         {
-            lock (syncObj)
+            lock (_syncObj)
             {
                 var now = Environment.TickCount;
                 var toDelete = new List<IPEndPoint>();
@@ -209,7 +210,7 @@ namespace Pixockets
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, headLen, length);
 
-            var notAcked = new NotAckedPacket();
+            var notAcked = _notAckedPool.Get();
             notAcked.Buffer = fullBuffer;
             notAcked.Offset = 0;
             notAcked.Length = fullBuffer.Length;
@@ -254,30 +255,17 @@ namespace Pixockets
 
         private void ReceiveAck(IPEndPoint endPoint, ushort ack)
         {
-            lock (syncObj)
-            {
-                var seqState = GetSeqState(endPoint);
-                var notAcked = seqState.NotAcked;
-                var notAckedCount = notAcked.Count;
-                for (int i = 0; i < notAckedCount; ++i)
-                {
-                    var packet = notAcked[i];
-                    if (packet.SeqNum == ack)
-                    {
-                        notAcked.RemoveAt(i);
-                        break;
-                    }
-                }
-            }
+            var seqState = GetSeqState(endPoint);
+            seqState.ReceiveAck(endPoint, ack);
         }
 
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
-            lock (syncObj)
+            lock (_syncObj)
             {
                 if (!_seqStates.ContainsKey(endPoint))
                 {
-                    _seqStates.Add(endPoint, new SequenceState());
+                    _seqStates.Add(endPoint, new SequenceState(_notAckedPool));
                 }
 
                 return _seqStates[endPoint];

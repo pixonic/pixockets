@@ -13,9 +13,11 @@ namespace Pixockets
         public object SyncObj = new object();
 
         private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
+        private Pool<NotAckedPacket> _notAckedPool;
 
-        public SequenceState()
+        public SequenceState(Pool<NotAckedPacket> notAckedPool)
         {
+            _notAckedPool = notAckedPool;
             LastActive = Environment.TickCount;
         }
 
@@ -105,11 +107,10 @@ namespace Pixockets
         {
             lock (SyncObj)
             {
-                var notAcked = NotAcked;
-                var notAckedCount = notAcked.Count;
+                var notAckedCount = NotAcked.Count;
                 for (int i = 0; i < notAckedCount; ++i)
                 {
-                    var packet = notAcked[i];
+                    var packet = NotAcked[i];
                     if (now - packet.SendTicks > ackTimeout)
                     {
                         sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length);
@@ -124,6 +125,24 @@ namespace Pixockets
                     if (SmartSock.TimeDelta(frag.LastActive, now) > fragmentTimeout)
                     {
                         _frags.RemoveAt(i);
+                    }
+                }
+            }
+        }
+
+        public void ReceiveAck(IPEndPoint endPoint, ushort ack)
+        {
+            lock (SyncObj)
+            {
+                var notAckedCount = NotAcked.Count;
+                for (int i = 0; i < notAckedCount; ++i)
+                {
+                    var packet = NotAcked[i];
+                    if (packet.SeqNum == ack)
+                    {
+                        NotAcked.RemoveAt(i);
+                        _notAckedPool.Put(packet);
+                        break;
                     }
                 }
             }

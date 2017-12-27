@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Pixockets
 {
-    public class NotAckedPacket
+    public class NotAckedPacket : IPoolable
     {
         public int Offset;
         public int Length;
