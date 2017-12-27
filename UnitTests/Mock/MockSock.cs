@@ -20,6 +20,11 @@ namespace UnitTests.Mock
             }
         }
 
+        public override IPEndPoint RemoteEndPoint
+        {
+            get { return ConnectEndPoint; }
+        }
+
         public override void SetCallbacks(ReceiverBase callbacks)
         {
             Callbacks = callbacks;
