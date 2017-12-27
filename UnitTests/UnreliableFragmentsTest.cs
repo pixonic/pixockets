@@ -3,6 +3,7 @@ using Pixockets;
 using System;
 using System.IO;
 using System.Net;
+using System.Threading;
 using UnitTests.Mock;
 
 namespace UnitTests
@@ -49,6 +50,49 @@ namespace UnitTests
             var bareSock = new MockSock();
             var sock = new SmartSock(bareSock, cbs);
 
+            byte[] buffer1 = CreateFirstFragment();
+
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+
+            byte[] buffer2 = CreateSecondFragment();
+
+            bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+
+            // Make sure full combined packet received
+            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
+            Assert.AreEqual(12345, BitConverter.ToUInt16(cbs.OnReceiveCalls[0].Buffer, cbs.OnReceiveCalls[0].Offset));
+            Assert.AreEqual(77, cbs.OnReceiveCalls[0].Buffer[cbs.OnReceiveCalls[0].Offset + 2]);
+            Assert.AreEqual(23456, BitConverter.ToUInt16(cbs.OnReceiveCalls[0].Buffer, cbs.OnReceiveCalls[0].Offset + 3));
+            Assert.AreEqual(5, cbs.OnReceiveCalls[0].Length);
+        }
+
+        [Test]
+        public void ReceiveFailOnTimeoutBetweenFragments()
+        {
+            var cbs = new MockCallbacks();
+            var bareSock = new MockSock();
+            var sock = new SmartSock(bareSock, cbs);
+            sock.FragmentTimeout = 1;
+
+            byte[] buffer1 = CreateFirstFragment();
+
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+
+            byte[] buffer2 = CreateSecondFragment();
+
+            Thread.Sleep(20);
+            sock.Tick();
+
+            bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+
+            // Make sure nothing received
+            Assert.AreEqual(0, cbs.OnReceiveCalls.Count);
+        }
+
+        private static byte[] CreateFirstFragment()
+        {
             var header1 = new PacketHeader();
             header1.SetSeqNum(100);
             header1.SetFrag(3, 0, 2);
@@ -58,10 +102,11 @@ namespace UnitTests
             ms1.Write(BitConverter.GetBytes((ushort)12345), 0, 2);
             ms1.Write(new byte[] { 77 }, 0, 1);
             var buffer1 = ms1.ToArray();
+            return buffer1;
+        }
 
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
-            bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
-
+        private static byte[] CreateSecondFragment()
+        {
             var header2 = new PacketHeader();
             header2.SetSeqNum(101);
             header2.SetFrag(3, 1, 2);
@@ -70,17 +115,7 @@ namespace UnitTests
             header2.WriteTo(ms2);
             ms2.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
             var buffer2 = ms2.ToArray();
-
-            bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
-
-            //sock.Tick();
-
-            // Make sure full packet combined sent
-            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(12345, BitConverter.ToUInt16(cbs.OnReceiveCalls[0].Buffer, cbs.OnReceiveCalls[0].Offset));
-            Assert.AreEqual(77, cbs.OnReceiveCalls[0].Buffer[cbs.OnReceiveCalls[0].Offset+2]);
-            Assert.AreEqual(23456, BitConverter.ToUInt16(cbs.OnReceiveCalls[0].Buffer, cbs.OnReceiveCalls[0].Offset+3));
-            Assert.AreEqual(5, cbs.OnReceiveCalls[0].Length);
+            return buffer2;
         }
     }
 }
