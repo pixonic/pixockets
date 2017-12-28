@@ -216,17 +216,10 @@ namespace Pixockets
 
             byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
 
-            var notAcked = _notAckedPool.Get();
-            notAcked.Buffer = fullBuffer;
-            notAcked.Offset = 0;
-            notAcked.Length = fullBuffer.Length;
-            notAcked.SendTicks = Environment.TickCount;
-            notAcked.SeqNum = seqNum;
+            AddNotAcked(seqState, seqNum, fullBuffer);
 
-            seqState.AddNotAcked(notAcked);
             return fullBuffer;
         }
-
 
         private byte[] WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
         {
@@ -253,14 +246,8 @@ namespace Pixockets
 
             byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
 
-            var notAcked = _notAckedPool.Get();
-            notAcked.Buffer = fullBuffer;
-            notAcked.Offset = 0;
-            notAcked.Length = fullBuffer.Length;
-            notAcked.SendTicks = Environment.TickCount;
-            notAcked.SeqNum = seqNum;
+            AddNotAcked(seqState, seqNum, fullBuffer);
 
-            seqState.AddNotAcked(notAcked);
             return fullBuffer;
         }
 
@@ -273,6 +260,18 @@ namespace Pixockets
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, headLen, length);
             return fullBuffer;
+        }
+
+        private void AddNotAcked(SequenceState seqState, ushort seqNum, byte[] fullBuffer)
+        {
+            var notAcked = _notAckedPool.Get();
+            notAcked.Buffer = fullBuffer;
+            notAcked.Offset = 0;
+            notAcked.Length = fullBuffer.Length;
+            notAcked.SendTicks = Environment.TickCount;
+            notAcked.SeqNum = seqNum;
+
+            seqState.AddNotAcked(notAcked);
         }
 
         private void SendAck(IPEndPoint endPoint, ushort seqNum)
