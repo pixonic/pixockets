@@ -84,13 +84,11 @@ namespace Pixockets
                 var tailSize = length;
                 for (int i = 0; i < fragmentCount; ++i)
                 {
-                    // TODO: pool them
                     var fragmentSize = Math.Min(MaxPayload, tailSize);
-                    var fragmentBuffer = new byte[fragmentSize];
-                    Array.Copy(buffer, offset + i * MaxPayload, fragmentBuffer, 0, fragmentSize);
                     tailSize -= MaxPayload;
+                    var fragmentOffset = offset + i * MaxPayload;
 
-                    var fullBuffer = WrapFragment(endPoint, fragmentBuffer, 0, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
+                    var fullBuffer = WrapFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
                     SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
                 }
@@ -105,9 +103,30 @@ namespace Pixockets
 
         public void SendReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
-            var fullBuffer = WrapReliable(endPoint, buffer, offset, length);
+            if (length > MaxPayload)
+            {
+                var seqState = GetSeqState(endPoint);
+                ushort fragId = seqState.tNextFragId();
+                // Cut packet
+                var fragmentCount = (length + MaxPayload - 1) / MaxPayload;
+                var tailSize = length;
+                for (int i = 0; i < fragmentCount; ++i)
+                {
+                    var fragmentSize = Math.Min(MaxPayload, tailSize);
+                    tailSize -= MaxPayload;
+                    var fragmentOffset = offset + i * MaxPayload;
 
-            SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                    var fullBuffer = WrapReliableFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
+
+                    SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                }
+            }
+            else
+            {
+                var fullBuffer = WrapReliable(endPoint, buffer, offset, length);
+
+                SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+            }
         }
 
         public void Send(byte[] buffer, int offset, int length)
@@ -232,6 +251,34 @@ namespace Pixockets
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, headLen, length);
+            return fullBuffer;
+        }
+
+        private byte[] WrapReliableFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
+        {
+            // TODO: pool byte arrays and PacketHeaders
+            var header = new PacketHeader();
+            header.SetNeedAck();
+            var seqState = GetSeqState(endPoint);
+            ushort seqNum = seqState.NextSeqNum();
+            // TODO: pool them
+            header.SetSeqNum(seqNum);
+            header.SetFrag(fragId, fragNum, fragCount);
+            var headLen = header.HeaderLength;
+            header.Length = (ushort)(headLen + length);
+            var fullBuffer = new byte[length + headLen];
+            header.WriteTo(fullBuffer, 0);
+            // TODO: find more optimal way
+            Array.Copy(buffer, offset, fullBuffer, headLen, length);
+
+            var notAcked = _notAckedPool.Get();
+            notAcked.Buffer = fullBuffer;
+            notAcked.Offset = 0;
+            notAcked.Length = fullBuffer.Length;
+            notAcked.SendTicks = Environment.TickCount;
+            notAcked.SeqNum = seqNum;
+
+            seqState.AddNotAcked(notAcked);
             return fullBuffer;
         }
 
