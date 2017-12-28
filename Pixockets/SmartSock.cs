@@ -200,13 +200,8 @@ namespace Pixockets
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
             header.SetSeqNum(seqNum);
-            var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
-            header.WriteTo(fullBuffer, 0);
-            // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, headLen, length);
-            return fullBuffer;
+
+            return AttachHeader(buffer, offset, length, header);
         }
 
         private byte[] WrapReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
@@ -218,12 +213,8 @@ namespace Pixockets
             ushort seqNum = seqState.NextSeqNum();
             // TODO: pool them
             header.SetSeqNum(seqNum);
-            var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
-            header.WriteTo(fullBuffer, 0);
-            // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, headLen, length);
+
+            byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
 
             var notAcked = _notAckedPool.Get();
             notAcked.Buffer = fullBuffer;
@@ -245,13 +236,8 @@ namespace Pixockets
             var header = new PacketHeader();
             header.SetSeqNum(seqNum);  // TODO: do we really need it?
             header.SetFrag(fragId, fragNum, fragCount);
-            var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
-            header.WriteTo(fullBuffer, 0);
-            // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, headLen, length);
-            return fullBuffer;
+
+            return AttachHeader(buffer, offset, length, header);
         }
 
         private byte[] WrapReliableFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
@@ -264,12 +250,8 @@ namespace Pixockets
             // TODO: pool them
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
-            var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
-            header.WriteTo(fullBuffer, 0);
-            // TODO: find more optimal way
-            Array.Copy(buffer, offset, fullBuffer, headLen, length);
+
+            byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
 
             var notAcked = _notAckedPool.Get();
             notAcked.Buffer = fullBuffer;
@@ -279,6 +261,17 @@ namespace Pixockets
             notAcked.SeqNum = seqNum;
 
             seqState.AddNotAcked(notAcked);
+            return fullBuffer;
+        }
+
+        private static byte[] AttachHeader(byte[] buffer, int offset, int length, PacketHeader header)
+        {
+            var headLen = header.HeaderLength;
+            header.Length = (ushort)(headLen + length);
+            var fullBuffer = new byte[length + headLen];
+            header.WriteTo(fullBuffer, 0);
+            // TODO: find more optimal way
+            Array.Copy(buffer, offset, fullBuffer, headLen, length);
             return fullBuffer;
         }
 
