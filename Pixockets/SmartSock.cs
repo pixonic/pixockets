@@ -78,11 +78,7 @@ namespace Pixockets
             if (length > MaxPayload)
             {
                 var seqState = GetSeqState(endPoint);
-                ushort fragId;
-                lock (seqState.SyncObj)
-                {
-                    fragId = seqState.FragId++;
-                }
+                ushort fragId = seqState.tNextFragId();
                 // Cut packet
                 var fragmentCount = (length + MaxPayload - 1) / MaxPayload;
                 var tailSize = length;
@@ -216,10 +212,8 @@ namespace Pixockets
             notAcked.Length = fullBuffer.Length;
             notAcked.SendTicks = Environment.TickCount;
             notAcked.SeqNum = seqNum;
-            lock (seqState.SyncObj)
-            {
-                seqState.NotAcked.Add(notAcked);
-            }
+
+            seqState.AddNotAcked(notAcked);
             return fullBuffer;
         }
 

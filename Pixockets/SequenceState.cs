@@ -6,12 +6,12 @@ namespace Pixockets
 {
     public class SequenceState
     {
-        public ushort SeqNum;
-        public ushort FragId;
-        public readonly List<NotAckedPacket> NotAcked = new List<NotAckedPacket>();
         public int LastActive;
-        public object SyncObj = new object();
 
+        private ushort _nextSeqNum;
+        private ushort _nextFragId;
+        private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
+        private object _syncObj = new object();
         private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private Pool<NotAckedPacket> _notAckedPool;
 
@@ -23,13 +23,18 @@ namespace Pixockets
 
         public ushort NextSeqNum()
         {
-            ushort seqNum;
-            lock (SyncObj)
+            lock (_syncObj)
             {
-                seqNum = SeqNum++;
+                return _nextSeqNum++;
             }
+        }
 
-            return seqNum;
+        public ushort tNextFragId()
+        {
+            lock (_syncObj)
+            {
+                return _nextFragId++;
+            }
         }
 
         public void AddFragment(byte[] buffer, int offset, int length, PacketHeader header)
@@ -42,7 +47,7 @@ namespace Pixockets
                 Header = header,
             };
 
-            lock (SyncObj)
+            lock (_syncObj)
             {
                 var frag = GetFragmentedPacket(header);
                 frag.LastActive = Environment.TickCount;
@@ -60,7 +65,7 @@ namespace Pixockets
                 }
 
                 // remove if duplicate
-                if (fragIdx > 0 && frag.Buffers[fragIdx].Header.FragNum < frag.Buffers[fragIdx - 1].Header.FragNum)
+                if (fragIdx > 0 && frag.Buffers[fragIdx].Header.FragNum == frag.Buffers[fragIdx - 1].Header.FragNum)
                 {
                     frag.Buffers.RemoveAt(fragIdx);
                 }
@@ -72,7 +77,7 @@ namespace Pixockets
             byte[] combinedBuffer;
             int fullLength = 0;
 
-            lock (SyncObj)
+            lock (_syncObj)
             {
                 // TODO: validate that headers of all fragments match
                 var frag = GetFragmentedPacket(header);
@@ -105,12 +110,12 @@ namespace Pixockets
 
         public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)
         {
-            lock (SyncObj)
+            lock (_syncObj)
             {
-                var notAckedCount = NotAcked.Count;
+                var notAckedCount = _notAcked.Count;
                 for (int i = 0; i < notAckedCount; ++i)
                 {
-                    var packet = NotAcked[i];
+                    var packet = _notAcked[i];
                     if (now - packet.SendTicks > ackTimeout)
                     {
                         sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length);
@@ -130,17 +135,25 @@ namespace Pixockets
             }
         }
 
+        public void AddNotAcked(NotAckedPacket packet)
+        {
+            lock (_syncObj)
+            {
+                _notAcked.Add(packet);
+            }
+        }
+
         public void ReceiveAck(IPEndPoint endPoint, ushort ack)
         {
-            lock (SyncObj)
+            lock (_syncObj)
             {
-                var notAckedCount = NotAcked.Count;
+                var notAckedCount = _notAcked.Count;
                 for (int i = 0; i < notAckedCount; ++i)
                 {
-                    var packet = NotAcked[i];
+                    var packet = _notAcked[i];
                     if (packet.SeqNum == ack)
                     {
-                        NotAcked.RemoveAt(i);
+                        _notAcked.RemoveAt(i);
                         _notAckedPool.Put(packet);
                         break;
                     }
