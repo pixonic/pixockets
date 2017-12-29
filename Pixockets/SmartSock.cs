@@ -206,12 +206,11 @@ namespace Pixockets
 
         private byte[] WrapReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
+            var seqState = GetSeqState(endPoint);
+            ushort seqNum = seqState.NextSeqNum();
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
             header.SetNeedAck();
-            var seqState = GetSeqState(endPoint);
-            ushort seqNum = seqState.NextSeqNum();
-            // TODO: pool them
             header.SetSeqNum(seqNum);
 
             byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
