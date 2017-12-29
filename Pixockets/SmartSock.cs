@@ -293,15 +293,28 @@ namespace Pixockets
 
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
+            SequenceState result;
+            bool newState = false;
             lock (_syncObj)
             {
                 if (!_seqStates.ContainsKey(endPoint))
                 {
-                    _seqStates.Add(endPoint, new SequenceState(_notAckedPool));
+                    result = new SequenceState(_notAckedPool);
+                    _seqStates.Add(endPoint, result);
+                    newState = true;
                 }
-
-                return _seqStates[endPoint];
+                else
+                {
+                    result = _seqStates[endPoint];
+                }
             }
+
+            if (newState)
+            {
+                _callbacks.OnConnect(endPoint);
+            }
+
+            return result;
         }
     }
 }

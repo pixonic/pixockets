@@ -38,7 +38,8 @@ namespace UnitTests
             // Simulate send from UdpClient
             _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);            
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
             Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, _cbs.OnReceiveCalls[0].Offset));
             Assert.AreEqual(PacketHeader.MinHeaderLength, _cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
@@ -59,6 +60,7 @@ namespace UnitTests
             // Simulate send from UdpClient
             _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(0, _cbs.OnReceiveCalls.Count);
         }
 
