@@ -155,7 +155,9 @@ namespace Pixockets
                 var toDeleteCount = toDelete.Count;
                 for (int i = 0; i < toDeleteCount; ++i)
                 {
-                    _seqStates.Remove(toDelete[i]);
+                    var endPoint = toDelete[i];
+                    _seqStates.Remove(endPoint);
+                    _callbacks.OnDisconnect(endPoint);
                 }
             }
         }

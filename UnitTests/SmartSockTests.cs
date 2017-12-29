@@ -109,6 +109,7 @@ namespace UnitTests
 
             Thread.Sleep(20);
             _sock.Tick();
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
 
             _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
 
