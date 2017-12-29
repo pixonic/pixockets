@@ -18,11 +18,11 @@ namespace Pixockets
         public readonly SockBase SubSock;
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
-        private ReceiverBase _callbacks;
+        private SmartReceiverBase _callbacks;
         private object _syncObj = new object();
         private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
 
-        public SmartSock(SockBase subSock, ReceiverBase callbacks)
+        public SmartSock(SockBase subSock, SmartReceiverBase callbacks)
         {
             subSock.SetCallbacks(this);
             SubSock = subSock;

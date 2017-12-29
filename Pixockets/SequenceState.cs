@@ -72,7 +72,7 @@ namespace Pixockets
             }
         }
 
-        public void CombineIfFull(PacketHeader header, IPEndPoint endPoint, ReceiverBase cbs)
+        public void CombineIfFull(PacketHeader header, IPEndPoint endPoint, SmartReceiverBase cbs)
         {
             byte[] combinedBuffer;
             int fullLength = 0;

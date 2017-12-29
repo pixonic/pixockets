@@ -11,14 +11,14 @@ namespace UnitTests
     [TestFixture]
     public class ReliableFragmentsTest
     {
-        MockCallbacks _cbs;
+        MockSmartCallbacks _cbs;
         MockSock _bareSock;
         SmartSock _sock;
 
         [SetUp]
         public void Setup()
         {
-            _cbs = new MockCallbacks();
+            _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
             _sock = new SmartSock(_bareSock, _cbs);
         }

@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeltaTests.cs" />
+    <Compile Include="Mock\MockSmartCallbacks.cs" />
     <Compile Include="Mock\MockCallbacks.cs" />
     <Compile Include="Mock\MockSock.cs" />
     <Compile Include="MTUTests.cs" />
