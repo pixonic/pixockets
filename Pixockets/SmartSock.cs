@@ -49,6 +49,10 @@ namespace Pixockets
             // Update activity timestamp on receive packet
             var seqState = GetSeqState(endPoint);
             seqState.LastActive = Environment.TickCount;
+            if (seqState.CheckConnected())
+            {
+                _callbacks.OnConnect(endPoint);
+            }
 
             var header = new PacketHeader(buffer, offset);
             if (length != header.Length)
@@ -301,24 +305,17 @@ namespace Pixockets
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
             SequenceState result;
-            bool newState = false;
             lock (_syncObj)
             {
                 if (!_seqStates.ContainsKey(endPoint))
                 {
                     result = new SequenceState(_notAckedPool);
                     _seqStates.Add(endPoint, result);
-                    newState = true;
                 }
                 else
                 {
                     result = _seqStates[endPoint];
                 }
-            }
-
-            if (newState)
-            {
-                _callbacks.OnConnect(endPoint);
             }
 
             return result;

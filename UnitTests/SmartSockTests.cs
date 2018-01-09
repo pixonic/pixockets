@@ -74,6 +74,7 @@ namespace UnitTests
             var buffer = ms.ToArray();
             _sock.Send(buffer, 0, buffer.Length);
 
+            Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var header = new PacketHeader(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
@@ -109,7 +110,7 @@ namespace UnitTests
 
             Thread.Sleep(20);
             _sock.Tick();
-            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
 
             _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
 

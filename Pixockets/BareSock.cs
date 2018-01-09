@@ -135,10 +135,10 @@ namespace Pixockets
 
         private void OnPacketReceived(SocketAsyncEventArgs e)
         {
-            if (e.BytesTransferred <= 0)
-                return;
-
-            _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
+            if (e.BytesTransferred > 0)
+            {
+                _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
+            }
 
             ActualReceive();
         }

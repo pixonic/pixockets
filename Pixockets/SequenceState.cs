@@ -8,6 +8,7 @@ namespace Pixockets
     {
         public int LastActive;
 
+        private bool _connected = false;
         private ushort _nextSeqNum;
         private ushort _nextFragId;
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
@@ -19,6 +20,20 @@ namespace Pixockets
         {
             _notAckedPool = notAckedPool;
             LastActive = Environment.TickCount;
+        }
+
+        public bool CheckConnected()
+        {
+            lock (_syncObj)
+            {
+                if (!_connected)
+                {
+                    _connected = true;
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         public ushort NextSeqNum()
