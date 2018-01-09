@@ -1,7 +1,7 @@
 ﻿using Pixockets;
 using System;
 using System.Net;
-using System.Text;
+using System.Threading;
 
 namespace TestClient
 {
@@ -10,17 +10,20 @@ namespace TestClient
         static void Main(string[] args)
         {
             var callbacks = new PrintingReceiver();
-            var sock = new BareSock();
-            sock.SetCallbacks(callbacks);
+            var sock = new SmartSock(new BareSock(), callbacks);
 
             sock.Connect(IPAddress.Loopback, 2345);
             sock.Receive();
 
             while (true)
             {
-                var msg = Console.ReadLine();
+                Thread.Sleep(1000);
 
-                var buffer = Encoding.UTF8.GetBytes(msg);
+                sock.Tick();
+
+                var msg = Environment.TickCount;
+
+                var buffer = BitConverter.GetBytes(msg);
                 sock.Send(buffer, 0, buffer.Length);
             }
         }

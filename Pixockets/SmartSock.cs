@@ -39,6 +39,11 @@ namespace Pixockets
             SubSock.Receive();
         }
 
+        public void Receive(int port)
+        {
+            SubSock.Receive(port);
+        }
+
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
         {
             // Update activity timestamp on receive packet

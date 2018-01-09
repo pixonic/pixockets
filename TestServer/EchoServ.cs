@@ -1,39 +1,46 @@
 ﻿using Pixockets;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
-using System.Text;
 
 namespace TestServer
 {
-    public class EchoServ : ReceiverBase
+    public class EchoServ : SmartReceiverBase
     {
-        private BareSock _servSock;
-        private Dictionary<IPEndPoint, long> _clients = new Dictionary<IPEndPoint, long>();
-        private Stopwatch _timer = new Stopwatch();
+        private SmartSock _servSock;
+        private ConcurrentDictionary<IPEndPoint, int> _clients = new ConcurrentDictionary<IPEndPoint, int>();
+        private Stopwatch _timer = new Stopwatch();        
 
         public EchoServ()
         {
             _timer.Start();
         }
 
-        public void SetSocket(BareSock socket)
+        public void SetSocket(SmartSock socket)
         {
             _servSock = socket;
         }
 
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
         {
-            if (!_clients.ContainsKey(endPoint))
+            _clients[endPoint] = BitConverter.ToInt32(buffer, offset);
+
+            Console.WriteLine("Received: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);
+        }
+
+        public void Tick()
+        {
+            _servSock.Tick();
+            var ms = new MemoryStream();
+            ms.Write(BitConverter.GetBytes(_clients.Count), 0, 4);
+            foreach (var client in _clients)
             {
-                _clients.Add(endPoint, _timer.ElapsedTicks);
+                ms.Write(BitConverter.GetBytes(client.Value), 0, 4);
             }
-
-            var str = Encoding.UTF8.GetString(buffer, offset, length);
-            Console.WriteLine("Receive: {0}:{1}:{2}", endPoint.Address, endPoint.Port, str);
-
-            var sendBuffer = Encoding.UTF8.GetBytes("#: " + str);
+            var sendBuffer = ms.ToArray();
             Broadcast(sendBuffer, 0, sendBuffer.Length);
         }
 
@@ -43,6 +50,19 @@ namespace TestServer
             {
                 _servSock.Send(client.Key, buffer, offset, length);
             }
+        }
+
+        public override void OnConnect(IPEndPoint endPoint)
+        {
+            Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
+            _clients.TryAdd(endPoint, 0);
+        }
+
+        public override void OnDisconnect(IPEndPoint endPoint)
+        {
+            Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
+            int ts;
+            _clients.TryRemove(endPoint, out ts);
         }
     }
 }
