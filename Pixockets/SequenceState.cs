@@ -172,6 +172,7 @@ namespace Pixockets
                     if (packet.SeqNum == ack)
                     {
                         _notAcked.RemoveAt(i);
+                        _buffersPool.Return(packet.Buffer);
                         _notAckedPool.Put(packet);
                         break;
                     }
