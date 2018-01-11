@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            _sock = new SmartSock(_bareSock, _cbs);
+            _sock = new SmartSock(ArrayPool<byte>.Shared, _bareSock, _cbs);
         }
 
         [Test]

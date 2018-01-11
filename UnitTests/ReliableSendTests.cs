@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
+using System.Buffers;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -20,7 +21,7 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            _sock = new SmartSock(_bareSock, _cbs);
+            _sock = new SmartSock(ArrayPool<byte>.Shared, _bareSock, _cbs);
         }
 
         [Test]
@@ -59,8 +60,8 @@ namespace UnitTests
 
             // Make sure ack sent
             var ackHeader = new PacketHeader(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
-            Assert.AreEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
-            Assert.AreEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
+            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
+            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
             Assert.AreEqual(123, ackHeader.Ack);
             Assert.IsFalse(ackHeader.GetNeedAck());
             Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);

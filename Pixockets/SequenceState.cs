@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 
@@ -15,9 +16,11 @@ namespace Pixockets
         private object _syncObj = new object();
         private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private Pool<NotAckedPacket> _notAckedPool;
+        private ArrayPool<byte> _buffersPool;
 
-        public SequenceState(Pool<NotAckedPacket> notAckedPool)
+        public SequenceState(ArrayPool<byte> buffersPool, Pool<NotAckedPacket> notAckedPool)
         {
+            _buffersPool = buffersPool;
             _notAckedPool = notAckedPool;
             LastActive = Environment.TickCount;
         }
@@ -110,7 +113,7 @@ namespace Pixockets
                 }
 
                 // TODO: pool buffers
-                combinedBuffer = new byte[fullLength];
+                combinedBuffer = _buffersPool.Rent(fullLength);
                 var targetOffset = 0;
                 for (int i = 0; i < buffersCount; ++i)
                 {

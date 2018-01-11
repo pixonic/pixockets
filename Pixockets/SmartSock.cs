@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 
@@ -21,9 +22,11 @@ namespace Pixockets
         private SmartReceiverBase _callbacks;
         private object _syncObj = new object();
         private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
+        private readonly ArrayPool<byte> _buffersPool;
 
-        public SmartSock(SockBase subSock, SmartReceiverBase callbacks)
+        public SmartSock(ArrayPool<byte> buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
+            _buffersPool = buffersPool;
             subSock.SetCallbacks(this);
             SubSock = subSock;
             _callbacks = callbacks;
@@ -99,14 +102,14 @@ namespace Pixockets
 
                     var fullBuffer = WrapFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
-                    SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
                 }
             }
             else
             {
                 var fullBuffer = Wrap(endPoint, buffer, offset, length);
 
-                SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
             }
         }
 
@@ -127,14 +130,14 @@ namespace Pixockets
 
                     var fullBuffer = WrapReliableFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
-                    SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
                 }
             }
             else
             {
                 var fullBuffer = WrapReliable(endPoint, buffer, offset, length);
 
-                SubSock.Send(endPoint, fullBuffer, 0, fullBuffer.Length);
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
             }
         }
 
@@ -204,7 +207,7 @@ namespace Pixockets
             return delta;
         }
 
-        private byte[] Wrap(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        private ArraySegment<byte> Wrap(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
@@ -215,7 +218,7 @@ namespace Pixockets
             return AttachHeader(buffer, offset, length, header);
         }
 
-        private byte[] WrapReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        private ArraySegment<byte> WrapReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
         {
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
@@ -224,14 +227,14 @@ namespace Pixockets
             header.SetNeedAck();
             header.SetSeqNum(seqNum);
 
-            byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
+            var fullBuffer = AttachHeader(buffer, offset, length, header);
 
             AddNotAcked(seqState, seqNum, fullBuffer);
 
             return fullBuffer;
         }
 
-        private byte[] WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
+        private ArraySegment<byte> WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
         {
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
@@ -243,7 +246,7 @@ namespace Pixockets
             return AttachHeader(buffer, offset, length, header);
         }
 
-        private byte[] WrapReliableFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
+        private ArraySegment<byte> WrapReliableFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
         {
             // TODO: pool byte arrays and PacketHeaders
             var header = new PacketHeader();
@@ -254,30 +257,32 @@ namespace Pixockets
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
 
-            byte[] fullBuffer = AttachHeader(buffer, offset, length, header);
+            var fullBuffer = AttachHeader(buffer, offset, length, header);
 
             AddNotAcked(seqState, seqNum, fullBuffer);
 
             return fullBuffer;
         }
 
-        private static byte[] AttachHeader(byte[] buffer, int offset, int length, PacketHeader header)
+        private ArraySegment<byte> AttachHeader(byte[] buffer, int offset, int length, PacketHeader header)
         {
             var headLen = header.HeaderLength;
             header.Length = (ushort)(headLen + length);
-            var fullBuffer = new byte[length + headLen];
+            var fullLength = length + headLen;
+            var fullBuffer = _buffersPool.Rent(fullLength);
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, headLen, length);
-            return fullBuffer;
+            ArraySegment<byte> result = new ArraySegment<byte>(fullBuffer, 0, fullLength);
+            return result;
         }
 
-        private void AddNotAcked(SequenceState seqState, ushort seqNum, byte[] fullBuffer)
+        private void AddNotAcked(SequenceState seqState, ushort seqNum, ArraySegment<byte> fullBuffer)
         {
             var notAcked = _notAckedPool.Get();
-            notAcked.Buffer = fullBuffer;
-            notAcked.Offset = 0;
-            notAcked.Length = fullBuffer.Length;
+            notAcked.Buffer = fullBuffer.Array;
+            notAcked.Offset = fullBuffer.Offset;
+            notAcked.Length = fullBuffer.Count;
             notAcked.SendTicks = Environment.TickCount;
             notAcked.SeqNum = seqNum;
 
@@ -290,10 +295,10 @@ namespace Pixockets
             header.SetAck(seqNum);
             header.Length = (ushort)header.HeaderLength;
 
-            var buffer = new byte[header.Length];
+            var buffer = _buffersPool.Rent(header.Length);
             header.WriteTo(buffer, 0);
 
-            SubSock.Send(endPoint, buffer, 0, buffer.Length);
+            SubSock.Send(endPoint, buffer, 0, header.Length);
         }
 
         private void ReceiveAck(IPEndPoint endPoint, ushort ack)
@@ -309,7 +314,7 @@ namespace Pixockets
             {
                 if (!_seqStates.ContainsKey(endPoint))
                 {
-                    result = new SequenceState(_notAckedPool);
+                    result = new SequenceState(_buffersPool, _notAckedPool);
                     _seqStates.Add(endPoint, result);
                 }
                 else

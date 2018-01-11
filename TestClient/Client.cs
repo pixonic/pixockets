@@ -11,7 +11,7 @@ namespace TestClient
         static void Main(string[] args)
         {
             var callbacks = new PrintingReceiver();
-            var sock = new SmartSock(new BareSock(ArrayPool<byte>.Shared), callbacks);
+            var sock = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), callbacks);
 
             sock.Connect(IPAddress.Loopback, 2345);
             sock.Receive();
