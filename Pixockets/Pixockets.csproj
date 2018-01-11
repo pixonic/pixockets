@@ -54,6 +54,10 @@
     <Compile Include="ReceiverBase.cs" />
     <Compile Include="PacketHeader.cs" />
     <Compile Include="SmartSock.cs" />
+    <Compile Include="System\Buffers\ArrayPool.cs" />
+    <Compile Include="System\Buffers\DefaultArrayPool.cs" />
+    <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
+    <Compile Include="System\Buffers\Utilities.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

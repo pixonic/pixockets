@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -12,6 +13,7 @@ namespace Pixockets
         // TODO: support IPV6
         public Socket SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
+        private ArrayPool<byte> _buffersPool;
         private SocketAsyncEventArgs _eSend = new SocketAsyncEventArgs();
         private SocketAsyncEventArgs _eReceive = new SocketAsyncEventArgs();
 
@@ -23,8 +25,9 @@ namespace Pixockets
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
         public override IPEndPoint RemoteEndPoint { get { return (IPEndPoint)SysSock.RemoteEndPoint; } }
 
-        public BareSock()
+        public BareSock(ArrayPool<byte> buffersPool)
         {
+            _buffersPool = buffersPool;
             _eSend.Completed += OnSendCompleted;
             _eReceive.Completed += OnReceiveCompleted;
         }
@@ -41,7 +44,7 @@ namespace Pixockets
 
         public override void Receive()
         {
-            _eReceive.SetBuffer(new byte[MTU], 0, MTU);
+            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
 
             _eReceive.RemoteEndPoint = AnyEndPoint;
 
@@ -50,7 +53,7 @@ namespace Pixockets
 
         public override void Receive(int port)
         {
-            _eReceive.SetBuffer(new byte[MTU], 0, MTU);
+            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
             _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
             SysSock.Bind(_eReceive.RemoteEndPoint);
 
@@ -156,6 +159,8 @@ namespace Pixockets
             {
                 _readyToSend = true;
             }
+
+            _buffersPool.Return(e.Buffer);
         }
     }
 }

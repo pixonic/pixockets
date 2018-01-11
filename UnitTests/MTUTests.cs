@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using Pixockets;
+using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using UnitTests.Mock;
@@ -13,7 +14,7 @@ namespace UnitTests
         public void SendMoreThanMTUClamped()
         {
             MockCallbacks cbs = new MockCallbacks();
-            BareSock sock = new BareSock();
+            BareSock sock = new BareSock(ArrayPool<byte>.Shared);
             sock.SetCallbacks(cbs);
             sock.Receive(23459);
 
