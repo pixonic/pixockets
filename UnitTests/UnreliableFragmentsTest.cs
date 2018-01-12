@@ -39,14 +39,16 @@ namespace UnitTests
             Assert.AreEqual(2, _bareSock.Sends.Count);
 
             var packetToSend = _bareSock.Sends[0];
-            var header = new PacketHeader(packetToSend.Buffer, packetToSend.Offset);
+            var header = new PacketHeader();
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(_sock.MaxPayload + header.HeaderLength, header.Length);
             Assert.AreEqual(12345, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
             Assert.IsFalse(header.GetNeedAck());
 
             packetToSend = _bareSock.Sends[1];
-            header = new PacketHeader(packetToSend.Buffer, packetToSend.Offset);
+            header = new PacketHeader();
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(buffer.Length - _sock.MaxPayload + header.HeaderLength, header.Length);
             Assert.AreEqual(23456, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(1, header.SeqNum);

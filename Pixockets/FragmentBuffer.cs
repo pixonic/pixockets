@@ -1,11 +1,11 @@
 ﻿
 namespace Pixockets
 {
-    public class FragmentBuffer
+    public struct FragmentBuffer
     {
         public byte[] Buffer;
         public int Offset;
         public int Length;
-        public PacketHeader Header;
+        public ushort FragNum;
     }
 }

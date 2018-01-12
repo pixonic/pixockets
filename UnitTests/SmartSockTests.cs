@@ -78,7 +78,8 @@ namespace UnitTests
             Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
-            var header = new PacketHeader(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            var header = new PacketHeader();
+            header.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
             Assert.AreEqual(123456789, BitConverter.ToInt32(_bareSock.Sends[0].Buffer, header.HeaderLength));
         }
@@ -93,7 +94,8 @@ namespace UnitTests
             
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
-            var header = new PacketHeader(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            var header = new PacketHeader();
+            header.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
             Assert.AreEqual(0, header.SeqNum);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
             Assert.AreEqual(123456789, BitConverter.ToInt32(_bareSock.Sends[0].Buffer, header.HeaderLength));
@@ -119,7 +121,8 @@ namespace UnitTests
             Assert.AreEqual(2, _bareSock.Sends.Count);
 
             // Last Sequnce number is zero
-            var header = new PacketHeader(_bareSock.Sends[1].Buffer, _bareSock.Sends[1].Offset);
+            var header = new PacketHeader();
+            header.Init(_bareSock.Sends[1].Buffer, _bareSock.Sends[1].Offset);
             Assert.AreEqual(0, header.SeqNum);
         }
     }

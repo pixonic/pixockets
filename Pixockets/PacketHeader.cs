@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Pixockets
 {
-    public class PacketHeader
+    public class PacketHeader : IPoolable
     {
         public const int MinHeaderLength = 3;
 
@@ -48,6 +48,30 @@ namespace Pixockets
             Flags = 0;
         }
 
+        public void Init(byte[] buffer, int offset)
+        {
+            Length = BitConverter.ToUInt16(buffer, offset);
+            Flags = buffer[offset + 2];
+            int pos = offset + 3;
+            if ((Flags & ContainsSeq) != 0)
+            {
+                SeqNum = BitConverter.ToUInt16(buffer, pos);
+                pos += 2;
+            }
+            if ((Flags & ContainsAck) != 0)
+            {
+                Ack = BitConverter.ToUInt16(buffer, pos);
+                pos += 2;
+            }
+            if ((Flags & ContainsFrag) != 0)
+            {
+                FragId = BitConverter.ToUInt16(buffer, pos);
+                FragNum = BitConverter.ToUInt16(buffer, pos + 2);
+                FragCount = BitConverter.ToUInt16(buffer, pos + 4);
+                pos += 6;
+            }
+        }
+
         public PacketHeader(ushort length)
         {
             Length = length;
@@ -83,30 +107,6 @@ namespace Pixockets
             FragNum = fragNum;
             FragCount = fragCount;
             Flags |= ContainsFrag;
-        }
-
-        public PacketHeader(byte[] buffer, int offset)
-        {
-            Length = BitConverter.ToUInt16(buffer, offset);
-            Flags = buffer[offset+2];
-            int pos = offset + 3;
-            if ((Flags & ContainsSeq) != 0)
-            {
-                SeqNum = BitConverter.ToUInt16(buffer, pos);
-                pos += 2;
-            }
-            if ((Flags & ContainsAck) != 0)
-            {
-                Ack = BitConverter.ToUInt16(buffer, pos);
-                pos += 2;
-            }
-            if ((Flags & ContainsFrag) != 0)
-            {
-                FragId = BitConverter.ToUInt16(buffer, pos);
-                FragNum = BitConverter.ToUInt16(buffer, pos + 2);
-                FragCount = BitConverter.ToUInt16(buffer, pos + 4);
-                pos += 6;
-            }
         }
 
         // For unit-testing only
@@ -152,6 +152,11 @@ namespace Pixockets
             }
 
             return pos;
+        }
+
+        public void Strip()
+        {
+            Flags = 0;
         }
     }
 }

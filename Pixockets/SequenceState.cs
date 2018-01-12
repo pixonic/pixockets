@@ -5,7 +5,7 @@ using System.Net;
 
 namespace Pixockets
 {
-    public class SequenceState
+    public class SequenceState : IPoolable
     {
         public int LastActive;
 
@@ -15,12 +15,19 @@ namespace Pixockets
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private object _syncObj = new object();
         private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
+
         private Pool<NotAckedPacket> _notAckedPool;
+        private Pool<FragmentedPacket> _fragPacketsPool;
         private ArrayPool<byte> _buffersPool;
 
-        public SequenceState(ArrayPool<byte> buffersPool, Pool<NotAckedPacket> notAckedPool)
+        public SequenceState()
+        {
+        }
+
+        public void Init(ArrayPool<byte> buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<NotAckedPacket> notAckedPool)
         {
             _buffersPool = buffersPool;
+            _fragPacketsPool = fragPacketsPool;
             _notAckedPool = notAckedPool;
             LastActive = Environment.TickCount;
         }
@@ -62,7 +69,7 @@ namespace Pixockets
                 Buffer = buffer,
                 Offset = offset + header.HeaderLength,  // payload offset
                 Length = length - header.HeaderLength,  // payload length
-                Header = header,
+                FragNum = header.FragNum,
             };
 
             lock (_syncObj)
@@ -76,14 +83,14 @@ namespace Pixockets
                 // sort fragments
                 var fragIdx = frag.Buffers.Count - 1;
                 while (fragIdx > 0 &&
-                    frag.Buffers[fragIdx].Header.FragNum < frag.Buffers[fragIdx - 1].Header.FragNum)
+                    frag.Buffers[fragIdx].FragNum < frag.Buffers[fragIdx - 1].FragNum)
                 {
                     Exch(frag, fragIdx - 1, fragIdx);
                     fragIdx--;
                 }
 
                 // remove if duplicate
-                if (fragIdx > 0 && frag.Buffers[fragIdx].Header.FragNum == frag.Buffers[fragIdx - 1].Header.FragNum)
+                if (fragIdx > 0 && frag.Buffers[fragIdx].FragNum == frag.Buffers[fragIdx - 1].FragNum)
                 {
                     frag.Buffers.RemoveAt(fragIdx);
                 }
@@ -106,13 +113,12 @@ namespace Pixockets
                     return;
                 }
 
-                var buffersCount = frag.Buffers[0].Header.FragCount;
+                var buffersCount = frag.FragCount;
                 for (int i = 0; i < buffersCount; ++i)
                 {
                     fullLength += frag.Buffers[i].Length;
                 }
 
-                // TODO: pool buffers
                 combinedBuffer = _buffersPool.Rent(fullLength);
                 var targetOffset = 0;
                 for (int i = 0; i < buffersCount; ++i)
@@ -121,6 +127,10 @@ namespace Pixockets
                     Array.Copy(srcBuffer.Buffer, srcBuffer.Offset, combinedBuffer, targetOffset, srcBuffer.Length);
                     targetOffset += frag.Buffers[i].Length;
                 }
+
+                // TODO: optimize?
+                _frags.Remove(frag);
+                _fragPacketsPool.Put(frag);
             }
 
             cbs.OnReceive(combinedBuffer, 0, fullLength, endPoint);
@@ -148,6 +158,7 @@ namespace Pixockets
                     if (SmartSock.TimeDelta(frag.LastActive, now) > fragmentTimeout)
                     {
                         _frags.RemoveAt(i);
+                        _fragPacketsPool.Put(frag);
                     }
                 }
             }
@@ -209,11 +220,36 @@ namespace Pixockets
             // create new one
             else
             {
-                // TODO: pool them
-                var frag = new FragmentedPacket();
+                var frag = _fragPacketsPool.Get();
                 frag.FragId = header.FragId;
+                frag.FragCount = header.FragCount;
                 _frags.Add(frag);
                 return frag;
+            }
+        }
+
+        public void Strip()
+        {
+            lock (_syncObj)
+            {
+                var notAckedCount = _notAcked.Count;
+                for (int i = 0; i < notAckedCount; ++i)
+                {
+                    var packet = _notAcked[i];
+                    _buffersPool.Return(packet.Buffer);
+                    _notAckedPool.Put(packet);
+                }
+                _notAcked.Clear();
+
+                _connected = false;
+                _nextSeqNum = 0;
+                _nextFragId = 0;
+                var fragCount = _frags.Count;
+                for (int i = 0; i < fragCount; ++i)
+                {
+                    _fragPacketsPool.Put(_frags[i]);
+                }
+                _frags.Clear();
             }
         }
     }

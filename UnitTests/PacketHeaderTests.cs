@@ -15,7 +15,8 @@ namespace UnitTests
             ms.Write(BitConverter.GetBytes((ushort)54321), 0, 2);
             ms.WriteByte(0);
             var buffer = ms.ToArray();
-            var header = new PacketHeader(buffer, 0);
+            var header = new PacketHeader();
+            header.Init(buffer, 0);
 
             Assert.AreEqual(54321, header.Length);
         }

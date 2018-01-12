@@ -35,7 +35,8 @@ namespace UnitTests
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var packetToSend = _bareSock.Sends[0];
-            var header = new PacketHeader(packetToSend.Buffer, packetToSend.Offset);
+            var header = new PacketHeader();
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
             Assert.AreEqual(123456789, BitConverter.ToInt32(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
@@ -59,7 +60,8 @@ namespace UnitTests
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             // Make sure ack sent
-            var ackHeader = new PacketHeader(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            var ackHeader = new PacketHeader();
+            ackHeader.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
             Assert.AreEqual(123, ackHeader.Ack);
@@ -82,7 +84,8 @@ namespace UnitTests
 
             Assert.AreEqual(2, _bareSock.Sends.Count);
             var packetToSend = _bareSock.Sends[1];
-            var header = new PacketHeader(packetToSend.Buffer, packetToSend.Offset);
+            var header = new PacketHeader();
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
             Assert.AreEqual(123456789, BitConverter.ToInt32(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
@@ -100,7 +103,8 @@ namespace UnitTests
             _sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
 
             var sent = _bareSock.Sends[0];
-            var headerSent = new PacketHeader(sent.Buffer, sent.Offset);
+            var headerSent = new PacketHeader();
+            headerSent.Init(sent.Buffer, sent.Offset);
 
             ms.Seek(0, SeekOrigin.Begin);
             var ackHeader = new PacketHeader();
