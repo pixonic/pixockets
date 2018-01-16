@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+
+#if DEBUG
+using System.Collections.Generic;
+#endif
 using System.Diagnostics;
 using System.Threading;
 
@@ -19,6 +23,9 @@ namespace System.Buffers
             private SpinLock _lock; // do not make this readonly; it's a mutable struct
             private int _index;
 
+#if DEBUG
+            private readonly HashSet<T[]> _unique = new HashSet<T[]>();
+#endif
             /// <summary>
             /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
             /// </summary>
@@ -67,7 +74,12 @@ namespace System.Buffers
                 {
                     buffer = new T[_bufferLength];
                 }
-
+#if DEBUG
+                lock (_unique)
+                {
+                    _unique.Remove(buffer);
+                }
+#endif
                 return buffer;
             }
 
@@ -85,7 +97,17 @@ namespace System.Buffers
                     //throw new ArgumentException("BufferNotFromPool", nameof(array));
                     return;
                 }
+#if DEBUG
+                lock (_unique)
+                {
+                    if (_unique.Contains(array))
+                    {
+                        throw new ArgumentException("Double return of size " + array.Length);
+                    }
 
+                    _unique.Add(array);
+                }
+#endif
                 // While holding the spin lock, if there's room available in the bucket,
                 // put the buffer into the next available slot.  Otherwise, we just drop it.
                 // The try/finally is necessary to properly handle thread aborts on platforms

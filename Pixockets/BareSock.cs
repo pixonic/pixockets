@@ -20,7 +20,7 @@ namespace Pixockets
         private volatile bool _readyToSend = true;
         private ReceiverBase _callbacks;
         private ConcurrentQueue<PacketToSend> sendQueue = new ConcurrentQueue<PacketToSend>();
-        private Pool<PacketToSend> _packetsToSend = new Pool<PacketToSend>();
+        private Pool<PacketToSend> _packetsToSendPool = new Pool<PacketToSend>();
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
         public override IPEndPoint RemoteEndPoint { get { return (IPEndPoint)SysSock.RemoteEndPoint; } }
@@ -53,7 +53,6 @@ namespace Pixockets
 
         public override void Receive(int port)
         {
-            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
             _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
             SysSock.Bind(_eReceive.RemoteEndPoint);
 
@@ -75,7 +74,7 @@ namespace Pixockets
                 return;
             }
 
-            var packet = _packetsToSend.Get();
+            var packet = _packetsToSendPool.Get();
             packet.EndPoint = endPoint;
             packet.Buffer = buffer;
             packet.Offset = offset;
@@ -128,7 +127,7 @@ namespace Pixockets
 
         private void ActualReceive()
         {
-            _eReceive.SetBuffer(0, MTU);
+            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
             bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(_eReceive);
             if (!willRaiseEvent)
             {
@@ -150,17 +149,17 @@ namespace Pixockets
         {
             PacketToSend packet;
 
+            _buffersPool.Return(e.Buffer);
+
             if (sendQueue.TryDequeue(out packet))
             {
                 ActualSend(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length);
-                _packetsToSend.Put(packet);
+                _packetsToSendPool.Put(packet);
             }
             else
             {
                 _readyToSend = true;
             }
-
-            _buffersPool.Return(e.Buffer);
         }
     }
 }

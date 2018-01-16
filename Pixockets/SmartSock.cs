@@ -99,7 +99,7 @@ namespace Pixockets
             if (length > MaxPayload)
             {
                 var seqState = GetSeqState(endPoint);
-                ushort fragId = seqState.tNextFragId();
+                ushort fragId = seqState.NextFragId();
                 // Cut packet
                 // TODO: avoid trying to send if fragmentCount > 65536
                 var fragmentCount = (length + MaxPayload - 1) / MaxPayload;
@@ -128,7 +128,7 @@ namespace Pixockets
             if (length > MaxPayload)
             {
                 var seqState = GetSeqState(endPoint);
-                ushort fragId = seqState.tNextFragId();
+                ushort fragId = seqState.NextFragId();
                 // Cut packet
                 var fragmentCount = (length + MaxPayload - 1) / MaxPayload;
                 var tailSize = length;

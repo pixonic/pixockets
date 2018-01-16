@@ -54,7 +54,7 @@ namespace Pixockets
             }
         }
 
-        public ushort tNextFragId()
+        public ushort NextFragId()
         {
             lock (_syncObj)
             {
@@ -126,6 +126,7 @@ namespace Pixockets
                     var srcBuffer = frag.Buffers[i];
                     Array.Copy(srcBuffer.Buffer, srcBuffer.Offset, combinedBuffer, targetOffset, srcBuffer.Length);
                     targetOffset += frag.Buffers[i].Length;
+                    _buffersPool.Return(srcBuffer.Buffer);
                 }
 
                 // TODO: optimize?
