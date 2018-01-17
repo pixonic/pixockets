@@ -112,14 +112,14 @@ namespace Pixockets
 
                     var fullBuffer = WrapFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, true);
                 }
             }
             else
             {
                 var fullBuffer = Wrap(endPoint, buffer, offset, length);
 
-                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, true);
             }
         }
 
@@ -140,14 +140,14 @@ namespace Pixockets
 
                     var fullBuffer = WrapReliableFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
 
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, false);
                 }
             }
             else
             {
                 var fullBuffer = WrapReliable(endPoint, buffer, offset, length);
 
-                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count);
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, false);
             }
         }
 
@@ -156,7 +156,13 @@ namespace Pixockets
             var endPoint = SubSock.RemoteEndPoint;
             Send(endPoint, buffer, offset, length);
         }
- 
+
+        public void SendReliable(byte[] buffer, int offset, int length)
+        {
+            var endPoint = SubSock.RemoteEndPoint;
+            SendReliable(endPoint, buffer, offset, length);
+        }
+
         public void Tick()
         {
             lock (_syncObj)
@@ -320,7 +326,7 @@ namespace Pixockets
             var buffer = _buffersPool.Rent(header.Length);
             header.WriteTo(buffer, 0);
 
-            SubSock.Send(endPoint, buffer, 0, header.Length);
+            SubSock.Send(endPoint, buffer, 0, header.Length, true);
 
             _headersPool.Put(header);
         }

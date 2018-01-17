@@ -8,6 +8,7 @@ namespace Pixockets
         public int Offset;
         public int Length;
         public byte[] Buffer;
+        public bool PutBufferToPool;
 
         public void Strip()
         {

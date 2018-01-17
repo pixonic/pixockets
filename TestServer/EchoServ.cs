@@ -66,7 +66,7 @@ namespace TestServer
         {
             foreach (var client in _clients)
             {
-                _servSock.Send(client.Key, buffer, offset, length);
+                _servSock.SendReliable(client.Key, buffer, offset, length);
             }
         }
 

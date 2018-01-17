@@ -28,7 +28,7 @@ namespace TestClient
                 }
 
                 var initMsg = ms.ToArray();
-                sock.Send(initMsg, 0, initMsg.Length);
+                sock.SendReliable(initMsg, 0, initMsg.Length);
             }
 
             Thread.Sleep(1000);

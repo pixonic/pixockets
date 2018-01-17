@@ -43,6 +43,8 @@
     <Compile Include="FragmentBuffer.cs" />
     <Compile Include="FragmentedPacket.cs" />
     <Compile Include="NotAckedPacket.cs" />
+    <Compile Include="SAEAPool.cs" />
+    <Compile Include="SendOptions.cs" />
     <Compile Include="SmartReceiverBase.cs" />
     <Compile Include="SequenceState.cs" />
     <Compile Include="SockBase.cs" />

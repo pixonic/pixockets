@@ -48,7 +48,7 @@ namespace UnitTests
             BareSock sock = new BareSock(ArrayPool<byte>.Shared);
             sock.SetCallbacks(cbs);
 
-            sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4);
+            sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4, true);
 
             receiveTask.Wait(1000);
 

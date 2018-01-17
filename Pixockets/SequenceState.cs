@@ -147,7 +147,7 @@ namespace Pixockets
                     var packet = _notAcked[i];
                     if (now - packet.SendTicks > ackTimeout)
                     {
-                        sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length);
+                        sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length, false);
                         packet.SendTicks = now;
                     }
                 }

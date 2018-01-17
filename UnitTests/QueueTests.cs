@@ -23,9 +23,9 @@ namespace UnitTests
             sock.SetCallbacks(cbs);
 
             sock.Connect(IPAddress.Loopback, 23450);
-            sock.Send(BitConverter.GetBytes(1), 0, 4);
-            sock.Send(BitConverter.GetBytes(2), 0, 4);
-            sock.Send(BitConverter.GetBytes(3), 0, 4);
+            sock.Send(BitConverter.GetBytes(1), 0, 4, true);
+            sock.Send(BitConverter.GetBytes(2), 0, 4, true);
+            sock.Send(BitConverter.GetBytes(3), 0, 4, true);
 
             receiveTask.Wait(2000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);

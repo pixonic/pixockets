@@ -45,12 +45,12 @@ namespace UnitTests.Mock
             ReceiveOnPortCalls.Add(port);
         }
 
-        public override void Send(byte[] buffer, int offset, int length)
+        public override void Send(byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            Send(ConnectEndPoint, buffer, offset, length);
+            Send(ConnectEndPoint, buffer, offset, length, putBufferToPool);
         }
 
-        public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
             Sends.Add(new PacketToSend {
                 EndPoint = endPoint,
