@@ -24,8 +24,14 @@ namespace TestServer
             _servSock = socket;
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
+            if (!inOrder)
+            {
+                Console.WriteLine("!!! OutOfOrder !!!");
+                return;
+            }
+
             if (_clients[endPoint] == 0)
             {
                 var count = BitConverter.ToInt32(buffer, offset);

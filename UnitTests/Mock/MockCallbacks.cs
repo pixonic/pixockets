@@ -10,6 +10,7 @@ namespace UnitTests.Mock
         public int Offset;
         public int Length;
         public IPEndPoint EndPoint;
+        public bool InOrder;
     }
 
     public class MockCallbacks : ReceiverBase

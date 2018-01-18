@@ -20,7 +20,7 @@ namespace UnitTests.Mock
             OnDisconnectCalls.Add(endPoint);
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
             OnReceiveCalls.Add(new OnReceiveCall
             {
@@ -28,6 +28,7 @@ namespace UnitTests.Mock
                 Offset = offset,
                 Length = length,
                 EndPoint = endPoint,
+                InOrder = inOrder,
             });
         }
     }

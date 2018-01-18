@@ -16,8 +16,14 @@ namespace TestClient
             Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
+            if (!inOrder)
+            {
+                Console.WriteLine("!!! OutOfOrder !!!");
+                return;
+            }
+
             var count = BitConverter.ToInt32(buffer, offset);
             Console.WriteLine("Count: {0}", count);
             for (int i = 0; i < count; ++i)

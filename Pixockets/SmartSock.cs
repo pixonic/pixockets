@@ -77,8 +77,10 @@ namespace Pixockets
             }
             else
             {
-                OnReceiveComplete(buffer, offset, length, endPoint, header);
+                OnReceiveComplete(buffer, offset, length, endPoint, header, seqState);
             }
+
+            seqState.RegisterIncoming(header.SeqNum);
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
@@ -192,18 +194,22 @@ namespace Pixockets
             }
         }
 
-        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
+        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, SequenceState seqState)
         {
             var headerLen = header.HeaderLength;
 
             var payloadLength = length - headerLen;
             if (payloadLength > 0)
             {
+                // TODO: calculate it
+                bool inOrder = seqState.IsInOrder(header.SeqNum);
+
                 _callbacks.OnReceive(
                     buffer,
                     offset + headerLen,
                     payloadLength,
-                    endPoint);
+                    endPoint,
+                    inOrder);
             }
         }
 
