@@ -8,6 +8,7 @@ namespace Pixockets
     public class SequenceState : IPoolable
     {
         public int LastActive;
+        private const int ReceivedSeqNumBufferSize = 32;
 
         private bool _connected = false;
         private ushort _nextSeqNum;
@@ -16,6 +17,8 @@ namespace Pixockets
         private object _syncObj = new object();
         private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private int _lastReceivedSeqNum = -1;  // int for calculations
+        private ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferSize];
+        private int _lastRecevedSeqNumIdx = 0;
 
         private Pool<NotAckedPacket> _notAckedPool;
         private Pool<FragmentedPacket> _fragPacketsPool;
@@ -254,26 +257,20 @@ namespace Pixockets
                     _fragPacketsPool.Put(_frags[i]);
                 }
                 _frags.Clear();
-            }
-        }
+
+                _lastReceivedSeqNum = -1;
+                Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
+    }
+}
 
         public void RegisterIncoming(ushort seqNum)
         {
-            if (IsInOrderInt(seqNum))
+            _lastReceivedSeqNum = seqNum;
+            _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
+            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferSize)
             {
-                _lastReceivedSeqNum = seqNum;
+                _lastRecevedSeqNumIdx = 0;
             }
-        }
-
-        public bool IsInOrderInt(ushort seqNum)
-        {
-            //TODO: fix corner cases
-            int delta = seqNum - _lastReceivedSeqNum;
-            if (delta < -32000)
-            {
-                delta += 65536;
-            }
-            return delta > 0;
         }
 
         // TODO: drop dublicates
@@ -290,6 +287,19 @@ namespace Pixockets
                 delta = -1;
             }
             return delta > 0;
+        }
+
+        public bool IsDuplicate(ushort seqNum)
+        {
+            for (int i = 0; i < ReceivedSeqNumBufferSize; ++i)
+            {
+                if (_lastRecevedSeqNums[i] == seqNum)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

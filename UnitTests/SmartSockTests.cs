@@ -31,8 +31,9 @@ namespace UnitTests
             _sock.Receive();
 
             var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes((ushort)7), 0, 2);  // Length
-            ms.WriteByte(0);  // Flags
+            ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length
+            ms.WriteByte(PacketHeader.ContainsSeq);  // Flags
+            ms.Write(BitConverter.GetBytes((ushort)1), 0, 2); // SeqNum
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
             var buffer = ms.ToArray();
 
@@ -42,7 +43,7 @@ namespace UnitTests
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
             Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, _cbs.OnReceiveCalls[0].Offset));
-            Assert.AreEqual(PacketHeader.MinHeaderLength, _cbs.OnReceiveCalls[0].Offset);
+            Assert.AreEqual(5, _cbs.OnReceiveCalls[0].Offset); // Length + Flags + SeqNum
             Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
         }
 

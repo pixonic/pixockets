@@ -28,7 +28,7 @@ namespace Pixockets
             }
         }
 
-        private const byte ContainsSeq = 0x1;
+        public const byte ContainsSeq = 0x1;
         public const byte ContainsAck = 0x2;
         public const byte ContainsFrag = 0x4;
         private const byte Reserved1 = 0x8;

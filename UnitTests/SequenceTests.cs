@@ -93,10 +93,10 @@ namespace UnitTests
         {
             SendPacket(20000);
             SendPacket(40000);
-            SendPacket(65534);
-            SendPacket(1);
             SendPacket(65535);
             SendPacket(0);
+            SendPacket(65534);
+            SendPacket(1);
 
             Assert.AreEqual(6, _cbs.OnReceiveCalls.Count);
             Assert.IsTrue(_cbs.OnReceiveCalls[0].InOrder);
@@ -105,6 +105,31 @@ namespace UnitTests
             Assert.IsTrue(_cbs.OnReceiveCalls[3].InOrder);
             Assert.IsFalse(_cbs.OnReceiveCalls[4].InOrder);
             Assert.IsTrue(_cbs.OnReceiveCalls[5].InOrder);
+        }
+
+        [Test]
+        public void SerialDuplicatesDetected()
+        {
+            SendPacket(1);
+            SendPacket(1);
+            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+
+            SendPacket(1);
+            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+        }
+
+        [Test]
+        public void InterleavedDuplicatesDetected()
+        {
+            SendPacket(1);
+            SendPacket(2);
+            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
+
+            SendPacket(1);
+            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
+
+            SendPacket(2);
+            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
         }
 
         private void SendPacket(int n)

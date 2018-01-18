@@ -75,12 +75,18 @@ namespace Pixockets
             {
                 OnReceiveFragment(buffer, offset, length, endPoint, header);
             }
-            else
+            else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
-                OnReceiveComplete(buffer, offset, length, endPoint, header, seqState);
+                bool inOrder = seqState.IsInOrder(header.SeqNum);
+                if (inOrder || !seqState.IsDuplicate(header.SeqNum))
+                {
+                    OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder);
+                }
+                if (inOrder)
+                {
+                    seqState.RegisterIncoming(header.SeqNum);
+                }
             }
-
-            seqState.RegisterIncoming(header.SeqNum);
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
@@ -194,16 +200,13 @@ namespace Pixockets
             }
         }
 
-        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, SequenceState seqState)
+        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder)
         {
             var headerLen = header.HeaderLength;
 
             var payloadLength = length - headerLen;
             if (payloadLength > 0)
             {
-                // TODO: calculate it
-                bool inOrder = seqState.IsInOrder(header.SeqNum);
-
                 _callbacks.OnReceive(
                     buffer,
                     offset + headerLen,
@@ -249,7 +252,6 @@ namespace Pixockets
         {
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
-            // TODO: pool byte arrays and PacketHeaders
             var header = _headersPool.Get();
             header.SetNeedAck();
             header.SetSeqNum(seqNum);
@@ -280,12 +282,10 @@ namespace Pixockets
 
         private ArraySegment<byte> WrapReliableFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
         {
-            // TODO: pool byte arrays and PacketHeaders
             var header = _headersPool.Get();
             header.SetNeedAck();
             var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
-            // TODO: pool them
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
 
