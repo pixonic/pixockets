@@ -198,6 +198,76 @@ namespace Pixockets
             }
         }
 
+        public void Strip()
+        {
+            lock (_syncObj)
+            {
+                var notAckedCount = _notAcked.Count;
+                for (int i = 0; i < notAckedCount; ++i)
+                {
+                    var packet = _notAcked[i];
+                    _buffersPool.Return(packet.Buffer);
+                    _notAckedPool.Put(packet);
+                }
+                _notAcked.Clear();
+
+                _connected = false;
+                _nextSeqNum = 0;
+                _nextFragId = 0;
+                var fragCount = _frags.Count;
+                for (int i = 0; i < fragCount; ++i)
+                {
+                    _fragPacketsPool.Put(_frags[i]);
+                }
+                _frags.Clear();
+
+                _lastReceivedSeqNum = -1;
+                Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
+            }
+        }
+
+        public void RegisterIncoming(ushort seqNum)
+        {
+            lock (_syncObj)
+            {
+                _lastReceivedSeqNum = seqNum;
+                _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
+                if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferSize)
+                {
+                    _lastRecevedSeqNumIdx = 0;
+                }
+            }
+        }
+
+        // TODO: drop dublicates
+        public bool IsInOrder(ushort seqNum)
+        {
+            //TODO: fix corner cases
+            int delta = seqNum - _lastReceivedSeqNum;
+            if (delta < -32000)
+            {
+                delta += 65536;
+            }
+            else if (delta > 32000)
+            {
+                delta = -1;
+            }
+            return delta > 0;
+        }
+
+        public bool IsDuplicate(ushort seqNum)
+        {
+            for (int i = 0; i < ReceivedSeqNumBufferSize; ++i)
+            {
+                if (_lastRecevedSeqNums[i] == seqNum)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void Exch(FragmentedPacket frag, int i, int j)
         {
             var temp = frag.Buffers[i];
@@ -233,73 +303,6 @@ namespace Pixockets
                 _frags.Add(frag);
                 return frag;
             }
-        }
-
-        public void Strip()
-        {
-            lock (_syncObj)
-            {
-                var notAckedCount = _notAcked.Count;
-                for (int i = 0; i < notAckedCount; ++i)
-                {
-                    var packet = _notAcked[i];
-                    _buffersPool.Return(packet.Buffer);
-                    _notAckedPool.Put(packet);
-                }
-                _notAcked.Clear();
-
-                _connected = false;
-                _nextSeqNum = 0;
-                _nextFragId = 0;
-                var fragCount = _frags.Count;
-                for (int i = 0; i < fragCount; ++i)
-                {
-                    _fragPacketsPool.Put(_frags[i]);
-                }
-                _frags.Clear();
-
-                _lastReceivedSeqNum = -1;
-                Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
-    }
-}
-
-        public void RegisterIncoming(ushort seqNum)
-        {
-            _lastReceivedSeqNum = seqNum;
-            _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
-            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferSize)
-            {
-                _lastRecevedSeqNumIdx = 0;
-            }
-        }
-
-        // TODO: drop dublicates
-        public bool IsInOrder(ushort seqNum)
-        {
-            //TODO: fix corner cases
-            int delta = seqNum - _lastReceivedSeqNum;
-            if (delta < -32000)
-            {
-                delta += 65536;
-            }
-            else if (delta > 32000)
-            {
-                delta = -1;
-            }
-            return delta > 0;
-        }
-
-        public bool IsDuplicate(ushort seqNum)
-        {
-            for (int i = 0; i < ReceivedSeqNumBufferSize; ++i)
-            {
-                if (_lastRecevedSeqNums[i] == seqNum)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }
