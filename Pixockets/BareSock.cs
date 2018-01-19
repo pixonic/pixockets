@@ -42,7 +42,7 @@ namespace Pixockets
 
         public override void Connect(IPAddress address, int port)
         {
-            SysSock.Connect(IPAddress.Loopback, port);
+            SysSock.Connect(address, port);
         }
 
         public override void Receive()
