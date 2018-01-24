@@ -27,5 +27,9 @@ namespace UnitTests.Mock
                 EndPoint = endPoint,
             });
         }
+
+        public override void OnDisconnect(IPEndPoint endPoint)
+        {
+        }
     }
 }

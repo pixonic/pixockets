@@ -16,6 +16,8 @@ namespace Pixockets
 
         public IPEndPoint LocalEndPoint { get { return SubSock.LocalEndPoint; } }
 
+        public IPEndPoint RemoteEndPoint { get { return SubSock.RemoteEndPoint; } }
+
         public readonly SockBase SubSock;
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
@@ -99,6 +101,21 @@ namespace Pixockets
             }
 
             _headersPool.Put(header);
+        }
+
+        public override void OnDisconnect(IPEndPoint endPoint)
+        {
+            var seqState = GetSeqState(endPoint);
+
+            lock (_syncObj)
+            {
+                if (_seqStates.Remove(endPoint))
+                {
+                    _seqStatesPool.Put(seqState);
+                }
+            }
+
+            _callbacks.OnDisconnect(endPoint);
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)

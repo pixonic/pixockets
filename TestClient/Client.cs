@@ -13,37 +13,55 @@ namespace TestClient
         {
             var callbacks = new PrintingReceiver();
             var sock = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), callbacks);
+            var address = args[0];
 
-            sock.Connect(IPAddress.Loopback, 2345);
-            sock.Receive();
-
-            {
-                var rnd = new Random(Guid.NewGuid().GetHashCode());
-                var count = 700 + rnd.Next(500);
-                var ms = new MemoryStream(4 + count * 4);
-                ms.Write(BitConverter.GetBytes(count), 0, 4);
-                for (int i = 0; i < count; ++i)
-                {
-                    ms.Write(BitConverter.GetBytes(i), 0, 4);
-                }
-
-                var initMsg = ms.ToArray();
-                sock.SendReliable(initMsg, 0, initMsg.Length);
-            }
+            Connect(address, sock);
 
             Thread.Sleep(1000);
 
+            int cnt = 0;
             while (true)
             {
                 Thread.Sleep(1000);
 
                 sock.Tick();
 
-                var msg = Environment.TickCount;
+                if (!callbacks.Connected)
+                {
+                    Connect(address, sock);
+                    continue;
+                }
 
-                var buffer = BitConverter.GetBytes(msg);
+                cnt++;
+                if (cnt > 5)
+                {
+                    cnt = 1;
+                }
+
+                var buffer = BitConverter.GetBytes(cnt);
                 sock.Send(buffer, 0, buffer.Length);
             }
+        }
+
+        private static void Connect(string addr, SmartSock sock)
+        {
+            sock.Connect(IPAddress.Parse(addr), 2345);
+            sock.Receive();
+
+            var ep = (IPEndPoint)sock.LocalEndPoint;
+            Console.WriteLine("{0}:{1}", ep.Address, ep.Port);
+
+            var rnd = new Random(Guid.NewGuid().GetHashCode());
+            var count = 700 + rnd.Next(500);
+            var ms = new MemoryStream(4 + count * 4);
+            ms.Write(BitConverter.GetBytes(count), 0, 4);
+            for (int i = 0; i < count; ++i)
+            {
+                ms.Write(BitConverter.GetBytes(i), 0, 4);
+            }
+
+            var initMsg = ms.ToArray();
+            sock.SendReliable(initMsg, 0, initMsg.Length);
         }
     }
 }

@@ -1,38 +1,38 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
 namespace Pixockets
 {
+    // TODO: support IPV6
     public class BareSock : SockBase
     {
         public const int MTU = 1200;
-        // TODO: support IPV6
-        public Socket SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        public Socket SysSock = null;
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
-        public override IPEndPoint RemoteEndPoint { get { return (IPEndPoint)SysSock.RemoteEndPoint; } }
+
+        public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
 
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
         private ArrayPool<byte> _buffersPool;
-        private SocketAsyncEventArgs _eReceive = new SocketAsyncEventArgs();
+        private IPEndPoint _remoteEndPoint;
+        private IPEndPoint _receiveEndPoint;
 
-        private volatile bool _readyToSend = true;
         private ReceiverBase _callbacks;
-        private ConcurrentQueue<PacketToSend> _sendQueue = new ConcurrentQueue<PacketToSend>();
-        private Pool<PacketToSend> _packetsToSendPool = new Pool<PacketToSend>();
         private SAEAPool _sendArgsPool = new SAEAPool();
+        private SAEAPool _recvArgsPool = new SAEAPool();
 
         private SendOptions _returnToPool = new SendOptions { ReturnBufferToPool = true };
         private SendOptions _dontReturnToPool = new SendOptions { ReturnBufferToPool = false };
 
+        private object _syncObj = new object();
+
         public BareSock(ArrayPool<byte> buffersPool)
         {
             _buffersPool = buffersPool;
-            _eReceive.Completed += OnReceiveCompleted;
         }
 
         public override void SetCallbacks(ReceiverBase callbacks)
@@ -42,24 +42,41 @@ namespace Pixockets
 
         public override void Connect(IPAddress address, int port)
         {
-            SysSock.Connect(address, port);
+            lock (_syncObj)
+            {
+                Socket oldSysSock = null;
+                if (SysSock != null)
+                {
+                    oldSysSock = SysSock;
+                    SysSock = null;
+                }
+                if (oldSysSock != null)
+                {
+                    oldSysSock.Shutdown(SocketShutdown.Both);
+                    oldSysSock.Close();
+                }
+                SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                _remoteEndPoint = new IPEndPoint(address, port);
+                SysSock.Connect(_remoteEndPoint);
+            }
         }
 
         public override void Receive()
         {
-            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
-
-            _eReceive.RemoteEndPoint = AnyEndPoint;
-
-            ActualReceive();
+            _receiveEndPoint = AnyEndPoint;
+            var eReceive = GetRecvArgs();
+            ActualReceive(eReceive);
         }
 
         public override void Receive(int port)
         {
-            _eReceive.RemoteEndPoint = new IPEndPoint(IPAddress.Any, port);
-            SysSock.Bind(_eReceive.RemoteEndPoint);
+            SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
+            _remoteEndPoint = _receiveEndPoint;
+            SysSock.Bind(_remoteEndPoint);
 
-            ActualReceive();
+            var eReceive = GetRecvArgs();
+            ActualReceive(eReceive);
         }
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
@@ -70,31 +87,16 @@ namespace Pixockets
                     "length", length, string.Format("Length should be less then MTU ({0})", MTU));
             }
 
-            // TODO: make it atomic
-            if (_readyToSend)
-            {
-                ActualSend(endPoint, buffer, offset, length, putBufferToPool);
-                return;
-            }
-
-            var packet = _packetsToSendPool.Get();
-            packet.EndPoint = endPoint;
-            packet.Buffer = buffer;
-            packet.Offset = offset;
-            packet.Length = length;
-            packet.PutBufferToPool = putBufferToPool;
-
-            _sendQueue.Enqueue(packet);
+            ActualSend(endPoint, buffer, offset, length, putBufferToPool);
         }
 
         public override void Send(byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            Send((IPEndPoint)SysSock.RemoteEndPoint, buffer, offset, length, putBufferToPool);
+            Send(RemoteEndPoint, buffer, offset, length, putBufferToPool);
         }
 
         private void ActualSend(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            _readyToSend = false;
             // TODO: refactor
             var eSend = _sendArgsPool.Get();
             if (eSend == null)
@@ -113,8 +115,11 @@ namespace Pixockets
             {
                 eSend.UserToken = _dontReturnToPool;
             }
-
-            bool willRaiseEvent = SysSock.SendToAsync(eSend);
+            bool willRaiseEvent;
+            lock (_syncObj)
+            {
+                willRaiseEvent = SysSock.SendToAsync(eSend);
+            }
             if (!willRaiseEvent)
             {
                 OnPacketSent(eSend);
@@ -135,6 +140,9 @@ namespace Pixockets
 
         private void OnReceiveCompleted(object sender, SocketAsyncEventArgs e)
         {
+            var eReceive = GetRecvArgs();
+            ActualReceive(eReceive);
+
             if (e.LastOperation == SocketAsyncOperation.ReceiveMessageFrom)
             {
                 OnPacketReceived(e);
@@ -145,13 +153,40 @@ namespace Pixockets
             }
         }
 
-        private void ActualReceive()
+        private SocketAsyncEventArgs GetRecvArgs()
         {
-            _eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
-            bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(_eReceive);
+            var eReceive = _recvArgsPool.Get();
+            if (eReceive == null)
+            {
+                eReceive = new SocketAsyncEventArgs();
+                eReceive.Completed += OnReceiveCompleted;
+            }
+            eReceive.RemoteEndPoint = _remoteEndPoint;
+            eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
+            return eReceive;
+        }
+
+        private void ActualReceive(SocketAsyncEventArgs recvArgs)
+        {
+            bool willRaiseEvent;
+            lock (_syncObj)
+            {
+                if (SysSock == null)
+                {
+                    _recvArgsPool.Put(recvArgs);
+                    return;
+                }
+
+                recvArgs.RemoteEndPoint = _receiveEndPoint;
+                willRaiseEvent = SysSock.ReceiveMessageFromAsync(recvArgs);
+            }
+
             if (!willRaiseEvent)
             {
-                OnPacketReceived(_eReceive);
+                var eReceive = GetRecvArgs();
+                ActualReceive(eReceive);
+
+                OnPacketReceived(recvArgs);
             }
         }
 
@@ -162,13 +197,11 @@ namespace Pixockets
                 _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
             }
 
-            ActualReceive();
+            _recvArgsPool.Put(e);
         }
 
         private void OnPacketSent(SocketAsyncEventArgs e)
         {
-            PacketToSend packet;
-            
             var sendOptions = (SendOptions)e.UserToken;
 
             if (sendOptions.ReturnBufferToPool)
@@ -176,16 +209,6 @@ namespace Pixockets
                 _buffersPool.Return(e.Buffer);
             }
             _sendArgsPool.Put(e);
-
-            if (_sendQueue.TryDequeue(out packet))
-            {
-                ActualSend(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, packet.PutBufferToPool);
-                _packetsToSendPool.Put(packet);
-            }
-            else
-            {
-                _readyToSend = true;
-            }
         }
     }
 }
