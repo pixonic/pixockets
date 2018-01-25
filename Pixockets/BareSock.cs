@@ -32,6 +32,7 @@ namespace Pixockets
 
         public BareSock(ArrayPool<byte> buffersPool)
         {
+            SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _buffersPool = buffersPool;
         }
 
@@ -45,7 +46,10 @@ namespace Pixockets
             _remoteEndPoint = new IPEndPoint(address, port);
             lock (_syncObj)
             {
-                SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                if (SysSock.IsBound)
+                {
+                    SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                }
                 SysSock.Connect(_remoteEndPoint);
             }
         }
@@ -59,7 +63,6 @@ namespace Pixockets
 
         public override void Receive(int port)
         {
-            SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
             _remoteEndPoint = _receiveEndPoint;
             SysSock.Bind(_remoteEndPoint);
