@@ -58,6 +58,17 @@ namespace TestServer
             else
             {
                 _clients[endPoint] = BitConverter.ToInt32(buffer, offset);
+
+                var count = BitConverter.ToInt32(buffer, offset);
+                for (int i = 0; i < count; ++i)
+                {
+                    var num = BitConverter.ToInt32(buffer, offset + 4 + i * 4);
+                    if (num != i)
+                    {
+                        Console.WriteLine("Error in packet at position {0}*4", i + 1);
+                        break;
+                    }
+                }
             }
 
             //Console.WriteLine("Received: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);

@@ -35,12 +35,12 @@ namespace TestClient
                 }
 
                 cnt++;
-                if (cnt > 5)
+                if (cnt > 32)
                 {
                     cnt = 1;
                 }
 
-                var buffer = BitConverter.GetBytes(cnt);
+                var buffer = CreateMessage(cnt);
                 sock.Send(buffer, 0, buffer.Length);
             }
         }
@@ -55,6 +55,12 @@ namespace TestClient
 
             var rnd = new Random(Guid.NewGuid().GetHashCode());
             var count = 700 + rnd.Next(500);
+            byte[] initMsg = CreateMessage(count);
+            sock.SendReliable(initMsg, 0, initMsg.Length);
+        }
+
+        private static byte[] CreateMessage(int count)
+        {
             var ms = new MemoryStream(4 + count * 4);
             ms.Write(BitConverter.GetBytes(count), 0, 4);
             for (int i = 0; i < count; ++i)
@@ -63,7 +69,7 @@ namespace TestClient
             }
 
             var initMsg = ms.ToArray();
-            sock.SendReliable(initMsg, 0, initMsg.Length);
+            return initMsg;
         }
     }
 }
