@@ -7,6 +7,7 @@ namespace TestClient
     public class PrintingReceiver : SmartReceiverBase
     {
         public bool Connected { get; private set; }
+        public bool Connecting { get; set; }
 
         public PrintingReceiver()
         {
@@ -16,12 +17,14 @@ namespace TestClient
         public override void OnConnect(IPEndPoint endPoint)
         {
             Connected = true;
+            Connecting = false;
             Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
         public override void OnDisconnect(IPEndPoint endPoint)
         {
             Connected = false;
+            Connecting = false;
             Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 

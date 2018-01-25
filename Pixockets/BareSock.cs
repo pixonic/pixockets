@@ -42,21 +42,10 @@ namespace Pixockets
 
         public override void Connect(IPAddress address, int port)
         {
+            _remoteEndPoint = new IPEndPoint(address, port);
             lock (_syncObj)
             {
-                Socket oldSysSock = null;
-                if (SysSock != null)
-                {
-                    oldSysSock = SysSock;
-                    SysSock = null;
-                }
-                if (oldSysSock != null)
-                {
-                    oldSysSock.Shutdown(SocketShutdown.Both);
-                    oldSysSock.Close();
-                }
                 SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                _remoteEndPoint = new IPEndPoint(address, port);
                 SysSock.Connect(_remoteEndPoint);
             }
         }
@@ -162,7 +151,8 @@ namespace Pixockets
                 eReceive.Completed += OnReceiveCompleted;
             }
             eReceive.RemoteEndPoint = _remoteEndPoint;
-            eReceive.SetBuffer(_buffersPool.Rent(MTU), 0, MTU);
+            var buffer = _buffersPool.Rent(MTU);
+            eReceive.SetBuffer(buffer, 0, MTU);
             return eReceive;
         }
 
@@ -194,7 +184,8 @@ namespace Pixockets
         {
             if (e.BytesTransferred > 0)
             {
-                _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, (IPEndPoint)e.RemoteEndPoint);
+                var ep = (IPEndPoint)e.RemoteEndPoint;
+                _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, ep);
             }
 
             _recvArgsPool.Put(e);

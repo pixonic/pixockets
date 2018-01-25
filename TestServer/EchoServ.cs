@@ -32,7 +32,15 @@ namespace TestServer
                 return;
             }
 
-            if (_clients[endPoint] == 0)
+            int cliVal;
+
+            if (!_clients.TryGetValue(endPoint, out cliVal))
+            {
+                Console.WriteLine("!!! Received packet from not connected !!!: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);
+                return;
+            }
+
+            if (cliVal == 0)
             {
                 var count = BitConverter.ToInt32(buffer, offset);
                 Console.WriteLine("Received initial packet with {0} numbers", count);
@@ -52,7 +60,7 @@ namespace TestServer
                 _clients[endPoint] = BitConverter.ToInt32(buffer, offset);
             }
 
-            Console.WriteLine("Received: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);
+            //Console.WriteLine("Received: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);
         }
 
         public void Tick()

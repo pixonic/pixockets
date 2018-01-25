@@ -15,6 +15,7 @@ namespace TestClient
             var sock = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), callbacks);
             var address = args[0];
 
+            callbacks.Connecting = true;
             Connect(address, sock);
 
             Thread.Sleep(1000);
@@ -26,8 +27,9 @@ namespace TestClient
 
                 sock.Tick();
 
-                if (!callbacks.Connected)
+                if (!callbacks.Connected && !callbacks.Connecting)
                 {
+                    callbacks.Connecting = true;
                     Connect(address, sock);
                     continue;
                 }
