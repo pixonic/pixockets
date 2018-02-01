@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestWithUdpClient", "TestWithUdpClient\TestWithUdpClient.csproj", "{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplicatorServer", "ReplicatorServer\ReplicatorServer.csproj", "{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplicatorClient", "ReplicatorClient\ReplicatorClient.csproj", "{0B787A0A-AD50-4411-B492-E187BE98BBE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
