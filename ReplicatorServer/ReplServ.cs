@@ -49,14 +49,8 @@ namespace ReplicatorServer
                     cliVal.Blue = buffer[offset + 3];
                     cliVal.X = BitConverter.ToSingle(buffer, offset + 4);
                     cliVal.Y = BitConverter.ToSingle(buffer, offset + 8);
-                    //Color.FromArgb(255, red, green, blue);
                     Console.WriteLine("Received initial packet");
                     _clients[endPoint] = cliVal;
-
-                    if (cliVal.X == 0 || cliVal.Y == 0)
-                    {
-                        int a = 1;
-                    }
 
                     var ms = new MemoryStream();
                     ms.WriteByte(0);  // Init response
@@ -83,10 +77,6 @@ namespace ReplicatorServer
 
                     cliVal.X = rX;
                     cliVal.Y = rY;
-                    if (cliVal.X == 0 || cliVal.Y == 0)
-                    {
-                        int a = 1;
-                    }
                 }
                 else
                 {
