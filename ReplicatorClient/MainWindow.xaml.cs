@@ -144,7 +144,8 @@ namespace ReplicatorClient
         {
             if (IsDown)
             {
-                if ((IsDragging == false) && ((Math.Abs(e.GetPosition(Scene).X - StartPoint.X) > SystemParameters.MinimumHorizontalDragDistance) ||
+                if ((IsDragging == false) && (FollowerModel != null) &&
+                    ((Math.Abs(e.GetPosition(Scene).X - StartPoint.X) > SystemParameters.MinimumHorizontalDragDistance) ||
                     (Math.Abs(e.GetPosition(Scene).Y - StartPoint.Y) > SystemParameters.MinimumVerticalDragDistance)))
                 {
                     DragStarted();

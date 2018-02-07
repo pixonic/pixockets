@@ -117,7 +117,6 @@ namespace ReplicatorServer
         public override void OnConnect(IPEndPoint endPoint)
         {
             Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
-            //_clients.TryAdd(endPoint, null);
         }
 
         public override void OnDisconnect(IPEndPoint endPoint)

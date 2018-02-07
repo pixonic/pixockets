@@ -5,6 +5,7 @@ using System.Net;
 using System.Buffers;
 using System.Threading;
 using System.IO;
+using System.Collections.Generic;
 
 namespace ReplicatorClient
 {
@@ -25,6 +26,8 @@ namespace ReplicatorClient
         private Random _rnd = new Random(Guid.NewGuid().GetHashCode());
         private int _myId;
         private Vertex _myV;
+        private HashSet<int> _idsReceived = new HashSet<int>();
+        private List<int> _idsToDelete = new List<int>();
 
         public void Start(float x, float y)
         {
@@ -154,6 +157,7 @@ namespace ReplicatorClient
             for (int i = 0; i < count; ++i)
             {
                 var id = BitConverter.ToInt32(buffer, offset + 5 + i * 15);
+                _idsReceived.Add(id);
                 if (id == _myId)
                     continue;
 
@@ -176,6 +180,24 @@ namespace ReplicatorClient
                 follower.X = x;
                 follower.Y = y;
             }
+
+            foreach (var id in Followers.Keys1)
+            {
+                if (!_idsReceived.Contains(id))
+                {
+                    _idsToDelete.Add(id);
+                }
+            }
+
+            _idsReceived.Clear();
+
+            foreach (var id in _idsToDelete)
+            {
+                Followers.Remove(id);
+                OnDeleteFollower(id);
+            }
+
+            _idsToDelete.Clear();
         }
 
         public override void OnConnect(IPEndPoint endPoint)

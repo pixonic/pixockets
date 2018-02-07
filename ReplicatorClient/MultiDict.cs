@@ -4,6 +4,11 @@ namespace ReplicatorClient
 {
     public class MultiDict<K1, K2>
     {
+        public Dictionary<K1, K2>.KeyCollection Keys1
+        {
+            get { return Key1ToKey2.Keys; }            
+        }
+
         public void Add(K1 key1, K2 key2)
         {
             lock (Locker)
