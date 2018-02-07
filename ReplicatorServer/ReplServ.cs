@@ -30,12 +30,12 @@ namespace ReplicatorServer
             }
 
             ClientState cliVal = null;
-            /*
+            
             if (!_clients.TryGetValue(endPoint, out cliVal))
             {
-                Console.WriteLine("Received packet from not connected {0}:{1}", endPoint.Address, endPoint.Port);
+            //    Console.WriteLine("Received packet from not connected {0}:{1}", endPoint.Address, endPoint.Port);
             }
-            */
+            
             int packetId = buffer[offset];
 
             if (cliVal == null)
@@ -53,6 +53,11 @@ namespace ReplicatorServer
                     Console.WriteLine("Received initial packet");
                     _clients[endPoint] = cliVal;
 
+                    if (cliVal.X == 0 || cliVal.Y == 0)
+                    {
+                        int a = 1;
+                    }
+
                     var ms = new MemoryStream();
                     ms.WriteByte(0);  // Init response
                     ms.Write(BitConverter.GetBytes(cliVal.Id), 0, 4);
@@ -68,8 +73,20 @@ namespace ReplicatorServer
             {
                 if (packetId == 1)
                 {
-                    cliVal.X = BitConverter.ToSingle(buffer, offset + 1);
-                    cliVal.Y = BitConverter.ToSingle(buffer, offset + 5);
+                    var rX = BitConverter.ToSingle(buffer, offset + 1);
+                    var rY = BitConverter.ToSingle(buffer, offset + 5);
+
+                    if (rX != cliVal.X || rY != cliVal.Y)
+                    {
+                        Console.WriteLine("Received packet with id {0}, x = {1}, y = {2}", packetId, cliVal.X, cliVal.Y);
+                    }
+
+                    cliVal.X = rX;
+                    cliVal.Y = rY;
+                    if (cliVal.X == 0 || cliVal.Y == 0)
+                    {
+                        int a = 1;
+                    }
                 }
                 else
                 {

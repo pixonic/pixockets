@@ -55,6 +55,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="ConsoleManager.cs" />
     <Compile Include="Sync.cs" />
     <Compile Include="Vertex.cs" />
     <Page Include="MainWindow.xaml">

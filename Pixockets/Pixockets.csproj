@@ -43,6 +43,7 @@
     <Compile Include="FragmentBuffer.cs" />
     <Compile Include="FragmentedPacket.cs" />
     <Compile Include="NotAckedPacket.cs" />
+    <Compile Include="ReceivedPacket.cs" />
     <Compile Include="SAEAPool.cs" />
     <Compile Include="SendOptions.cs" />
     <Compile Include="SmartReceiverBase.cs" />
@@ -60,6 +61,7 @@
     <Compile Include="System\Buffers\DefaultArrayPool.cs" />
     <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
     <Compile Include="System\Buffers\Utilities.cs" />
+    <Compile Include="ThreadSock.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

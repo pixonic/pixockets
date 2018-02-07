@@ -1,7 +1,5 @@
 ﻿using Pixockets;
 using System;
-using System.ComponentModel;
-using System.Reflection;
 using System.Windows.Media;
 using System.Net;
 using System.Buffers;
@@ -19,9 +17,9 @@ namespace ReplicatorClient
 
         public int MyId { get { return _myId; } }
 
-        //private ChangesRegistry Changes = new ChangesRegistry();
-        //private Networker Connection;
-        private MultiDict<int, INotifyPropertyChanged> Followers = new MultiDict<int, INotifyPropertyChanged>();
+        private volatile bool _initReceived;
+
+        private MultiDict<int, Vertex> Followers = new MultiDict<int, Vertex>();
         private SmartSock _socket;
         private Thread _ticker;
         private Random _rnd = new Random(Guid.NewGuid().GetHashCode());
@@ -41,12 +39,18 @@ namespace ReplicatorClient
         {
             while (true)
             {
-                var ms = new MemoryStream();
-                ms.WriteByte(1); // Move request
-                ms.Write(BitConverter.GetBytes(_myV.X), 0, 4);
-                ms.Write(BitConverter.GetBytes(_myV.Y), 0, 4);
-                var buf = ms.ToArray();
-                _socket.Send(buf, 0, buf.Length);
+                if (_initReceived)
+                {
+                    var ms = new MemoryStream();
+                    ms.WriteByte(1); // Move request
+
+                    ms.Write(BitConverter.GetBytes((float)_myV.X), 0, 4);
+                    ms.Write(BitConverter.GetBytes((float)_myV.Y), 0, 4);
+
+                    var buf = ms.ToArray();
+
+                    _socket.Send(buf, 0, buf.Length);
+                }
 
                 _socket.Tick();
                 Thread.Sleep(100);
@@ -55,7 +59,7 @@ namespace ReplicatorClient
 
         public void Connect(float x, float y)
         {
-            _socket = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), this);
+            _socket = new SmartSock(ArrayPool<byte>.Shared, new ThreadSock(ArrayPool<byte>.Shared), this);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
             _socket.Receive();
@@ -77,9 +81,7 @@ namespace ReplicatorClient
 
             var sendBuffer = ms.ToArray();
 
-
-            OnNewFollower(_myId);
-            _myV = Followers.Get(_myId) as Vertex;
+            _myV = new Vertex();
             _myV.X = x;
             _myV.Y = y;
             _myV.C = brush;
@@ -87,7 +89,7 @@ namespace ReplicatorClient
             _socket.SendReliable(sendBuffer, 0, sendBuffer.Length);
         }
 
-        public void AddObject(int id, INotifyPropertyChanged follower)
+        public void AddObject(int id, Vertex follower)
         {
             if (follower == null)
             {
@@ -95,112 +97,11 @@ namespace ReplicatorClient
             }
 
             Followers.Add(id, follower);
-            //follower.PropertyChanged += FollowerPropertyChanged;
         }
-        /*
-        private void FollowerPropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            PropertyInfo propInfo = sender.GetType().GetProperty(e.PropertyName);
-            string propValue = propInfo.GetValue(sender).ToString();
-
-            Vertex follower = sender as Vertex;
-            if (follower != _myV)
-                return;
-
-            if (!Followers.ContainsKey(follower))
-            {
-                return;
-            }
-
-            int itemId = Followers.Get(follower);
-
-            try
-            {
-                //Unsubscribe because we changing it by ourselves
-                follower.PropertyChanged -= FollowerPropertyChanged;
-
-                // TODO: refactor
-                if (e.PropertyName == "X")
-                {
-                    _myV.X = float.Parse(propValue);
-                }
-                else if (e.PropertyName == "Y")
-                {
-                    _myV.Y = float.Parse(propValue);
-                }
-            }
-            catch (Exception)
-            {
-                return;
-            }
-            finally
-            {
-                //Subscribe to catch changes from other actions
-                follower.PropertyChanged += FollowerPropertyChanged;
-            }
-
-            //Connection.Send(itemId, e.PropertyName, propValue);
-        }
-        */
-        private void ApplyChanges(int from, int itemId, string propName, string propValue)
-        {
-            if (propName == "-" && propValue == "-")
-            {
-                Followers.Remove(itemId);
-
-                OnDeleteFollower(itemId);
-
-                return;
-            }
-
-            if (!Followers.ContainsKey(itemId))
-            {
-                if (OnNewFollower != null)
-                {
-                    OnNewFollower(itemId);
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            INotifyPropertyChanged follower = Followers.Get(itemId);
-
-            try
-            {
-                //Unsubscribe because we changing it by ourselves
-                //follower.PropertyChanged -= FollowerPropertyChanged;
-
-                PropertyInfo propertyInfo = follower.GetType().GetProperty(propName);
-                if (propertyInfo.PropertyType.FullName == "System.Windows.Media.Brush")
-                {
-                    Brush brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(propValue));
-                    brush.Freeze();
-                    propertyInfo.SetValue(follower, brush, null);
-                }
-                else
-                {
-                    propertyInfo.SetValue(follower, Convert.ChangeType(propValue, propertyInfo.PropertyType), null);
-                }
-            }
-            catch (Exception)
-            {
-                return;
-            }
-            finally
-            {
-                //Subscribe to catch changes from other actions
-                //follower.PropertyChanged += FollowerPropertyChanged;
-            }
-        }
-
 
         public void RemoveObject(int id)
         {
             Followers.Remove(id);
-
-            //Connection.Send(id, "-", "-");
         }
 
         public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
@@ -209,69 +110,82 @@ namespace ReplicatorClient
             // Init response
             if (packetId == 0)
             {
-                _myId = BitConverter.ToInt32(buffer, offset + 1);
-
-                if (OnNewFollower != null)
-                {
-                    OnNewFollower(_myId);
-                    Vertex follower = Followers.Get(_myId) as Vertex;
-
-                    try
-                    {
-                        //Unsubscribe because we changing it by ourselves
-                        //follower.PropertyChanged -= FollowerPropertyChanged;
-
-                        //follower.X = _myX;
-                        //follower.Y = _myY;
-
-                        //PropertyInfo xPropInfo = follower.GetType().GetProperty("X");
-                        //xPropInfo.SetValue(follower, _myX, null);
-
-                        //PropertyInfo yPropInfo = follower.GetType().GetProperty("Y");
-                        //yPropInfo.SetValue(follower, _myY, null);
-
-                        /*
-                                                if (propertyInfo.PropertyType.FullName == "System.Windows.Media.Brush")
-                                                {
-                                                    Brush brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(propValue));
-                                                    brush.Freeze();
-                                                    propertyInfo.SetValue(follower, brush, null);
-                                                }
-                                                else
-                                                {
-                                                }*/
-                    }
-                    catch (Exception)
-                    {
-                        return;
-                    }
-                    finally
-                    {
-                        //Subscribe to catch changes from other actions
-                        //follower.PropertyChanged += FollowerPropertyChanged;
-                    }
-
-                }
+                OnInitResponse(buffer, offset);
             }
             // Tick response
             else if (packetId == 1)
             {
-
+                OnTickResponse(buffer, offset);
             }
             else
             {
                 // Wrong packet
+                Console.WriteLine("Wrong packet with id {0}", packetId);
+            }
+        }
+
+        private void OnInitResponse(byte[] buffer, int offset)
+        {
+            _myId = BitConverter.ToInt32(buffer, offset + 1);
+
+            var follower = Followers.Get(_myId) as Vertex;
+
+            if (follower == null)
+            {
+                OnNewFollower(_myId);
+                follower = Followers.Get(_myId) as Vertex;
+            }
+
+            follower.X = _myV.X;
+            follower.Y = _myV.Y;
+            follower.C = _myV.C;
+
+            _myV = follower;
+
+            _initReceived = true;
+        }
+
+        private void OnTickResponse(byte[] buffer, int offset)
+        {
+            if (!_initReceived)
+                return;
+
+            var count = BitConverter.ToInt32(buffer, offset + 1);
+            for (int i = 0; i < count; ++i)
+            {
+                var id = BitConverter.ToInt32(buffer, offset + 5 + i * 15);
+                if (id == _myId)
+                    continue;
+
+                byte red = buffer[offset + 9 + i * 15];
+                byte green = buffer[offset + 10 + i * 15];
+                byte blue = buffer[offset + 11 + i * 15];
+                float x = BitConverter.ToSingle(buffer, offset + 12 + i * 15);
+                float y = BitConverter.ToSingle(buffer, offset + 16 + i * 15);
+
+                Vertex follower = Followers.Get(id) as Vertex;
+                if (follower == null)
+                {
+                    OnNewFollower(id);
+                    follower = Followers.Get(id) as Vertex;
+                    var brush = new SolidColorBrush(Color.FromArgb(255, red, green, blue));
+                    brush.Freeze();
+                    follower.C = brush;
+                }
+
+                follower.X = x;
+                follower.Y = y;
             }
         }
 
         public override void OnConnect(IPEndPoint endPoint)
         {
-            
+            Console.WriteLine("Connect");
         }
 
         public override void OnDisconnect(IPEndPoint endPoint)
         {
-            
+            Console.WriteLine("Disconnect");
         }
     }
 }

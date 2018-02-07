@@ -13,8 +13,6 @@ namespace ReplicatorClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        int LastIndex = 0;
-
         //UI
         private Point StartPoint;
         private double OriginalLeft;
@@ -31,6 +29,8 @@ namespace ReplicatorClient
 
         public MainWindow()
         {
+            ConsoleManager.Show();
+
             InitializeComponent();
 
             Replicator.OnNewFollower += AddFollower;
@@ -74,17 +74,12 @@ namespace ReplicatorClient
 
         private void AddFollower(int id)
         {
-            if (LastIndex < id)
-            {
-                LastIndex = id;
-            }
-
-            Vertex v = new Vertex();
+            var v = new Vertex();
             Vertices.Add(id, v);
 
             Replicator.AddObject(id, v);
 
-            this.Dispatcher.Invoke((Action)(() =>
+            Dispatcher.Invoke((() =>
             {
                 FrameworkElement elem = CreateVertexView(id);
 
