@@ -23,9 +23,11 @@ namespace Pixockets
         private ReceiverBase _callbacks;
 
         private Thread _sendThread;
+        private Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
         private BlockingCollection<PacketToSend> _sendQueue = new BlockingCollection<PacketToSend>();
 
         private Thread _receiveThread;
+        private Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
         private BlockingCollection<ReceivedPacket> _recvQueue = new BlockingCollection<ReceivedPacket>();
 
         private Thread _cbThread;
@@ -90,7 +92,7 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            var packet = new PacketToSend();
+            var packet = _packetToSendPool.Get();
             packet.EndPoint = endPoint;
             packet.Buffer = buffer;
             packet.Offset = offset;
@@ -113,6 +115,7 @@ namespace Pixockets
                 SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 if (packet.PutBufferToPool)
                     _buffersPool.Put(packet.Buffer);
+                _packetToSendPool.Put(packet);
             }
         }
 
@@ -122,6 +125,7 @@ namespace Pixockets
             {
                 var packet = _recvQueue.Take();
                 _callbacks.OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint);
+                _recvPacketPool.Put(packet);
             }
         }
 
@@ -136,7 +140,7 @@ namespace Pixockets
                     var bytesReceived = SysSock.ReceiveFrom(buffer, ref remoteEP);
                     if (bytesReceived > 0)
                     {
-                        var packet = new ReceivedPacket();
+                        var packet = _recvPacketPool.Get();
                         packet.Buffer = buffer;
                         packet.Offset = 0;
                         packet.Length = bytesReceived;
@@ -145,9 +149,10 @@ namespace Pixockets
                         _recvQueue.Add(packet);
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     // TODO: do something
+                    Console.WriteLine("Error sending packet: {0}", e.Message);
                 }
             }
         }
