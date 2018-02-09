@@ -3,7 +3,6 @@ using Pixockets;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 using UnitTests.Mock;
 
@@ -62,11 +61,7 @@ namespace UnitTests
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
             Assert.AreEqual(0, bufferPool.Rented.Count);
-            for (int i = 0; i < 1000; ++i)
-            {
-                if (bufferPool.Rented.Count == 0)
-                    Thread.Sleep(1);
-            }
+            Utils.WaitOnSet(bufferPool.Returned);
             Assert.AreEqual(1, bufferPool.Returned.Count);
             Assert.AreEqual(1, bufferPool.Alien);
         }
