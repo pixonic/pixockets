@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
-using System.Buffers;
 using System.IO;
 using System.Net;
 using UnitTests.Mock;
@@ -21,7 +20,8 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            _sock = new SmartSock(ArrayPool<byte>.Shared, _bareSock, _cbs);
+            var bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
             _endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
         }
 

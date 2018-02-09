@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 
@@ -24,14 +23,14 @@ namespace Pixockets
         private SmartReceiverBase _callbacks;
         private object _syncObj = new object();
         private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
-        private readonly ArrayPool<byte> _buffersPool;
+        private readonly BufferPoolBase _buffersPool;
         private readonly Pool<FragmentedPacket> _fragPacketsPool = new Pool<FragmentedPacket>();
         private readonly Pool<SequenceState> _seqStatesPool = new Pool<SequenceState>();
         private readonly Pool<PacketHeader> _headersPool = new Pool<PacketHeader>();
 
         private readonly List<KeyValuePair<IPEndPoint, SequenceState>> _toDelete = new List<KeyValuePair<IPEndPoint, SequenceState>>();
 
-        public SmartSock(ArrayPool<byte> buffersPool, SockBase subSock, SmartReceiverBase callbacks)
+        public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
             _buffersPool = buffersPool;
             subSock.SetCallbacks(this);
@@ -320,7 +319,7 @@ namespace Pixockets
             var headLen = header.HeaderLength;
             header.Length = (ushort)(headLen + length);
             var fullLength = length + headLen;
-            var fullBuffer = _buffersPool.Rent(fullLength);
+            var fullBuffer = _buffersPool.Get(fullLength);
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
             Array.Copy(buffer, offset, fullBuffer, headLen, length);
@@ -346,7 +345,7 @@ namespace Pixockets
             header.SetAck(seqNum);
             header.Length = (ushort)header.HeaderLength;
 
-            var buffer = _buffersPool.Rent(header.Length);
+            var buffer = _buffersPool.Get(header.Length);
             header.WriteTo(buffer, 0);
 
             SubSock.Send(endPoint, buffer, 0, header.Length, true);

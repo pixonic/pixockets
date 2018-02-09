@@ -2,7 +2,6 @@
 using System;
 using System.Windows.Media;
 using System.Net;
-using System.Buffers;
 using System.Threading;
 using System.IO;
 using System.Collections.Generic;
@@ -62,7 +61,8 @@ namespace ReplicatorClient
 
         public void Connect(float x, float y)
         {
-            _socket = new SmartSock(ArrayPool<byte>.Shared, new ThreadSock(ArrayPool<byte>.Shared), this);
+            var bufferPool = new CoreBufferPool();
+            _socket = new SmartSock(bufferPool, new ThreadSock(bufferPool), this);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
             _socket.Receive();

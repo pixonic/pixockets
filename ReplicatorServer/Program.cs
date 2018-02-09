@@ -1,5 +1,4 @@
 ﻿using Pixockets;
-using System.Buffers;
 using System.Threading;
 
 namespace ReplicatorServer
@@ -9,7 +8,8 @@ namespace ReplicatorServer
         static void Main(string[] args)
         {
             var callbacks = new ReplServ();
-            var sock = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), callbacks);
+            var bufferPool = new CoreBufferPool();
+            var sock = new SmartSock(bufferPool, new BareSock(bufferPool), callbacks);
             callbacks.SetSocket(sock);
 
             sock.Receive(2345);

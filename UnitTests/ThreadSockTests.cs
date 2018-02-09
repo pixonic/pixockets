@@ -1,7 +1,6 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
-using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -15,14 +14,16 @@ namespace UnitTests
         [Test]
         public void ThreadSocketCreated()
         {
-            var sock = new ThreadSock(ArrayPool<byte>.Shared);
+            var bufferPool = new CoreBufferPool();
+            var sock = new ThreadSock(bufferPool);
         }
 
         [Test]
         public void ThreadSockReceive()
         {
             MockCallbacks cbs = new MockCallbacks();
-            var sock = new ThreadSock(ArrayPool<byte>.Shared);
+            var bufferPool = new CoreBufferPool();
+            var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
             sock.Receive(23466);
 
@@ -45,7 +46,8 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             MockCallbacks cbs = new MockCallbacks();
-            var sock = new ThreadSock(ArrayPool<byte>.Shared);
+            var bufferPool = new CoreBufferPool();
+            var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
 
             sock.Send(new IPEndPoint(IPAddress.Loopback, 23467), BitConverter.GetBytes(123456789), 0, 4, true);
@@ -59,12 +61,13 @@ namespace UnitTests
         [Test]
         public void ThreadSockConnectAndReceiveFrom()
         {
-            UdpClient udpClient = new UdpClient(23458);
+            UdpClient udpClient = new UdpClient(23468);
 
             MockCallbacks cbs = new MockCallbacks();
-            var sock = new ThreadSock(ArrayPool<byte>.Shared);
+            var bufferPool = new CoreBufferPool();
+            var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
-            sock.Connect(IPAddress.Loopback, 23458);
+            sock.Connect(IPAddress.Loopback, 23468);
             sock.Receive();
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)sock.SysSock.LocalEndPoint);

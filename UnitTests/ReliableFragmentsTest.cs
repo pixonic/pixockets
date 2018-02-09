@@ -21,7 +21,8 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            _sock = new SmartSock(ArrayPool<byte>.Shared, _bareSock, _cbs);
+            var bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
         }
 
         [Test]

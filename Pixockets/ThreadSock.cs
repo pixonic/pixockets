@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
@@ -17,7 +16,7 @@ namespace Pixockets
 
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-        private ArrayPool<byte> _buffersPool;
+        private BufferPoolBase _buffersPool;
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
@@ -34,7 +33,7 @@ namespace Pixockets
         private object _syncObj = new object();
 
 
-        public ThreadSock(ArrayPool<byte> buffersPool)
+        public ThreadSock(BufferPoolBase buffersPool)
         {
             SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
@@ -113,7 +112,7 @@ namespace Pixockets
                 var packet = _sendQueue.Take();
                 SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 if (packet.PutBufferToPool)
-                    _buffersPool.Return(packet.Buffer);
+                    _buffersPool.Put(packet.Buffer);
             }
         }
 
@@ -130,7 +129,7 @@ namespace Pixockets
         {
             while (true)
             {
-                var buffer = _buffersPool.Rent(MTU);
+                var buffer = _buffersPool.Get(MTU);
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {

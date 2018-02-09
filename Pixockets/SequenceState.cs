@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 
@@ -22,13 +21,13 @@ namespace Pixockets
 
         private Pool<NotAckedPacket> _notAckedPool;
         private Pool<FragmentedPacket> _fragPacketsPool;
-        private ArrayPool<byte> _buffersPool;
+        private BufferPoolBase _buffersPool;
 
         public SequenceState()
         {
         }
 
-        public void Init(ArrayPool<byte> buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<NotAckedPacket> notAckedPool)
+        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<NotAckedPacket> notAckedPool)
         {
             _buffersPool = buffersPool;
             _fragPacketsPool = fragPacketsPool;
@@ -123,14 +122,14 @@ namespace Pixockets
                     fullLength += frag.Buffers[i].Length;
                 }
 
-                combinedBuffer = _buffersPool.Rent(fullLength);
+                combinedBuffer = _buffersPool.Get(fullLength);
                 var targetOffset = 0;
                 for (int i = 0; i < buffersCount; ++i)
                 {
                     var srcBuffer = frag.Buffers[i];
                     Array.Copy(srcBuffer.Buffer, srcBuffer.Offset, combinedBuffer, targetOffset, srcBuffer.Length);
                     targetOffset += frag.Buffers[i].Length;
-                    _buffersPool.Return(srcBuffer.Buffer);
+                    _buffersPool.Put(srcBuffer.Buffer);
                 }
 
                 // TODO: optimize?
@@ -190,7 +189,7 @@ namespace Pixockets
                     if (packet.SeqNum == ack)
                     {
                         _notAcked.RemoveAt(i);
-                        _buffersPool.Return(packet.Buffer);
+                        _buffersPool.Put(packet.Buffer);
                         _notAckedPool.Put(packet);
                         break;
                     }
@@ -206,7 +205,7 @@ namespace Pixockets
                 for (int i = 0; i < notAckedCount; ++i)
                 {
                     var packet = _notAcked[i];
-                    _buffersPool.Return(packet.Buffer);
+                    _buffersPool.Put(packet.Buffer);
                     _notAckedPool.Put(packet);
                 }
                 _notAcked.Clear();

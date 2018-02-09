@@ -1,6 +1,5 @@
 ﻿using Pixockets;
 using System;
-using System.Buffers;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -12,7 +11,8 @@ namespace TestClient
         static void Main(string[] args)
         {
             var callbacks = new PrintingReceiver();
-            var sock = new SmartSock(ArrayPool<byte>.Shared, new BareSock(ArrayPool<byte>.Shared), callbacks);
+            var bufferPool = new CoreBufferPool();
+            var sock = new SmartSock(bufferPool, new BareSock(bufferPool), callbacks);
             var address = args[0];
 
             callbacks.Connecting = true;
