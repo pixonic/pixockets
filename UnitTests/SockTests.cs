@@ -3,6 +3,7 @@ using Pixockets;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using UnitTests.Mock;
 
@@ -14,15 +15,17 @@ namespace UnitTests
         [Test]
         public void SocketCreated()
         {
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             var sock = new BareSock(bufferPool);
+            Assert.AreEqual(0, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
 
         [Test]
         public void SockReceive()
         {
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             BareSock sock = new BareSock(bufferPool);
             sock.SetCallbacks(cbs);
             sock.Receive(23456);
@@ -37,6 +40,8 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
             Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
 
         [Test]
@@ -46,7 +51,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             BareSock sock = new BareSock(bufferPool);
             sock.SetCallbacks(cbs);
 
@@ -56,6 +61,14 @@ namespace UnitTests
 
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+            Assert.AreEqual(0, bufferPool.Rented.Count);
+            for (int i = 0; i < 1000; ++i)
+            {
+                if (bufferPool.Rented.Count == 0)
+                    Thread.Sleep(1);
+            }
+            Assert.AreEqual(1, bufferPool.Returned.Count);
+            Assert.AreEqual(1, bufferPool.Alien);
         }
 
         [Test]
@@ -64,7 +77,7 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23458);
 
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             BareSock sock = new BareSock(bufferPool);
             sock.SetCallbacks(cbs);
             sock.Connect(IPAddress.Loopback, 23458);
@@ -78,6 +91,8 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
             Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
     }
 }

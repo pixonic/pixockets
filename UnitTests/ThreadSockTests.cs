@@ -14,15 +14,17 @@ namespace UnitTests
         [Test]
         public void ThreadSocketCreated()
         {
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             var sock = new ThreadSock(bufferPool);
+            Assert.AreEqual(0, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
 
         [Test]
         public void ThreadSockReceive()
         {
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
             sock.Receive(23466);
@@ -37,6 +39,8 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
             Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
 
         [Test]
@@ -46,7 +50,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
 
@@ -56,6 +60,9 @@ namespace UnitTests
 
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+            Assert.AreEqual(0, bufferPool.Rented.Count);
+            Assert.AreEqual(1, bufferPool.Returned.Count);
+            Assert.AreEqual(1, bufferPool.Alien);
         }
 
         [Test]
@@ -64,7 +71,7 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23468);
 
             MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new CoreBufferPool();
+            var bufferPool = new MockBufferPool();
             var sock = new ThreadSock(bufferPool);
             sock.SetCallbacks(cbs);
             sock.Connect(IPAddress.Loopback, 23468);
@@ -78,6 +85,8 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
             Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
             Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, bufferPool.Rented.Count);
+            Assert.AreEqual(0, bufferPool.Returned.Count);
         }
     }
 }

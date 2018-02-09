@@ -45,6 +45,7 @@
   <ItemGroup>
     <Compile Include="ConnectionTests.cs" />
     <Compile Include="DeltaTests.cs" />
+    <Compile Include="Mock\MockBufferPool.cs" />
     <Compile Include="Mock\MockSmartCallbacks.cs" />
     <Compile Include="Mock\MockCallbacks.cs" />
     <Compile Include="Mock\MockSock.cs" />
