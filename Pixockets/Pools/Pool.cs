@@ -4,7 +4,8 @@ namespace Pixockets
 {
     public class Pool<T> where T: class, IPoolable, new()
     {
-        private ConcurrentStack<T> _stack = new ConcurrentStack<T>();
+        private readonly ConcurrentStack<T> _stack = new ConcurrentStack<T>();
+
         public T Get()
         {
             T result;
