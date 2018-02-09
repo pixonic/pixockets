@@ -6,7 +6,8 @@ namespace Pixockets
     // SocketAsyncEventArgsPool
     public class SAEAPool
     {
-        private ConcurrentStack<SocketAsyncEventArgs> _stack = new ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly ConcurrentStack<SocketAsyncEventArgs> _stack = new ConcurrentStack<SocketAsyncEventArgs>();
+
         public SocketAsyncEventArgs Get()
         {
             SocketAsyncEventArgs result;

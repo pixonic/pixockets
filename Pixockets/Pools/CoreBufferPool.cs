@@ -4,7 +4,7 @@ namespace Pixockets
 {
     public class CoreBufferPool : BufferPoolBase
     {
-        private ArrayPool<byte> _arrayPool = new DefaultArrayPool<byte>();
+        private readonly ArrayPool<byte> _arrayPool = new DefaultArrayPool<byte>();
 
         public override byte[] Get(int minLen)
         {
