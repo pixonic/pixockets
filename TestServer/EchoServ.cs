@@ -35,7 +35,7 @@ namespace TestServer
 
             if (!_clients.TryGetValue(endPoint, out cliVal))
             {
-                Console.WriteLine("!!! Received packet from not connected !!!: {0}:{1}:{2}", endPoint.Address, endPoint.Port, _clients[endPoint]);
+                Console.WriteLine("!!! Received packet from not connected !!!: {0}:{1}", endPoint.Address, endPoint.Port);
                 return;
             }
 
