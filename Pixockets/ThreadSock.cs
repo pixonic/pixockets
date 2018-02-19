@@ -16,23 +16,23 @@ namespace Pixockets
 
         private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-        private BufferPoolBase _buffersPool;
+        private readonly BufferPoolBase _buffersPool;
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
         private ReceiverBase _callbacks;
 
-        private Thread _sendThread;
-        private Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
-        private BlockingCollection<PacketToSend> _sendQueue = new BlockingCollection<PacketToSend>();
+        private readonly Thread _sendThread;
+        private readonly Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
+        private readonly BlockingCollection<PacketToSend> _sendQueue = new BlockingCollection<PacketToSend>();
 
-        private Thread _receiveThread;
-        private Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
-        private BlockingCollection<ReceivedPacket> _recvQueue = new BlockingCollection<ReceivedPacket>();
+        private readonly Thread _receiveThread;
+        private readonly Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
+        private readonly BlockingCollection<ReceivedPacket> _recvQueue = new BlockingCollection<ReceivedPacket>();
 
-        private Thread _cbThread;
+        private readonly Thread _cbThread;
 
-        private object _syncObj = new object();
+        private readonly object _syncObj = new object();
 
 
         public ThreadSock(BufferPoolBase buffersPool)
