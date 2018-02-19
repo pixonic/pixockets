@@ -20,7 +20,7 @@ namespace System.Buffers
             private readonly T[][] _buffers;
             private readonly int _poolId;
 
-            private SpinLock _lock; // do not make this readonly; it's a mutable struct
+            private readonly object _syncObj = new object();
             private int _index;
 
 #if DEBUG
@@ -31,14 +31,13 @@ namespace System.Buffers
             /// </summary>
             internal Bucket(int bufferLength, int numberOfBuffers, int poolId)
             {
-                _lock = new SpinLock(Debugger.IsAttached); // only enable thread tracking if debugger is attached; it adds non-trivial overheads to Enter/Exit
                 _buffers = new T[numberOfBuffers][];
                 _bufferLength = bufferLength;
                 _poolId = poolId;
             }
 
             /// <summary>Gets an ID for the bucket to use with events.</summary>
-            internal int Id => GetHashCode();
+            private int Id { get { return GetHashCode(); } }
 
             /// <summary>Takes an array from the bucket.  If the bucket is empty, returns null.</summary>
             internal T[] Rent()
@@ -48,23 +47,17 @@ namespace System.Buffers
 
                 // While holding the lock, grab whatever is at the next available index and
                 // update the index.  We do as little work as possible while holding the spin
-                // lock to minimize contention with other threads.  The try/finally is
-                // necessary to properly handle thread aborts on platforms which have them.
-                bool lockTaken = false, allocateBuffer = false;
-                try
-                {
-                    _lock.Enter(ref lockTaken);
+                // lock to minimize contention with other threads.
+                bool allocateBuffer = false;
 
+                lock (_syncObj)
+                {
                     if (_index < buffers.Length)
                     {
                         buffer = buffers[_index];
                         buffers[_index++] = null;
                         allocateBuffer = buffer == null;
                     }
-                }
-                finally
-                {
-                    if (lockTaken) _lock.Exit(false);
                 }
 
                 // While we were holding the lock, we grabbed whatever was at the next available index, if
@@ -112,19 +105,12 @@ namespace System.Buffers
                 // put the buffer into the next available slot.  Otherwise, we just drop it.
                 // The try/finally is necessary to properly handle thread aborts on platforms
                 // which have them.
-                bool lockTaken = false;
-                try
+                lock (_syncObj)
                 {
-                    _lock.Enter(ref lockTaken);
-
                     if (_index != 0)
                     {
                         _buffers[--_index] = array;
                     }
-                }
-                finally
-                {
-                    if (lockTaken) _lock.Exit(false);
                 }
             }
         }

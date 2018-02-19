@@ -9,7 +9,6 @@ namespace System.Buffers
 {
     internal static class Utilities
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int SelectBucketIndex(int bufferSize)
         {
             Debug.Assert(bufferSize > 0);
@@ -26,7 +25,6 @@ namespace System.Buffers
             return poolIndex + (int)bitsRemaining;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int GetMaxSizeForBucket(int binIndex)
         {
             int maxSize = 16 << binIndex;

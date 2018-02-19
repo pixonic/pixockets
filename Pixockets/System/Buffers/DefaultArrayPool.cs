@@ -23,11 +23,11 @@ namespace System.Buffers
         {
             if (maxArrayLength <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxArrayLength));
+                throw new ArgumentOutOfRangeException("maxArrayLength");
             }
             if (maxArraysPerBucket <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxArraysPerBucket));
+                throw new ArgumentOutOfRangeException("maxArraysPerBucket");
             }
 
             // Our bucketing algorithm has a min length of 2^4 and a max length of 2^30.
@@ -54,7 +54,7 @@ namespace System.Buffers
         }
 
         /// <summary>Gets an ID for the pool to use with events.</summary>
-        private int Id => GetHashCode();
+        private int Id { get { return GetHashCode(); } }
 
         public override T[] Rent(int minimumLength)
         {
@@ -63,7 +63,7 @@ namespace System.Buffers
             // to be usable in general instead of using `new`, even for computed lengths.
             if (minimumLength < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(minimumLength));
+                throw new ArgumentOutOfRangeException("minimumLength");
             }
             else if (minimumLength == 0)
             {
@@ -110,7 +110,7 @@ namespace System.Buffers
         {
             if (array == null)
             {
-                throw new ArgumentNullException(nameof(array));
+                throw new ArgumentNullException("array");
             }
             else if (array.Length == 0)
             {
