@@ -156,5 +156,12 @@ namespace Pixockets
                 }
             }
         }
+
+        public override void Close()
+        {
+            _sendThread.Abort();
+            _receiveThread.Abort();
+            _cbThread.Abort();
+        }
     }
 }

@@ -8,7 +8,7 @@ namespace Pixockets
     {
         public int ConnectionTimeout = 10000;
         public int AckTimeout = 1000;
-        public int MaxPayload = BareSock.MTU - 100;
+        public int MaxPayload = 1100;  // Shold be less than SubSock.MTU - HeaderLength
         public int FragmentTimeout = 1000;
 
         private const int DeltaThreshold = 1000000000;
