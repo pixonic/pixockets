@@ -4,12 +4,11 @@
 
 
 #if DEBUG
+using System;
 using System.Collections.Generic;
 #endif
-using System.Diagnostics;
-using System.Threading;
 
-namespace System.Buffers
+namespace Core.Buffers
 {
     internal sealed partial class DefaultArrayPool<T> : ArrayPool<T>
     {

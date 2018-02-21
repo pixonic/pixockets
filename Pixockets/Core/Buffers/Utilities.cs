@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
-namespace System.Buffers
+namespace Core.Buffers
 {
     internal static class Utilities
     {

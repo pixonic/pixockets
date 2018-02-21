@@ -61,10 +61,10 @@
     <Compile Include="ReceiverBase.cs" />
     <Compile Include="PacketHeader.cs" />
     <Compile Include="SmartSock.cs" />
-    <Compile Include="System\Buffers\ArrayPool.cs" />
-    <Compile Include="System\Buffers\DefaultArrayPool.cs" />
-    <Compile Include="System\Buffers\DefaultArrayPoolBucket.cs" />
-    <Compile Include="System\Buffers\Utilities.cs" />
+    <Compile Include="Core\Buffers\ArrayPool.cs" />
+    <Compile Include="Core\Buffers\DefaultArrayPool.cs" />
+    <Compile Include="Core\Buffers\DefaultArrayPoolBucket.cs" />
+    <Compile Include="Core\Buffers\Utilities.cs" />
     <Compile Include="ThreadSock.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+﻿using Core.Buffers;
 
 namespace Pixockets
 {
