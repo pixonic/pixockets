@@ -55,6 +55,8 @@
     <Compile Include="ReliableSendTests.cs" />
     <Compile Include="SequenceTests.cs" />
     <Compile Include="SmartSockTests.cs" />
+    <Compile Include="ThreadSafeQueueTests.cs" />
+    <Compile Include="ThreadSafeStackTests.cs" />
     <Compile Include="ThreadSockTests.cs" />
     <Compile Include="SockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -24,11 +23,11 @@ namespace Pixockets
 
         private readonly Thread _sendThread;
         private readonly Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
-        private readonly BlockingCollection<PacketToSend> _sendQueue = new BlockingCollection<PacketToSend>();
+        private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
         private readonly Thread _receiveThread;
         private readonly Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
-        private readonly BlockingCollection<ReceivedPacket> _recvQueue = new BlockingCollection<ReceivedPacket>();
+        private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private readonly Thread _cbThread;
 

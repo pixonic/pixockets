@@ -1,12 +1,11 @@
-﻿using System.Collections.Concurrent;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 
 namespace Pixockets
 {
     // SocketAsyncEventArgsPool
     public class SAEAPool
     {
-        private readonly ConcurrentStack<SocketAsyncEventArgs> _stack = new ConcurrentStack<SocketAsyncEventArgs>();
+        private readonly ThreadSafeStack<SocketAsyncEventArgs> _stack = new ThreadSafeStack<SocketAsyncEventArgs>();
 
         public SocketAsyncEventArgs Get()
         {

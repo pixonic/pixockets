@@ -1,10 +1,9 @@
-﻿using System.Collections.Concurrent;
-
+﻿
 namespace Pixockets
 {
     public class Pool<T> where T: class, IPoolable, new()
     {
-        private readonly ConcurrentStack<T> _stack = new ConcurrentStack<T>();
+        private readonly ThreadSafeStack<T> _stack = new ThreadSafeStack<T>();
 
         public T Get()
         {
