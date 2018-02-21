@@ -11,36 +11,51 @@ namespace UnitTests
     [TestFixture]
     public class ThreadSockTests
     {
+        private MockCallbacks _cbs;
+        private MockBufferPool _bufferPool;
+        private ThreadSock _sock;
+
+        [SetUp]
+        public void Setup()
+        {
+            _cbs = new MockCallbacks();
+            _bufferPool = new MockBufferPool();
+            _sock = new ThreadSock(_bufferPool);
+            _sock.SetCallbacks(_cbs);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
+        }
+
         [Test]
         public void ThreadSocketCreated()
         {
-            var bufferPool = new MockBufferPool();
-            var sock = new ThreadSock(bufferPool);
-            Assert.AreEqual(0, bufferPool.Rented.Count);
-            Assert.AreEqual(0, bufferPool.Returned.Count);
+            Assert.AreEqual(0, _bufferPool.Rented.Count);
+            Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
 
         [Test]
         public void ThreadSockReceive()
         {
-            MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new MockBufferPool();
-            var sock = new ThreadSock(bufferPool);
-            sock.SetCallbacks(cbs);
-            sock.Receive(23466);
+            _sock.Receive(23466);
+            Assert.AreEqual(IPAddress.Any, _sock.LocalEndPoint.Address);
+            Assert.AreEqual(23466, _sock.LocalEndPoint.Port);
 
             UdpClient udpClient = new UdpClient();
             udpClient.Connect(IPAddress.Loopback, 23466);
             udpClient.Send(BitConverter.GetBytes(123456789), 4);
 
-            Utils.WaitOnReceive(cbs);
+            Utils.WaitOnReceive(_cbs);
 
-            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
-            Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
-            Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
-            Assert.AreEqual(2, bufferPool.Rented.Count);
-            Assert.AreEqual(0, bufferPool.Returned.Count);
+            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, 0));
+            Assert.AreEqual(0, _cbs.OnReceiveCalls[0].Offset);
+            Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
 
         [Test]
@@ -49,20 +64,34 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23467);
             var receiveTask = udpClient.ReceiveAsync();
 
-            MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new MockBufferPool();
-            var sock = new ThreadSock(bufferPool);
-            sock.SetCallbacks(cbs);
-
-            sock.Send(new IPEndPoint(IPAddress.Loopback, 23467), BitConverter.GetBytes(123456789), 0, 4, true);
+            // Send to specified EndPoint, don't put buffer to pool
+            var sendEP = new IPEndPoint(IPAddress.Loopback, 23467);
+            _sock.Send(sendEP, BitConverter.GetBytes(123456789), 0, 4, false);
 
             receiveTask.Wait(1000);
 
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
-            Assert.AreEqual(0, bufferPool.Rented.Count);
-            Assert.AreEqual(1, bufferPool.Returned.Count);
-            Assert.AreEqual(1, bufferPool.Alien);
+            Assert.AreEqual(0, _bufferPool.Rented.Count);
+            Assert.AreEqual(0, _bufferPool.Returned.Count);
+            Assert.AreEqual(0, _bufferPool.Alien);
+
+            receiveTask = udpClient.ReceiveAsync();
+
+            // Send to already connected EndPoint, get buffer from pool
+            _sock.Connect(sendEP.Address, sendEP.Port);
+            var buf = _bufferPool.Get(4);
+            Array.Copy(BitConverter.GetBytes(123456789), buf, 4);
+            _sock.Send(buf, 0, 4, true);
+
+            receiveTask.Wait(1000);
+
+            Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+            Assert.AreEqual(1, _bufferPool.Rented.Count);
+            Utils.WaitOnSet(_bufferPool.Returned);
+            Assert.AreEqual(1, _bufferPool.Returned.Count);
+            Assert.AreEqual(0, _bufferPool.Alien);
         }
 
         [Test]
@@ -70,23 +99,27 @@ namespace UnitTests
         {
             UdpClient udpClient = new UdpClient(23468);
 
-            MockCallbacks cbs = new MockCallbacks();
-            var bufferPool = new MockBufferPool();
-            var sock = new ThreadSock(bufferPool);
-            sock.SetCallbacks(cbs);
-            sock.Connect(IPAddress.Loopback, 23468);
-            sock.Receive();
+            _sock.Connect(IPAddress.Loopback, 23468);
+            _sock.Receive();
 
-            udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)sock.SysSock.LocalEndPoint);
+            udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 
-            Utils.WaitOnReceive(cbs);
+            Utils.WaitOnReceive(_cbs);
 
-            Assert.AreEqual(1, cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(cbs.OnReceiveCalls[0].Buffer, 0));
-            Assert.AreEqual(0, cbs.OnReceiveCalls[0].Offset);
-            Assert.AreEqual(4, cbs.OnReceiveCalls[0].Length);
-            Assert.AreEqual(2, bufferPool.Rented.Count);
-            Assert.AreEqual(0, bufferPool.Returned.Count);
+            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, 0));
+            Assert.AreEqual(0, _cbs.OnReceiveCalls[0].Offset);
+            Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            Assert.AreEqual(0, _bufferPool.Returned.Count);
+        }
+
+
+        [Test]
+        public void ThreadSockReceiveError()
+        {
+            _sock.Receive();
+            // TODO: check error
         }
     }
 }
