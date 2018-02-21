@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-using System.Threading;
-
 namespace System.Buffers
 {
     /// <summary>
@@ -22,33 +19,6 @@ namespace System.Buffers
     /// </remarks>
     public abstract class ArrayPool<T>
     {
-        /// <summary>
-        /// Creates a new <see cref="ArrayPool{T}"/> instance using default configuration options.
-        /// </summary>
-        /// <returns>A new <see cref="ArrayPool{T}"/> instance.</returns>
-        public static ArrayPool<T> Create()
-        {
-            return new DefaultArrayPool<T>();
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="ArrayPool{T}"/> instance using custom configuration options.
-        /// </summary>
-        /// <param name="maxArrayLength">The maximum length of array instances that may be stored in the pool.</param>
-        /// <param name="maxArraysPerBucket">
-        /// The maximum number of array instances that may be stored in each bucket in the pool.  The pool
-        /// groups arrays of similar lengths into buckets for faster access.
-        /// </param>
-        /// <returns>A new <see cref="ArrayPool{T}"/> instance with the specified configuration options.</returns>
-        /// <remarks>
-        /// The created pool will group arrays into buckets, with no more than <paramref name="maxArraysPerBucket"/>
-        /// in each bucket and with those arrays not exceeding <paramref name="maxArrayLength"/> in length.
-        /// </remarks>
-        public static ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket)
-        {
-            return new DefaultArrayPool<T>(maxArrayLength, maxArraysPerBucket);
-        }
-
         /// <summary>
         /// Retrieves a buffer that is at least the requested length.
         /// </summary>
