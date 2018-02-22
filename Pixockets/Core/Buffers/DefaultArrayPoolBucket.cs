@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-#if DEBUG
 using System;
-using System.Collections.Generic;
-#endif
 
 namespace Core.Buffers
 {
-    internal sealed partial class DefaultArrayPool<T> : ArrayPool<T>
+    internal sealed partial class DefaultArrayPool<T>: ArrayPool<T>
     {
         /// <summary>Provides a thread-safe bucket containing buffers that can be Rent'd and Return'd.</summary>
         private sealed class Bucket
@@ -22,9 +18,6 @@ namespace Core.Buffers
             private readonly object _syncObj = new object();
             private int _index;
 
-#if DEBUG
-            private readonly HashSet<T[]> _unique = new HashSet<T[]>();
-#endif
             /// <summary>
             /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
             /// </summary>
@@ -66,12 +59,7 @@ namespace Core.Buffers
                 {
                     buffer = new T[_bufferLength];
                 }
-#if DEBUG
-                lock (_unique)
-                {
-                    _unique.Remove(buffer);
-                }
-#endif
+
                 return buffer;
             }
 
@@ -86,20 +74,9 @@ namespace Core.Buffers
                 if (array.Length != _bufferLength)
                 {
                     // Just ignore alien buffers
-                    //throw new ArgumentException("BufferNotFromPool", nameof(array));
-                    return;
+                    throw new ArgumentException("BufferNotFromPool", "array");
                 }
-#if DEBUG
-                lock (_unique)
-                {
-                    if (_unique.Contains(array))
-                    {
-                        throw new ArgumentException("Double return of size " + array.Length);
-                    }
 
-                    _unique.Add(array);
-                }
-#endif
                 // While holding the spin lock, if there's room available in the bucket,
                 // put the buffer into the next available slot.  Otherwise, we just drop it.
                 // The try/finally is necessary to properly handle thread aborts on platforms

@@ -12,6 +12,7 @@ namespace UnitTests
     public class ReliableFragmentsTest
     {
         MockSmartCallbacks _cbs;
+        CoreBufferPool _bufferPool;
         MockSock _bareSock;
         SmartSock _sock;
 
@@ -20,8 +21,8 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            var bufferPool = new CoreBufferPool();
-            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
+            _bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
         }
 
         [Test]
@@ -62,10 +63,10 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -76,12 +77,12 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
             // Duplicate
-            _bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer1.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -92,10 +93,10 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -105,49 +106,49 @@ namespace UnitTests
         {
             _sock.FragmentTimeout = 1;
 
-            byte[] buffer1 = CreateFirstFragment();
+            var buffer1 = CreateFirstFragment();
 
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
-            _bareSock.Callbacks.OnReceive(buffer1, 0, buffer1.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
-            byte[] buffer2 = CreateSecondFragment();
+            var buffer2 = CreateSecondFragment();
 
             Thread.Sleep(20);
             _sock.Tick();
 
-            _bareSock.Callbacks.OnReceive(buffer2, 0, buffer2.Length, remoteEndPoint);
+            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             // Make sure nothing received
             Assert.AreEqual(0, _cbs.OnReceiveCalls.Count);
         }
 
-        private static byte[] CreateFirstFragment()
+        private ArraySegment<byte> CreateFirstFragment()
         {
             var header = new PacketHeader();
             header.SetNeedAck();
             header.SetSeqNum(100);
             header.SetFrag(3, 0, 2);
             header.Length = (ushort)(header.HeaderLength + 3);
-            var ms = new MemoryStream();
-            header.WriteTo(ms);
-            ms.Write(BitConverter.GetBytes((ushort)12345), 0, 2);
-            ms.Write(new byte[] { 77 }, 0, 1);
-            var buffer1 = ms.ToArray();
-            return buffer1;
+            var buffer = _bufferPool.Get(header.Length);
+            header.WriteTo(buffer, 0);
+            Array.Copy(BitConverter.GetBytes((ushort)12345), 0, buffer, header.HeaderLength, 2);
+            buffer[header.HeaderLength + 2] = 77;
+
+            return new ArraySegment<byte>(buffer, 0, header.Length);
         }
 
-        private static byte[] CreateSecondFragment()
+        private ArraySegment<byte> CreateSecondFragment()
         {
             var header = new PacketHeader();
             header.SetNeedAck();
             header.SetSeqNum(101);
             header.SetFrag(3, 1, 2);
             header.Length = (ushort)(header.HeaderLength + 2);
-            var ms = new MemoryStream();
-            header.WriteTo(ms);
-            ms.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
-            var buffer = ms.ToArray();
-            return buffer;
+            var buffer = _bufferPool.Get(header.Length);
+            header.WriteTo(buffer, 0);
+            Array.Copy(BitConverter.GetBytes((ushort)23456), 0, buffer, header.HeaderLength, 2);
+
+            return new ArraySegment<byte>(buffer, 0, header.Length);
         }
 
         private void AssertCombinedPacketReceived()
