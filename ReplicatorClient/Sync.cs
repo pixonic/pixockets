@@ -27,6 +27,7 @@ namespace ReplicatorClient
         private Vertex _myV;
         private HashSet<int> _idsReceived = new HashSet<int>();
         private List<int> _idsToDelete = new List<int>();
+        private CoreBufferPool _bufferPool = new CoreBufferPool();
 
         public void Start(float x, float y)
         {
@@ -55,14 +56,27 @@ namespace ReplicatorClient
                 }
 
                 _socket.Tick();
+                while (true)
+                {
+                    var packet = _socket.ReceiveFrom();
+                    if (packet != null)
+                    {
+                        OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
+                        _bufferPool.Put(packet.Buffer);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
                 Thread.Sleep(100);
             }
         }
 
         public void Connect(float x, float y)
         {
-            var bufferPool = new CoreBufferPool();
-            _socket = new SmartSock(bufferPool, new ThreadSock(bufferPool), this);
+            //var bufferPool = new CoreBufferPool();
+            _socket = new SmartSock(_bufferPool, new ThreadSock(_bufferPool), this);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
             _socket.Receive();
@@ -107,7 +121,7 @@ namespace ReplicatorClient
             Followers.Remove(id);
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
+        private void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
             byte packetId = buffer[offset];
             // Init response

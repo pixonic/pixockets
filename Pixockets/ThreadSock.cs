@@ -29,8 +29,6 @@ namespace Pixockets
         private readonly Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
-        private readonly Thread _cbThread;
-
         private readonly object _syncObj = new object();
 
 
@@ -44,9 +42,6 @@ namespace Pixockets
             _sendThread.Start();
             _receiveThread = new Thread(new ThreadStart(ReceiveLoop));
             _receiveThread.IsBackground = true;
-            _cbThread = new Thread(new ThreadStart(ReceiveCallbacksLoop));
-            _cbThread.IsBackground = true;
-            _cbThread.Start();
         }
 
         public override void Connect(IPAddress address, int port)
@@ -118,16 +113,6 @@ namespace Pixockets
             }
         }
 
-        private void ReceiveCallbacksLoop()
-        {
-            while (true)
-            {
-                var packet = _recvQueue.Take();
-                _callbacks.OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint);
-                _recvPacketPool.Put(packet);
-            }
-        }
-
         private void ReceiveLoop()
         {
             while (true)
@@ -156,11 +141,21 @@ namespace Pixockets
             }
         }
 
+        public override ReceivedPacket ReceiveFrom()
+        {
+            ReceivedPacket result;
+            if (_recvQueue.TryTake(out result))
+            {
+                return result;
+            }
+
+            return null;
+        }
+
         public override void Close()
         {
             _sendThread.Abort();
             _receiveThread.Abort();
-            _cbThread.Abort();
         }
     }
 }

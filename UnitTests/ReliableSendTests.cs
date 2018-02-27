@@ -55,7 +55,9 @@ namespace UnitTests
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
 
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+
+            var receivedPacket = _sock.ReceiveFrom();
 
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
@@ -112,7 +114,9 @@ namespace UnitTests
             ackHeader.Length = (ushort)ackHeader.HeaderLength;
             ackHeader.WriteTo(ms);
             buffer = ms.ToArray();
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+
+            /*var receivedPacket =*/ _sock.ReceiveFrom();
 
             Thread.Sleep(20);
             _sock.Tick();

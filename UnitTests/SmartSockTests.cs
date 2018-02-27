@@ -38,13 +38,14 @@ namespace UnitTests
             var buffer = ms.ToArray();
 
             // Simulate send from UdpClient
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
-            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, _cbs.OnReceiveCalls[0].Offset));
-            Assert.AreEqual(5, _cbs.OnReceiveCalls[0].Offset); // Length + Flags + SeqNum
-            Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
+            var receivedPacket = _sock.ReceiveFrom();
+                
+            Assert.IsNotNull(receivedPacket);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, receivedPacket.Offset));
+            Assert.AreEqual(5, receivedPacket.Offset); // Length + Flags + SeqNum
+            Assert.AreEqual(4, receivedPacket.Length);
         }
 
         [Test]
@@ -60,10 +61,10 @@ namespace UnitTests
             var buffer = ms.ToArray();
 
             // Simulate send from UdpClient
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
+            Assert.IsNull(_sock.ReceiveFrom());
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
-            Assert.AreEqual(0, _cbs.OnReceiveCalls.Count);
         }
 
         [Test]

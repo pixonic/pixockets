@@ -63,10 +63,10 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -77,12 +77,12 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
             // Duplicate
-            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer1.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer1.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -93,33 +93,33 @@ namespace UnitTests
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
 
         [Test]
-        public void ReceiveFailOnTimeoutBetweenFragments()
+        public void ReceiveReliableFailOnTimeoutBetweenFragments()
         {
             _sock.FragmentTimeout = 1;
 
             var buffer1 = CreateFirstFragment();
 
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
-            _bareSock.Callbacks.OnReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
-
-            var buffer2 = CreateSecondFragment();
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            Assert.IsNull(_sock.ReceiveFrom());
 
             Thread.Sleep(20);
             _sock.Tick();
 
-            _bareSock.Callbacks.OnReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            var buffer2 = CreateSecondFragment();
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             // Make sure nothing received
-            Assert.AreEqual(0, _cbs.OnReceiveCalls.Count);
+            Assert.IsNull(_sock.ReceiveFrom());
         }
 
         private ArraySegment<byte> CreateFirstFragment()
@@ -154,11 +154,12 @@ namespace UnitTests
         private void AssertCombinedPacketReceived()
         {
             // Make sure full combined packet received
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(12345, BitConverter.ToUInt16(_cbs.OnReceiveCalls[0].Buffer, _cbs.OnReceiveCalls[0].Offset));
-            Assert.AreEqual(77, _cbs.OnReceiveCalls[0].Buffer[_cbs.OnReceiveCalls[0].Offset + 2]);
-            Assert.AreEqual(23456, BitConverter.ToUInt16(_cbs.OnReceiveCalls[0].Buffer, _cbs.OnReceiveCalls[0].Offset + 3));
-            Assert.AreEqual(5, _cbs.OnReceiveCalls[0].Length);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+            Assert.AreEqual(1, receivedPackets.Count);
+            Assert.AreEqual(12345, BitConverter.ToUInt16(receivedPackets[0].Buffer, receivedPackets[0].Offset));
+            Assert.AreEqual(77, receivedPackets[0].Buffer[receivedPackets[0].Offset + 2]);
+            Assert.AreEqual(23456, BitConverter.ToUInt16(receivedPackets[0].Buffer, receivedPackets[0].Offset + 3));
+            Assert.AreEqual(5, receivedPackets[0].Length);
         }
     }
 }

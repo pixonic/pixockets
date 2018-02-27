@@ -38,7 +38,9 @@ namespace UnitTests
             var buffer = ms.ToArray();
 
             // Simulate send from UdpClient
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+
+            /* var receivedPacket =*/_sock.ReceiveFrom();
 
             Thread.Sleep(20);
             _sock.Tick();

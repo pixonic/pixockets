@@ -25,15 +25,6 @@ namespace TestClient
             {
                 Thread.Sleep(1000);
 
-                sock.Tick();
-
-                if (!callbacks.Connected && !callbacks.Connecting)
-                {
-                    callbacks.Connecting = true;
-                    Connect(address, sock);
-                    continue;
-                }
-
                 cnt++;
                 if (cnt > 32)
                 {
@@ -42,6 +33,26 @@ namespace TestClient
 
                 var buffer = CreateMessage(cnt);
                 sock.Send(buffer, 0, buffer.Length);
+                sock.Tick();
+                while (true)
+                {
+                    var packet = sock.ReceiveFrom();
+                    if (packet != null)
+                    {
+                        callbacks.OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                if (!callbacks.Connected && !callbacks.Connecting)
+                {
+                    callbacks.Connecting = true;
+                    Connect(address, sock);
+                    continue;
+                }
             }
         }
 

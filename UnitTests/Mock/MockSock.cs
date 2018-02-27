@@ -1,6 +1,7 @@
 ﻿using Pixockets;
 using System.Net;
 using System.Collections.Generic;
+using System;
 
 namespace UnitTests.Mock
 {
@@ -9,6 +10,7 @@ namespace UnitTests.Mock
         public ReceiverBase Callbacks;
         public IPEndPoint ConnectEndPoint;
         public List<PacketToSend> Sends = new List<PacketToSend>();
+        public List<ReceivedPacket> Recvs = new List<ReceivedPacket>();
         public int ReceiveCalls;
         public List<int> ReceiveOnPortCalls = new List<int>();
 
@@ -53,6 +55,28 @@ namespace UnitTests.Mock
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
             Sends.Add(new PacketToSend {
+                EndPoint = endPoint,
+                Buffer = buffer,
+                Offset = offset,
+                Length = length,
+            });
+        }
+
+        public override ReceivedPacket ReceiveFrom()
+        {
+            if (Recvs.Count > 0)
+            {
+                var result = Recvs[0];
+                Recvs.RemoveAt(0);
+                return result;
+            }
+
+            return null;
+        }
+
+        public void FakeReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        {
+            Recvs.Add(new ReceivedPacket {
                 EndPoint = endPoint,
                 Buffer = buffer,
                 Offset = offset,

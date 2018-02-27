@@ -2,6 +2,7 @@
 
 namespace Pixockets
 {
+    // TODO: convert to struct?
     public class ReceivedPacket : IPoolable
     {
         public IPEndPoint EndPoint;
@@ -14,5 +15,14 @@ namespace Pixockets
             EndPoint = null;
             Buffer = null;
         }
+    };
+
+    public class ReceivedSmartPacket
+    {
+        public IPEndPoint EndPoint;
+        public int Offset;
+        public int Length;
+        public byte[] Buffer;
+        public bool InOrder;
     };
 }

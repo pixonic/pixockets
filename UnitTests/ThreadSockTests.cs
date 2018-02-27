@@ -48,12 +48,11 @@ namespace UnitTests
             udpClient.Connect(IPAddress.Loopback, 23466);
             udpClient.Send(BitConverter.GetBytes(123456789), 4);
 
-            Utils.WaitOnReceive(_cbs);
+            var receivedPacket = Utils.WaitOnReceive(_sock);
 
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, 0));
-            Assert.AreEqual(0, _cbs.OnReceiveCalls[0].Offset);
-            Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, 0));
+            Assert.AreEqual(0, receivedPacket.Offset);
+            Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(2, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
@@ -104,16 +103,14 @@ namespace UnitTests
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 
-            Utils.WaitOnReceive(_cbs);
+            var receivedPacket = Utils.WaitOnReceive(_sock);
 
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(_cbs.OnReceiveCalls[0].Buffer, 0));
-            Assert.AreEqual(0, _cbs.OnReceiveCalls[0].Offset);
-            Assert.AreEqual(4, _cbs.OnReceiveCalls[0].Length);
+            Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, 0));
+            Assert.AreEqual(0, receivedPacket.Offset);
+            Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(2, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
-
 
         [Test]
         public void ThreadSockReceiveError()

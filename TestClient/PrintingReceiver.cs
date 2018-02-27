@@ -28,7 +28,7 @@ namespace TestClient
             Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
+        public void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
             if (!inOrder)
             {

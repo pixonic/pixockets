@@ -21,7 +21,7 @@ namespace ReplicatorServer
             _servSock = socket;
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
+        private void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
             if (!inOrder)
             {
@@ -89,7 +89,21 @@ namespace ReplicatorServer
 
         public void Tick()
         {
+            while (true)
+            {
+                var packet = _servSock.ReceiveFrom();
+                if (packet != null)
+                {
+                    OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
             _servSock.Tick();
+            
             var ms = new MemoryStream();
             ms.WriteByte(1);  // Tick packet
             ms.Write(BitConverter.GetBytes(_clients.Count), 0, 4);

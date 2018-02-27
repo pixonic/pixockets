@@ -53,8 +53,10 @@ namespace Pixockets
             SubSock.Receive(port);
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        private ReceivedSmartPacket OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
         {
+            ReceivedSmartPacket result = null;
+
             // Update activity timestamp on receive packet
             var seqState = GetSeqState(endPoint);
             seqState.LastActive = Environment.TickCount;
@@ -69,19 +71,19 @@ namespace Pixockets
             {
                 // Wrong packet
                 _headersPool.Put(header);
-                return;
+                return null;
             }
 
             if ((header.Flags & PacketHeader.ContainsFrag) != 0)
             {
-                OnReceiveFragment(buffer, offset, length, endPoint, header);
+                result = OnReceiveFragment(buffer, offset, length, endPoint, header);
             }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
                 bool inOrder = seqState.IsInOrder(header.SeqNum);
                 if (inOrder || !seqState.IsDuplicate(header.SeqNum))
                 {
-                    OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder);
+                    result = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder);
                 }
                 if (inOrder)
                 {
@@ -100,7 +102,32 @@ namespace Pixockets
             }
 
             _headersPool.Put(header);
+
+            return result;
         }
+
+        public ReceivedSmartPacket ReceiveFrom()
+        {
+            ReceivedSmartPacket result = null;
+            while (true)
+            {
+                ReceivedPacket packet = SubSock.ReceiveFrom();
+                if (packet != null)
+                {
+                    result = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint);
+                }
+                else
+                {
+                    break;
+                }
+                if (result != null)
+                {
+                    break;
+                }
+            }
+            return result;
+        }
+
 
         public override void OnDisconnect(IPEndPoint endPoint)
         {
@@ -216,27 +243,31 @@ namespace Pixockets
             }
         }
 
-        private void OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder)
+        private ReceivedSmartPacket OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder)
         {
             var headerLen = header.HeaderLength;
 
             var payloadLength = length - headerLen;
             if (payloadLength > 0)
             {
-                _callbacks.OnReceive(
-                    buffer,
-                    offset + headerLen,
-                    payloadLength,
-                    endPoint,
-                    inOrder);
+                var result = new ReceivedSmartPacket();
+                result.Buffer = buffer;
+                result.Offset = offset + headerLen;
+                result.Length = payloadLength;
+                result.EndPoint = endPoint;
+                result.InOrder = inOrder;
+                return result;
             }
+
+            return null;
         }
 
-        private void OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
+        private ReceivedSmartPacket OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
         {
             var seqState = GetSeqState(endPoint);
             seqState.AddFragment(buffer, offset, length, header);
-            seqState.CombineIfFull(header, endPoint, _callbacks);
+
+            return seqState.CombineIfFull(header, endPoint, _callbacks);
         }
 
         // TODO: move it to some common class

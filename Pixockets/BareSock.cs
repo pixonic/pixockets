@@ -26,6 +26,7 @@ namespace Pixockets
 
         private SendOptions _returnToPool = new SendOptions { ReturnBufferToPool = true };
         private SendOptions _dontReturnToPool = new SendOptions { ReturnBufferToPool = false };
+        private ThreadSafeQueue<ReceivedPacket> _receivedQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private object _syncObj = new object();
 
@@ -84,6 +85,13 @@ namespace Pixockets
         public override void Send(byte[] buffer, int offset, int length, bool putBufferToPool)
         {
             Send(RemoteEndPoint, buffer, offset, length, putBufferToPool);
+        }
+
+        public override ReceivedPacket ReceiveFrom()
+        {
+            ReceivedPacket result;
+            _receivedQueue.TryTake(out result);
+            return result;
         }
 
         private void ActualSend(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
@@ -187,7 +195,14 @@ namespace Pixockets
             if (e.BytesTransferred > 0)
             {
                 var ep = (IPEndPoint)e.RemoteEndPoint;
-                _callbacks.OnReceive(e.Buffer, 0, e.BytesTransferred, ep);
+
+                var received = new ReceivedPacket();
+                received.Buffer = e.Buffer;
+                received.Offset = 0;
+                received.Length = e.BytesTransferred;
+                received.EndPoint = ep;
+
+                _receivedQueue.Add(received);
             }
 
             _recvArgsPool.Put(e);

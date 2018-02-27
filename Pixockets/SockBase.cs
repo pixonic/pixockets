@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 
 namespace Pixockets
 {
@@ -18,6 +19,8 @@ namespace Pixockets
         public abstract void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool);
 
         public abstract void Send(byte[] buffer, int offset, int length, bool putBufferToPool);
+
+        public abstract ReceivedPacket ReceiveFrom();
 
         public virtual void Close()
         {

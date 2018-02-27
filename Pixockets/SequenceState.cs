@@ -100,7 +100,7 @@ namespace Pixockets
             }
         }
 
-        public void CombineIfFull(PacketHeader header, IPEndPoint endPoint, SmartReceiverBase cbs)
+        public ReceivedSmartPacket CombineIfFull(PacketHeader header, IPEndPoint endPoint, SmartReceiverBase cbs)
         {
             byte[] combinedBuffer;
             int fullLength = 0;
@@ -113,7 +113,7 @@ namespace Pixockets
                 // TODO: pool packet headers
                 if (frag.Buffers.Count < header.FragCount)
                 {
-                    return;
+                    return null;
                 }
 
                 var buffersCount = frag.FragCount;
@@ -137,9 +137,16 @@ namespace Pixockets
                 _fragPacketsPool.Put(frag);
             }
 
-            // TODO: calculate it
+            // TODO: calculate it?
             bool inOrder = true;
-            cbs.OnReceive(combinedBuffer, 0, fullLength, endPoint, inOrder);
+
+            var packet = new ReceivedSmartPacket();
+            packet.Buffer = combinedBuffer;
+            packet.Offset = 0;
+            packet.Length = fullLength;
+            packet.EndPoint = endPoint;
+            packet.InOrder = inOrder;
+            return packet;
         }
 
         public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)

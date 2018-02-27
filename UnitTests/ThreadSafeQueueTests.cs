@@ -25,6 +25,16 @@ namespace UnitTests
         }
 
         [Test]
+        public void QueueSimpleAddTryTake()
+        {
+            _queue.Add(7);
+
+            int item;
+            Assert.IsTrue(_queue.TryTake(out item));
+            Assert.AreEqual(7, item);
+        }
+
+        [Test]
         public void QueueMultiThreadAddTake()
         {
             var fillThread = new Thread(new ThreadStart(FillQueue));

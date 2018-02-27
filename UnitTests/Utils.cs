@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Pixockets;
+using System.Collections.Generic;
 using System.Threading;
 using UnitTests.Mock;
 
@@ -6,14 +7,46 @@ namespace UnitTests
 {
     class Utils
     {
-        public static void WaitOnReceive(MockCallbacks cbs)
+        public static ReceivedPacket WaitOnReceive(SockBase sock)
         {
             for (int i = 0; i < 1000; ++i)
             {
+                var receivedPacket = sock.ReceiveFrom();
+                if (receivedPacket != null)
+                {
+                    return receivedPacket;
+                }
                 Thread.Sleep(1);
-                if (cbs.OnReceiveCalls.Count > 0)
-                    break;
             }
+            return null;
+        }
+
+        public static ReceivedSmartPacket WaitOnReceive(SmartSock sock)
+        {
+            for (int i = 0; i < 1000; ++i)
+            {
+                var receivedPacket = sock.ReceiveFrom();
+                if (receivedPacket != null)
+                {
+                    return receivedPacket;
+                }
+                Thread.Sleep(1);
+            }
+            return null;
+        }
+
+        public static List<ReceivedSmartPacket> ReceiveAll(SmartSock sock)
+        {
+            var result = new List<ReceivedSmartPacket>();
+            for (int i = 0; i < 1000; ++i)
+            {
+                var receivedPacket = sock.ReceiveFrom();
+                if (receivedPacket != null)
+                {
+                    result.Add(receivedPacket);
+                }
+            }
+            return result;
         }
 
         public static void WaitOnList<T>(List<T> list)

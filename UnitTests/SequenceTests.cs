@@ -31,9 +31,13 @@ namespace UnitTests
             SendPacket(0);
             SendPacket(1);
 
-            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[0].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[1].InOrder);
+            var receivedPacket1 = _sock.ReceiveFrom();
+            Assert.IsNotNull(receivedPacket1);
+            Assert.IsTrue(receivedPacket1.InOrder);
+
+            var receivedPacket2 = _sock.ReceiveFrom();
+            Assert.IsNotNull(receivedPacket2);
+            Assert.IsTrue(receivedPacket2.InOrder);
         }
 
         [Test]
@@ -42,9 +46,13 @@ namespace UnitTests
             SendPacket(2);
             SendPacket(1);
 
-            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[0].InOrder);
-            Assert.IsFalse(_cbs.OnReceiveCalls[1].InOrder);
+            var receivedPacket1 = _sock.ReceiveFrom();
+            Assert.IsNotNull(receivedPacket1);
+            Assert.IsTrue(receivedPacket1.InOrder);
+
+            var receivedPacket2 = _sock.ReceiveFrom();
+            Assert.IsNotNull(receivedPacket2);
+            Assert.IsFalse(receivedPacket2.InOrder);
         }
 
         [Test]
@@ -55,9 +63,11 @@ namespace UnitTests
             SendPacket(65535);
             SendPacket(0);
 
-            Assert.AreEqual(4, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[2].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[3].InOrder);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(4, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[2].InOrder);
+            Assert.IsTrue(receivedPackets[3].InOrder);
         }
 
         [Test]
@@ -68,9 +78,11 @@ namespace UnitTests
             SendPacket(65534);
             SendPacket(1);
 
-            Assert.AreEqual(4, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[2].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[3].InOrder);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(4, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[2].InOrder);
+            Assert.IsTrue(receivedPackets[3].InOrder);
         }
 
         [Test]
@@ -81,11 +93,13 @@ namespace UnitTests
             SendPacket(2);
             SendPacket(4);
 
-            Assert.AreEqual(4, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[0].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[1].InOrder);
-            Assert.IsFalse(_cbs.OnReceiveCalls[2].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[3].InOrder);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(4, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[0].InOrder);
+            Assert.IsTrue(receivedPackets[1].InOrder);
+            Assert.IsFalse(receivedPackets[2].InOrder);
+            Assert.IsTrue(receivedPackets[3].InOrder);
         }
 
         [Test]
@@ -98,13 +112,15 @@ namespace UnitTests
             SendPacket(65534);
             SendPacket(1);
 
-            Assert.AreEqual(6, _cbs.OnReceiveCalls.Count);
-            Assert.IsTrue(_cbs.OnReceiveCalls[0].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[1].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[2].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[3].InOrder);
-            Assert.IsFalse(_cbs.OnReceiveCalls[4].InOrder);
-            Assert.IsTrue(_cbs.OnReceiveCalls[5].InOrder);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(6, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[0].InOrder);
+            Assert.IsTrue(receivedPackets[1].InOrder);
+            Assert.IsTrue(receivedPackets[2].InOrder);
+            Assert.IsTrue(receivedPackets[3].InOrder);
+            Assert.IsFalse(receivedPackets[4].InOrder);
+            Assert.IsTrue(receivedPackets[5].InOrder);
         }
 
         [Test]
@@ -112,10 +128,12 @@ namespace UnitTests
         {
             SendPacket(1);
             SendPacket(1);
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+            var receivedPackets = Utils.ReceiveAll(_sock);
+            Assert.AreEqual(1, receivedPackets.Count);
 
             SendPacket(1);
-            Assert.AreEqual(1, _cbs.OnReceiveCalls.Count);
+            var receivedPacket = _sock.ReceiveFrom();
+            Assert.IsNull(receivedPacket);
         }
 
         [Test]
@@ -123,19 +141,23 @@ namespace UnitTests
         {
             SendPacket(1);
             SendPacket(2);
-            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
+
+            var receivedPackets = Utils.ReceiveAll(_sock);
+            Assert.AreEqual(2, receivedPackets.Count);
 
             SendPacket(1);
-            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
+            var receivedPacket1 = _sock.ReceiveFrom();
+            Assert.IsNull(receivedPacket1);
 
             SendPacket(2);
-            Assert.AreEqual(2, _cbs.OnReceiveCalls.Count);
+            var receivedPacket2 = _sock.ReceiveFrom();
+            Assert.IsNull(receivedPacket2);
         }
 
         private void SendPacket(int n)
         {
             var buffer = CreatePacket(n);
-            _bareSock.Callbacks.OnReceive(buffer, 0, buffer.Length, _endPoint);
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, _endPoint);
         }
 
         private static byte[] CreatePacket(int n)

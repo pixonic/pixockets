@@ -23,7 +23,7 @@ namespace TestServer
             _servSock = socket;
         }
 
-        public override void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
+        public void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
         {
             if (!inOrder)
             {
@@ -76,6 +76,19 @@ namespace TestServer
         public void Tick()
         {
             _servSock.Tick();
+            while (true)
+            {
+                var packet = _servSock.ReceiveFrom();
+                if (packet != null)
+                {
+                    OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
+                }
+                else
+                {
+                    break;
+                }
+            }
+
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(_clients.Count), 0, 4);
             foreach (var client in _clients)
