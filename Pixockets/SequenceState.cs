@@ -214,10 +214,14 @@ namespace Pixockets
             }
         }
 
-        // TODO: drop dublicates
         public bool IsInOrder(ushort seqNum)
         {
-            //TODO: fix corner cases
+            //TODO: fix more corner cases?
+            if (_lastReceivedSeqNum == -1)
+            {
+                return true;
+            }
+
             int delta = seqNum - _lastReceivedSeqNum;
             if (delta < -32000)
             {

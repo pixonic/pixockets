@@ -124,6 +124,32 @@ namespace UnitTests
         }
 
         [Test]
+        public void ResetOrderArrival()
+        {
+            SendPacket(40000);
+            SendPacket(40001);
+
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(2, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[0].InOrder);
+            Assert.IsTrue(receivedPackets[1].InOrder);
+        }
+
+        [Test]
+        public void HugeGapOrderArrival()
+        {
+            SendPacket(1);
+            SendPacket(65000);
+
+            var receivedPackets = Utils.ReceiveAll(_sock);
+
+            Assert.AreEqual(2, receivedPackets.Count);
+            Assert.IsTrue(receivedPackets[0].InOrder);
+            Assert.IsFalse(receivedPackets[1].InOrder);
+        }
+
+        [Test]
         public void SerialDuplicatesDetected()
         {
             SendPacket(1);
