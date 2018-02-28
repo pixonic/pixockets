@@ -20,11 +20,11 @@ namespace Pixockets
         private IPEndPoint _receiveEndPoint;
 
         private readonly Thread _sendThread;
-        private readonly Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
+        private readonly ThreadSafePool<PacketToSend> _packetToSendPool = new ThreadSafePool<PacketToSend>();
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
         private readonly Thread _receiveThread;
-        private readonly Pool<ReceivedPacket> _recvPacketPool = new Pool<ReceivedPacket>();
+        private readonly ThreadSafePool<ReceivedPacket> _recvPacketPool = new ThreadSafePool<ReceivedPacket>();
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private readonly object _syncObj = new object();

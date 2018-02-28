@@ -20,12 +20,12 @@ namespace Pixockets
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
-        private SAEAPool _sendArgsPool = new SAEAPool();
-        private SAEAPool _recvArgsPool = new SAEAPool();
+        private readonly SAEAPool _sendArgsPool = new SAEAPool();
+        private readonly SAEAPool _recvArgsPool = new SAEAPool();
 
-        private SendOptions _returnToPool = new SendOptions { ReturnBufferToPool = true };
-        private SendOptions _dontReturnToPool = new SendOptions { ReturnBufferToPool = false };
-        private ThreadSafeQueue<ReceivedPacket> _receivedQueue = new ThreadSafeQueue<ReceivedPacket>();
+        private readonly SendOptions _returnToPool = new SendOptions { ReturnBufferToPool = true };
+        private readonly SendOptions _dontReturnToPool = new SendOptions { ReturnBufferToPool = false };
+        private readonly ThreadSafeQueue<ReceivedPacket> _receivedQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private object _syncObj = new object();
 

@@ -45,7 +45,9 @@
     <Compile Include="NotAckedPacket.cs" />
     <Compile Include="Pools\BufferPoolBase.cs" />
     <Compile Include="Pools\CoreBufferPool.cs" />
+    <Compile Include="Pools\ThreadSafePool.cs" />
     <Compile Include="Pools\ThreadSafeQueue.cs" />
+    <Compile Include="Pools\FlatStack.cs" />
     <Compile Include="Pools\ThreadSafeStack.cs" />
     <Compile Include="ReceivedPacket.cs" />
     <Compile Include="Pools\SAEAPool.cs" />

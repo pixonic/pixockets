@@ -1,12 +1,10 @@
 using System.Collections.Generic;
-using System.Threading;
 
 namespace Pixockets
 {
     public class ThreadSafeStack<T>
     {
         private List<T> _items = new List<T>();
-        private AutoResetEvent _added = new AutoResetEvent(false);
         private readonly object _syncRoot = new object();
 
         public bool TryPop(out T result)
