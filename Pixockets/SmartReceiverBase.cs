@@ -8,4 +8,15 @@ namespace Pixockets
 
         public abstract void OnDisconnect(IPEndPoint endPoint);
     }
+
+    public class NullSmartReceiver : SmartReceiverBase
+    {
+        public override void OnConnect(IPEndPoint endPoint)
+        {
+        }
+
+        public override void OnDisconnect(IPEndPoint endPoint)
+        {
+        }
+    }
 }

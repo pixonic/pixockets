@@ -21,7 +21,6 @@ namespace Pixockets
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
         private SmartReceiverBase _callbacks;
-        private object _syncObj = new object();
         private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
         private readonly BufferPoolBase _buffersPool;
         private readonly Pool<FragmentedPacket> _fragPacketsPool = new Pool<FragmentedPacket>();
@@ -34,7 +33,14 @@ namespace Pixockets
         {
             _buffersPool = buffersPool;
             SubSock = subSock;
-            _callbacks = callbacks;
+            if (callbacks != null)
+            {
+                _callbacks = callbacks;
+            }
+            else
+            {
+                _callbacks = new NullSmartReceiver();
+            }
         }
 
         public void Connect(IPAddress address, int port)
@@ -199,31 +205,28 @@ namespace Pixockets
 
         public void Tick()
         {
-            lock (_syncObj)
+            var now = Environment.TickCount;
+            foreach (var seqState in _seqStates)
             {
-                var now = Environment.TickCount;
-                foreach (var seqState in _seqStates)
+                if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
                 {
-                    if (TimeDelta(seqState.Value.LastActive, now) > ConnectionTimeout)
-                    {
-                        _toDelete.Add(seqState);
-                        continue;
-                    }
-
-                    seqState.Value.Tick(seqState.Key, SubSock, now, AckTimeout, FragmentTimeout);
+                    _toDelete.Add(seqState);
+                    continue;
                 }
 
-                var toDeleteCount = _toDelete.Count;
-                for (int i = 0; i < toDeleteCount; ++i)
-                {
-                    var seqState = _toDelete[i];
-                    _seqStates.Remove(seqState.Key);
-                    _callbacks.OnDisconnect(seqState.Key);
-                    _seqStatesPool.Put(seqState.Value);
-                }
-
-                _toDelete.Clear();
+                seqState.Value.Tick(seqState.Key, SubSock, now, AckTimeout, FragmentTimeout);
             }
+
+            var toDeleteCount = _toDelete.Count;
+            for (int i = 0; i < toDeleteCount; ++i)
+            {
+                var seqState = _toDelete[i];
+                _seqStates.Remove(seqState.Key);
+                _callbacks.OnDisconnect(seqState.Key);
+                _seqStatesPool.Put(seqState.Value);
+            }
+
+            _toDelete.Clear();
         }
 
         private ReceivedSmartPacket OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder)
@@ -376,18 +379,15 @@ namespace Pixockets
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
             SequenceState result;
-            lock (_syncObj)
+            if (!_seqStates.ContainsKey(endPoint))
             {
-                if (!_seqStates.ContainsKey(endPoint))
-                {
-                    result = _seqStatesPool.Get();
-                    result.Init(_buffersPool, _fragPacketsPool, _notAckedPool);
-                    _seqStates.Add(endPoint, result);
-                }
-                else
-                {
-                    result = _seqStates[endPoint];
-                }
+                result = _seqStatesPool.Get();
+                result.Init(_buffersPool, _fragPacketsPool, _notAckedPool);
+                _seqStates.Add(endPoint, result);
+            }
+            else
+            {
+                result = _seqStates[endPoint];
             }
 
             return result;

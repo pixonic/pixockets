@@ -1,7 +1,6 @@
 ﻿using Pixockets;
 using System.Net;
 using System.Collections.Generic;
-using System;
 
 namespace UnitTests.Mock
 {
