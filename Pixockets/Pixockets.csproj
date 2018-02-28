@@ -58,7 +58,6 @@
     <Compile Include="PacketToSend.cs" />
     <Compile Include="Pools\Pool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ReceiverBase.cs" />
     <Compile Include="PacketHeader.cs" />
     <Compile Include="SmartSock.cs" />
     <Compile Include="Core\Buffers\ArrayPool.cs" />

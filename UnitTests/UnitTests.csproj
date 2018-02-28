@@ -47,7 +47,6 @@
     <Compile Include="DeltaTests.cs" />
     <Compile Include="Mock\MockBufferPool.cs" />
     <Compile Include="Mock\MockSmartCallbacks.cs" />
-    <Compile Include="Mock\MockCallbacks.cs" />
     <Compile Include="Mock\MockSock.cs" />
     <Compile Include="MTUTests.cs" />
     <Compile Include="PacketHeaderTests.cs" />

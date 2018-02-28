@@ -19,8 +19,6 @@ namespace Pixockets
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
-        private ReceiverBase _callbacks;
-
         private readonly Thread _sendThread;
         private readonly Pool<PacketToSend> _packetToSendPool = new Pool<PacketToSend>();
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
@@ -94,11 +92,6 @@ namespace Pixockets
             packet.PutBufferToPool = putBufferToPool;
 
             _sendQueue.Add(packet);
-        }
-
-        public override void SetCallbacks(ReceiverBase callbacks)
-        {
-            _callbacks = callbacks;
         }
 
         private void SendLoop()

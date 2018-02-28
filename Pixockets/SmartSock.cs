@@ -4,7 +4,7 @@ using System.Net;
 
 namespace Pixockets
 {
-    public class SmartSock : ReceiverBase
+    public class SmartSock
     {
         public int ConnectionTimeout = 10000;
         public int AckTimeout = 1000;
@@ -33,7 +33,6 @@ namespace Pixockets
         public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
             _buffersPool = buffersPool;
-            subSock.SetCallbacks(this);
             SubSock = subSock;
             _callbacks = callbacks;
         }
@@ -126,22 +125,6 @@ namespace Pixockets
                 }
             }
             return result;
-        }
-
-
-        public override void OnDisconnect(IPEndPoint endPoint)
-        {
-            var seqState = GetSeqState(endPoint);
-
-            lock (_syncObj)
-            {
-                if (_seqStates.Remove(endPoint))
-                {
-                    _seqStatesPool.Put(seqState);
-                }
-            }
-
-            _callbacks.OnDisconnect(endPoint);
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)

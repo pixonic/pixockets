@@ -11,17 +11,14 @@ namespace UnitTests
     [TestFixture]
     public class ThreadSockTests
     {
-        private MockCallbacks _cbs;
         private MockBufferPool _bufferPool;
         private ThreadSock _sock;
 
         [SetUp]
         public void Setup()
         {
-            _cbs = new MockCallbacks();
             _bufferPool = new MockBufferPool();
             _sock = new ThreadSock(_bufferPool);
-            _sock.SetCallbacks(_cbs);
         }
 
         [TearDown]

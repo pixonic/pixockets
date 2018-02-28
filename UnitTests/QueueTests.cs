@@ -17,10 +17,8 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23450);
             var receiveTask = udpClient.ReceiveAsync();
 
-            MockCallbacks cbs = new MockCallbacks();
             var bufferPool = new CoreBufferPool();
             BareSock sock = new BareSock(bufferPool);
-            sock.SetCallbacks(cbs);
 
             sock.Connect(IPAddress.Loopback, 23450);
             sock.Send(BitConverter.GetBytes(1), 0, 4, true);

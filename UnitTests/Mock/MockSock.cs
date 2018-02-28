@@ -7,7 +7,6 @@ namespace UnitTests.Mock
 {
     class MockSock : SockBase
     {
-        public ReceiverBase Callbacks;
         public IPEndPoint ConnectEndPoint;
         public List<PacketToSend> Sends = new List<PacketToSend>();
         public List<ReceivedPacket> Recvs = new List<ReceivedPacket>();
@@ -25,11 +24,6 @@ namespace UnitTests.Mock
         public override IPEndPoint RemoteEndPoint
         {
             get { return ConnectEndPoint; }
-        }
-
-        public override void SetCallbacks(ReceiverBase callbacks)
-        {
-            Callbacks = callbacks;
         }
 
         public override void Connect(IPAddress address, int port)

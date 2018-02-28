@@ -8,8 +8,6 @@ namespace Pixockets
         public abstract IPEndPoint LocalEndPoint { get; }
         public abstract IPEndPoint RemoteEndPoint { get; }
 
-        public abstract void SetCallbacks(ReceiverBase callbacks);
-
         public abstract void Connect(IPAddress address, int port);
 
         public abstract void Receive();

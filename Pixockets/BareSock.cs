@@ -20,7 +20,6 @@ namespace Pixockets
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
-        private ReceiverBase _callbacks;
         private SAEAPool _sendArgsPool = new SAEAPool();
         private SAEAPool _recvArgsPool = new SAEAPool();
 
@@ -34,11 +33,6 @@ namespace Pixockets
         {
             SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             _buffersPool = buffersPool;
-        }
-
-        public override void SetCallbacks(ReceiverBase callbacks)
-        {
-            _callbacks = callbacks;
         }
 
         public override void Connect(IPAddress address, int port)
