@@ -35,6 +35,42 @@ namespace UnitTests
         }
 
         [Test]
+        public void QueueMultipleAddTake()
+        {
+            FillQueue();
+            for (int i = 0; i < 100; i++)
+            {
+                int result = _queue.Take();
+                Assert.AreEqual(i, result);
+            }
+        }
+
+        [Test]
+        public void QueueInterleavedAddTake()
+        {
+            AddSome(0, 20);
+            TakeSome(0, 15);
+
+            AddSome(21, 40);
+            AddSome(41, 70);
+
+            TakeSome(16, 50);
+            TakeSome(51, 70);
+        }
+
+        [Test]
+        public void QueueMultipleAddTryTake()
+        {
+            FillQueue();
+            for (int i = 0; i < 100; i++)
+            {
+                int item;
+                Assert.IsTrue(_queue.TryTake(out item));
+                Assert.AreEqual(i, item);
+            }
+        }
+
+        [Test]
         public void QueueMultiThreadAddTake()
         {
             var fillThread = new Thread(new ThreadStart(FillQueue));
@@ -52,6 +88,24 @@ namespace UnitTests
             for (int i = 0; i < 100; i++)
             {
                 _queue.Add(i);
+            }
+        }
+
+        private void AddSome(int from, int to)
+        {
+            for (int i = from; i <= to; i++)
+            {
+                _queue.Add(i);
+            }
+        }
+
+        private void TakeSome(int from, int to)
+        {
+            for (int i = from; i <= to; i++)
+            {
+                int item;
+                Assert.IsTrue(_queue.TryTake(out item));
+                Assert.AreEqual(i, item);
             }
         }
     }

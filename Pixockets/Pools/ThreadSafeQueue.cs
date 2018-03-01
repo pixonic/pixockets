@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading;
 
 namespace Pixockets
@@ -6,15 +5,40 @@ namespace Pixockets
     // TODO: split to blocking and non-blocking?
     public class ThreadSafeQueue<T>
     {
-        private LinkedList<T> _nodes = new LinkedList<T>();
+        private class ArrayNode : IPoolable
+        {
+            public const int MaxCount = 32;
+            public const int MaxIndex = 31;
+
+            public ArrayNode Next;
+            public T[] Items = new T[MaxCount];
+            public int Lo;
+            public int Hi;
+
+            public void Strip()
+            {
+                Lo = Hi = 0;
+                Next = null;
+            }
+        }
+
+        private Pool<ArrayNode> _nodesPool = new Pool<ArrayNode>();
+        private ArrayNode _head;
+        private ArrayNode _tail;
         private AutoResetEvent _added = new AutoResetEvent(false);
         private readonly object _syncRoot = new object();
+        private int _count;
+
+        public ThreadSafeQueue()
+        {
+            _tail = _head = _nodesPool.Get();
+        }
 
         public void Add(T item)
         {
             lock (_syncRoot)
             {
-                _nodes.AddLast(item);
+                AddLast(item);
             }
             _added.Set();
         }
@@ -26,10 +50,9 @@ namespace Pixockets
             {
                 lock (_syncRoot)
                 {
-                    if (_nodes.Count > 0)
+                    if (_count > 0)
                     {
-                        var val = _nodes.First.Value;
-                        _nodes.RemoveFirst();
+                        var val = RemoveFirst();
                         return val;
                     }
                 }
@@ -40,7 +63,7 @@ namespace Pixockets
 
         public bool TryTake(out T item)
         {
-            if (_nodes.Count == 0)
+            if (_count == 0)
             {
                 item = default(T);
                 return false;
@@ -48,10 +71,9 @@ namespace Pixockets
 
             lock (_syncRoot)
             {
-                if (_nodes.Count > 0)
+                if (_count > 0)
                 {
-                    var val = _nodes.First.Value;
-                    _nodes.RemoveFirst();
+                    var val = RemoveFirst();
                     item = val;
                     return true;
                 }
@@ -59,6 +81,38 @@ namespace Pixockets
 
             item = default(T);
             return false;
+        }
+
+        private void AddLast(T item)
+        {
+            if (_tail.Hi >= ArrayNode.MaxCount)
+            {
+                var node = _nodesPool.Get();
+                _tail.Next = node;
+                _tail = node;
+            }
+
+            _tail.Items[_tail.Hi++] = item;
+            _count++;
+        }
+
+        private T RemoveFirst()
+        {
+            var result = _head.Items[_head.Lo];
+            _head.Items[_head.Lo++] = default(T);
+            _count--;
+
+            if (_head.Lo >= _head.Hi)
+            {
+                var node = _head;
+                _head = _head.Next;
+                _nodesPool.Put(node);
+                if (_head == null)
+                {
+                    _head = _tail = _nodesPool.Get();
+                }
+            }
+            return result;
         }
     }
 }
