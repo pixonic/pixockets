@@ -89,10 +89,10 @@ namespace ReplicatorServer
 
         public void Tick()
         {
+            var packet = new ReceivedSmartPacket();
             while (true)
             {
-                var packet = _servSock.ReceiveFrom();
-                if (packet != null)
+                if (_servSock.ReceiveFrom(ref packet))
                 {
                     OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
                 }

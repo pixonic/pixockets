@@ -110,7 +110,8 @@ namespace UnitTests
 
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
             _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
-            Assert.IsNull(_sock.ReceiveFrom());
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
 
             Thread.Sleep(20);
             _sock.Tick();
@@ -119,7 +120,7 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             // Make sure nothing received
-            Assert.IsNull(_sock.ReceiveFrom());
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
         }
 
         private ArraySegment<byte> CreateFirstFragment()

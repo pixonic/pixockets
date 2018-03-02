@@ -55,16 +55,16 @@ namespace UnitTests.Mock
             });
         }
 
-        public override ReceivedPacket ReceiveFrom()
+        public override bool ReceiveFrom(ref ReceivedPacket packet)
         {
             if (Recvs.Count > 0)
             {
-                var result = Recvs[0];
+                packet = Recvs[0];
                 Recvs.RemoveAt(0);
-                return result;
+                return true;
             }
 
-            return null;
+            return false;
         }
 
         public void FakeReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)

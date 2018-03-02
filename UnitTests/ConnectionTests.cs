@@ -32,15 +32,17 @@ namespace UnitTests
             _sock.Receive();
 
             var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes((ushort)7), 0, 2);  // Length
-            ms.WriteByte(0);  // Flags
+            ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length
+            ms.WriteByte(PacketHeader.ContainsSeq);  // Flags
+            ms.Write(BitConverter.GetBytes((ushort)1), 0, 2);  // SeqNum
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
             var buffer = ms.ToArray();
 
             // Simulate send from UdpClient
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
-            /* var receivedPacket =*/_sock.ReceiveFrom();
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
 
             Thread.Sleep(20);
             _sock.Tick();

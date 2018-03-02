@@ -40,9 +40,9 @@ namespace UnitTests
             // Simulate send from UdpClient
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
-            var receivedPacket = _sock.ReceiveFrom();
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
                 
-            Assert.IsNotNull(receivedPacket);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, receivedPacket.Offset));
             Assert.AreEqual(5, receivedPacket.Offset); // Length + Flags + SeqNum
             Assert.AreEqual(4, receivedPacket.Length);
@@ -63,7 +63,9 @@ namespace UnitTests
             // Simulate send from UdpClient
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
-            Assert.IsNull(_sock.ReceiveFrom());
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
+
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
         }
 

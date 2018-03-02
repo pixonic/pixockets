@@ -34,10 +34,10 @@ namespace TestClient
                 var buffer = CreateMessage(cnt);
                 sock.Send(buffer, 0, buffer.Length);
                 sock.Tick();
+                var packet = new ReceivedSmartPacket();
                 while (true)
                 {
-                    var packet = sock.ReceiveFrom();
-                    if (packet != null)
+                    if (sock.ReceiveFrom(ref packet))
                     {
                         callbacks.OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
                     }
@@ -67,6 +67,7 @@ namespace TestClient
             var rnd = new Random(Guid.NewGuid().GetHashCode());
             var count = 700 + rnd.Next(500);
             byte[] initMsg = CreateMessage(count);
+            Console.WriteLine("Sending message with {0} numbers", count);
             sock.SendReliable(initMsg, 0, initMsg.Length);
         }
 

@@ -18,6 +18,7 @@ namespace TestServer
             _timer.Start();
         }
 
+        // TODO: pass byte buffer pool also
         public void SetSocket(SmartSock socket)
         {
             _servSock = socket;
@@ -56,9 +57,9 @@ namespace TestServer
             }
             else
             {
-                _clients[endPoint] = BitConverter.ToInt32(buffer, offset);
-
                 var count = BitConverter.ToInt32(buffer, offset);
+                _clients[endPoint] = count;
+
                 for (int i = 0; i < count; ++i)
                 {
                     var num = BitConverter.ToInt32(buffer, offset + 4 + i * 4);
@@ -76,12 +77,13 @@ namespace TestServer
         public void Tick()
         {
             _servSock.Tick();
+            var packet = new ReceivedSmartPacket();
             while (true)
             {
-                var packet = _servSock.ReceiveFrom();
-                if (packet != null)
+                if (_servSock.ReceiveFrom(ref packet))
                 {
                     OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
+                    // TODO: return buffer to pool
                 }
                 else
                 {

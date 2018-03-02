@@ -56,10 +56,10 @@ namespace ReplicatorClient
                 }
 
                 _socket.Tick();
+                var packet = new ReceivedSmartPacket();
                 while (true)
                 {
-                    var packet = _socket.ReceiveFrom();
-                    if (packet != null)
+                    if (_socket.ReceiveFrom(ref packet))
                     {
                         OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
                         _bufferPool.Put(packet.Buffer);

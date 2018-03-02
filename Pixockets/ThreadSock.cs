@@ -24,7 +24,6 @@ namespace Pixockets
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
         private readonly Thread _receiveThread;
-        private readonly ThreadSafePool<ReceivedPacket> _recvPacketPool = new ThreadSafePool<ReceivedPacket>();
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private readonly object _syncObj = new object();
@@ -117,7 +116,7 @@ namespace Pixockets
                     var bytesReceived = SysSock.ReceiveFrom(buffer, ref remoteEP);
                     if (bytesReceived > 0)
                     {
-                        var packet = _recvPacketPool.Get();
+                        var packet = new ReceivedPacket();
                         packet.Buffer = buffer;
                         packet.Offset = 0;
                         packet.Length = bytesReceived;
@@ -134,15 +133,9 @@ namespace Pixockets
             }
         }
 
-        public override ReceivedPacket ReceiveFrom()
+        public override bool ReceiveFrom(ref ReceivedPacket packet)
         {
-            ReceivedPacket result;
-            if (_recvQueue.TryTake(out result))
-            {
-                return result;
-            }
-
-            return null;
+            return _recvQueue.TryTake(out packet);
         }
 
         public override void Close()

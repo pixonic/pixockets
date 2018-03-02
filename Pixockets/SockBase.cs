@@ -18,7 +18,7 @@ namespace Pixockets
 
         public abstract void Send(byte[] buffer, int offset, int length, bool putBufferToPool);
 
-        public abstract ReceivedPacket ReceiveFrom();
+        public abstract bool ReceiveFrom(ref ReceivedPacket packet);
 
         public virtual void Close()
         {

@@ -7,9 +7,9 @@ namespace Pixockets
     public class SmartSock
     {
         public int ConnectionTimeout = 10000;
-        public int AckTimeout = 1000;
+        public int AckTimeout = 2000;  // Should be less than max tick
         public int MaxPayload = 1100;  // Shold be less than SubSock.MTU - HeaderLength
-        public int FragmentTimeout = 1000;
+        public int FragmentTimeout = 2000;
 
         private const int DeltaThreshold = 1000000000;
 
@@ -58,9 +58,9 @@ namespace Pixockets
             SubSock.Receive(port);
         }
 
-        private ReceivedSmartPacket OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint)
+        private bool OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
         {
-            ReceivedSmartPacket result = null;
+            bool haveResult = false;
 
             // Update activity timestamp on receive packet
             var seqState = GetSeqState(endPoint);
@@ -76,19 +76,19 @@ namespace Pixockets
             {
                 // Wrong packet
                 _headersPool.Put(header);
-                return null;
+                return false;
             }
 
             if ((header.Flags & PacketHeader.ContainsFrag) != 0)
             {
-                result = OnReceiveFragment(buffer, offset, length, endPoint, header);
+                haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
             }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
                 bool inOrder = seqState.IsInOrder(header.SeqNum);
                 if (inOrder || !seqState.IsDuplicate(header.SeqNum))
                 {
-                    result = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder);
+                    haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
                 }
                 if (inOrder)
                 {
@@ -108,29 +108,29 @@ namespace Pixockets
 
             _headersPool.Put(header);
 
-            return result;
+            return haveResult;
         }
 
-        public ReceivedSmartPacket ReceiveFrom()
+        public bool ReceiveFrom(ref ReceivedSmartPacket receivedPacket)
         {
-            ReceivedSmartPacket result = null;
+            bool haveResult = false;
+            var packet = new ReceivedPacket();
             while (true)
             {
-                ReceivedPacket packet = SubSock.ReceiveFrom();
-                if (packet != null)
+                if (SubSock.ReceiveFrom(ref packet))
                 {
-                    result = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint);
+                    haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, ref receivedPacket);
                 }
                 else
                 {
                     break;
                 }
-                if (result != null)
+                if (haveResult)
                 {
                     break;
                 }
             }
-            return result;
+            return haveResult;
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
@@ -229,31 +229,30 @@ namespace Pixockets
             _toDelete.Clear();
         }
 
-        private ReceivedSmartPacket OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder)
+        private bool OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder, ref ReceivedSmartPacket receivedPacket)
         {
             var headerLen = header.HeaderLength;
 
             var payloadLength = length - headerLen;
             if (payloadLength > 0)
             {
-                var result = new ReceivedSmartPacket();
-                result.Buffer = buffer;
-                result.Offset = offset + headerLen;
-                result.Length = payloadLength;
-                result.EndPoint = endPoint;
-                result.InOrder = inOrder;
-                return result;
+                receivedPacket.Buffer = buffer;
+                receivedPacket.Offset = offset + headerLen;
+                receivedPacket.Length = payloadLength;
+                receivedPacket.EndPoint = endPoint;
+                receivedPacket.InOrder = inOrder;
+                return true;
             }
 
-            return null;
+            return false;
         }
 
-        private ReceivedSmartPacket OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header)
+        private bool OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, ref ReceivedSmartPacket receivedPacket)
         {
             var seqState = GetSeqState(endPoint);
             seqState.AddFragment(buffer, offset, length, header);
 
-            return seqState.CombineIfFull(header, endPoint, _callbacks);
+            return seqState.CombineIfFull(header, endPoint, _callbacks, ref receivedPacket);
         }
 
         // TODO: move it to some common class

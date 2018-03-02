@@ -9,30 +9,30 @@ namespace UnitTests
     {
         public static ReceivedPacket WaitOnReceive(SockBase sock)
         {
+            var receivedPacket = new ReceivedPacket();
             for (int i = 0; i < 1000; ++i)
             {
-                var receivedPacket = sock.ReceiveFrom();
-                if (receivedPacket != null)
+                if (sock.ReceiveFrom(ref receivedPacket))
                 {
                     return receivedPacket;
                 }
                 Thread.Sleep(1);
             }
-            return null;
+            return receivedPacket;
         }
 
         public static ReceivedSmartPacket WaitOnReceive(SmartSock sock)
         {
             for (int i = 0; i < 1000; ++i)
             {
-                var receivedPacket = sock.ReceiveFrom();
-                if (receivedPacket != null)
+                var receivedPacket = new ReceivedSmartPacket();
+                if (sock.ReceiveFrom(ref receivedPacket))
                 {
                     return receivedPacket;
                 }
                 Thread.Sleep(1);
             }
-            return null;
+            return new ReceivedSmartPacket();
         }
 
         public static List<ReceivedSmartPacket> ReceiveAll(SmartSock sock)
@@ -40,8 +40,8 @@ namespace UnitTests
             var result = new List<ReceivedSmartPacket>();
             for (int i = 0; i < 1000; ++i)
             {
-                var receivedPacket = sock.ReceiveFrom();
-                if (receivedPacket != null)
+                var receivedPacket = new ReceivedSmartPacket();
+                if (sock.ReceiveFrom(ref receivedPacket))
                 {
                     result.Add(receivedPacket);
                 }

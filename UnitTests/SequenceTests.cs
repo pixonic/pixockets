@@ -31,12 +31,12 @@ namespace UnitTests
             SendPacket(0);
             SendPacket(1);
 
-            var receivedPacket1 = _sock.ReceiveFrom();
-            Assert.IsNotNull(receivedPacket1);
+            var receivedPacket1 = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket1));
             Assert.IsTrue(receivedPacket1.InOrder);
 
-            var receivedPacket2 = _sock.ReceiveFrom();
-            Assert.IsNotNull(receivedPacket2);
+            var receivedPacket2 = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket2));
             Assert.IsTrue(receivedPacket2.InOrder);
         }
 
@@ -46,12 +46,12 @@ namespace UnitTests
             SendPacket(2);
             SendPacket(1);
 
-            var receivedPacket1 = _sock.ReceiveFrom();
-            Assert.IsNotNull(receivedPacket1);
+            var receivedPacket1 = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket1));
             Assert.IsTrue(receivedPacket1.InOrder);
 
-            var receivedPacket2 = _sock.ReceiveFrom();
-            Assert.IsNotNull(receivedPacket2);
+            var receivedPacket2 = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket2));
             Assert.IsFalse(receivedPacket2.InOrder);
         }
 
@@ -158,8 +158,8 @@ namespace UnitTests
             Assert.AreEqual(1, receivedPackets.Count);
 
             SendPacket(1);
-            var receivedPacket = _sock.ReceiveFrom();
-            Assert.IsNull(receivedPacket);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
         }
 
         [Test]
@@ -172,12 +172,12 @@ namespace UnitTests
             Assert.AreEqual(2, receivedPackets.Count);
 
             SendPacket(1);
-            var receivedPacket1 = _sock.ReceiveFrom();
-            Assert.IsNull(receivedPacket1);
+            var receivedPacket1 = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket1));
 
             SendPacket(2);
-            var receivedPacket2 = _sock.ReceiveFrom();
-            Assert.IsNull(receivedPacket2);
+            var receivedPacket2 = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket2));
         }
 
         private void SendPacket(int n)
