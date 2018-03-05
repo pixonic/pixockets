@@ -58,59 +58,6 @@ namespace Pixockets
             SubSock.Receive(port);
         }
 
-        private bool OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
-        {
-            bool haveResult = false;
-
-            // Update activity timestamp on receive packet
-            var seqState = GetSeqState(endPoint);
-            seqState.LastActive = Environment.TickCount;
-            if (seqState.CheckConnected())
-            {
-                _callbacks.OnConnect(endPoint);
-            }
-
-            var header = _headersPool.Get();
-            header.Init(buffer, offset);
-            if (length != header.Length)
-            {
-                // Wrong packet
-                _headersPool.Put(header);
-                return false;
-            }
-
-            if ((header.Flags & PacketHeader.ContainsFrag) != 0)
-            {
-                haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
-            }
-            else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
-            {
-                bool inOrder = seqState.IsInOrder(header.SeqNum);
-                if (inOrder || !seqState.IsDuplicate(header.SeqNum))
-                {
-                    haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
-                }
-                if (inOrder)
-                {
-                    seqState.RegisterIncoming(header.SeqNum);
-                }
-            }
-
-            if ((header.Flags & PacketHeader.ContainsAck) != 0)
-            {
-                ReceiveAck(endPoint, header.Ack);
-            }
-
-            if ((header.Flags & PacketHeader.NeedsAck) != 0)
-            {
-                SendAck(endPoint, header.SeqNum);
-            }
-
-            _headersPool.Put(header);
-
-            return haveResult;
-        }
-
         public bool ReceiveFrom(ref ReceivedSmartPacket receivedPacket)
         {
             bool haveResult = false;
@@ -227,6 +174,59 @@ namespace Pixockets
             }
 
             _toDelete.Clear();
+        }
+
+        private bool OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
+        {
+            bool haveResult = false;
+
+            // Update activity timestamp on receive packet
+            var seqState = GetSeqState(endPoint);
+            seqState.LastActive = Environment.TickCount;
+            if (seqState.CheckConnected())
+            {
+                _callbacks.OnConnect(endPoint);
+            }
+
+            var header = _headersPool.Get();
+            header.Init(buffer, offset);
+            if (length != header.Length)
+            {
+                // Wrong packet
+                _headersPool.Put(header);
+                return false;
+            }
+
+            if ((header.Flags & PacketHeader.ContainsFrag) != 0)
+            {
+                haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
+            }
+            else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
+            {
+                bool inOrder = seqState.IsInOrder(header.SeqNum);
+                if (inOrder || !seqState.IsDuplicate(header.SeqNum))
+                {
+                    haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
+                }
+                if (inOrder)
+                {
+                    seqState.RegisterIncoming(header.SeqNum);
+                }
+            }
+
+            if ((header.Flags & PacketHeader.ContainsAck) != 0)
+            {
+                ReceiveAck(endPoint, header.Ack);
+            }
+
+            if ((header.Flags & PacketHeader.NeedsAck) != 0)
+            {
+                SendAck(endPoint, header.SeqNum);
+            }
+
+            _headersPool.Put(header);
+
+            return haveResult;
         }
 
         private bool OnReceiveComplete(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, bool inOrder, ref ReceivedSmartPacket receivedPacket)

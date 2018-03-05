@@ -20,7 +20,6 @@ namespace Pixockets
         private IPEndPoint _receiveEndPoint;
 
         private readonly Thread _sendThread;
-        private readonly ThreadSafePool<PacketToSend> _packetToSendPool = new ThreadSafePool<PacketToSend>();
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
         private readonly Thread _receiveThread;
@@ -83,7 +82,7 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            var packet = _packetToSendPool.Get();
+            var packet = new PacketToSend();
             packet.EndPoint = endPoint;
             packet.Buffer = buffer;
             packet.Offset = offset;
@@ -101,7 +100,6 @@ namespace Pixockets
                 SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 if (packet.PutBufferToPool)
                     _buffersPool.Put(packet.Buffer);
-                _packetToSendPool.Put(packet);
             }
         }
 

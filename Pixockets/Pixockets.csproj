@@ -66,6 +66,7 @@
     <Compile Include="Core\Buffers\DefaultArrayPool.cs" />
     <Compile Include="Core\Buffers\DefaultArrayPoolBucket.cs" />
     <Compile Include="Core\Buffers\Utilities.cs" />
+    <Compile Include="ThreadSafeSmartSock.cs" />
     <Compile Include="ThreadSock.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -20,7 +20,7 @@ namespace ReplicatorClient
         private volatile bool _initReceived;
 
         private MultiDict<int, Vertex> Followers = new MultiDict<int, Vertex>();
-        private SmartSock _socket;
+        private ThreadSafeSmartSock _socket;
         private Thread _ticker;
         private Random _rnd = new Random(Guid.NewGuid().GetHashCode());
         private int _myId;
@@ -75,8 +75,8 @@ namespace ReplicatorClient
 
         public void Connect(float x, float y)
         {
-            //var bufferPool = new CoreBufferPool();
-            _socket = new SmartSock(_bufferPool, new ThreadSock(_bufferPool), this);
+            var smartSock = new SmartSock(_bufferPool, new ThreadSock(_bufferPool), this);
+            _socket = new ThreadSafeSmartSock(smartSock);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
             _socket.Receive();
