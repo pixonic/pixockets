@@ -21,7 +21,6 @@ namespace Pixockets
 
         private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
         private SmartReceiverBase _callbacks;
-        private readonly Pool<NotAckedPacket> _notAckedPool = new Pool<NotAckedPacket>();
         private readonly BufferPoolBase _buffersPool;
         private readonly Pool<FragmentedPacket> _fragPacketsPool = new Pool<FragmentedPacket>();
         private readonly Pool<SequenceState> _seqStatesPool = new Pool<SequenceState>();
@@ -345,7 +344,7 @@ namespace Pixockets
 
         private void AddNotAcked(SequenceState seqState, ushort seqNum, ArraySegment<byte> fullBuffer)
         {
-            var notAcked = _notAckedPool.Get();
+            var notAcked = new NotAckedPacket();
             notAcked.Buffer = fullBuffer.Array;
             notAcked.Offset = fullBuffer.Offset;
             notAcked.Length = fullBuffer.Count;
@@ -381,7 +380,7 @@ namespace Pixockets
             if (!_seqStates.ContainsKey(endPoint))
             {
                 result = _seqStatesPool.Get();
-                result.Init(_buffersPool, _fragPacketsPool, _notAckedPool);
+                result.Init(_buffersPool, _fragPacketsPool);
                 _seqStates.Add(endPoint, result);
             }
             else

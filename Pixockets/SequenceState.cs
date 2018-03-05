@@ -18,7 +18,6 @@ namespace Pixockets
         private ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferSize];
         private int _lastRecevedSeqNumIdx = 0;
 
-        private Pool<NotAckedPacket> _notAckedPool;
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
 
@@ -26,11 +25,10 @@ namespace Pixockets
         {
         }
 
-        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<NotAckedPacket> notAckedPool)
+        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool)
         {
             _buffersPool = buffersPool;
             _fragPacketsPool = fragPacketsPool;
-            _notAckedPool = notAckedPool;
             LastActive = Environment.TickCount;
         }
 
@@ -172,7 +170,6 @@ namespace Pixockets
                 {
                     _notAcked.RemoveAt(i);
                     _buffersPool.Put(packet.Buffer);
-                    _notAckedPool.Put(packet);
                     break;
                 }
             }
@@ -185,7 +182,6 @@ namespace Pixockets
             {
                 var packet = _notAcked[i];
                 _buffersPool.Put(packet.Buffer);
-                _notAckedPool.Put(packet);
             }
             _notAcked.Clear();
 
