@@ -11,9 +11,9 @@ namespace UnitTests
     [TestFixture]
     public class ReliableSendTests
     {
-        MockSmartCallbacks _cbs;
-        MockSock _bareSock;
-        SmartSock _sock;
+        private MockSmartCallbacks _cbs;
+        private MockSock _bareSock;
+        private SmartSock _sock;
 
         [SetUp]
         public void Setup()
@@ -46,20 +46,20 @@ namespace UnitTests
         [Test]
         public void ReceiveReliable()
         {
-            var header = new PacketHeader();
-            header.SetNeedAck();
-            header.SetSeqNum(123);
-            header.Length = (ushort)(header.HeaderLength + 4);
-            var ms = new MemoryStream();
-            header.WriteTo(ms);
-            ms.Write(BitConverter.GetBytes(123456789), 0, 4);
-            var buffer = ms.ToArray();
+            var buffer1 = FakeSentPacket(123);
+            _bareSock.FakeReceive(buffer1, 0, buffer1.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
-            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            var buffer2 = FakeSentPacket(124);
+            _bareSock.FakeReceive(buffer2, 0, buffer2.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
 
+            // Ack not sent yet
+            Assert.AreEqual(0, _bareSock.Sends.Count);
+            _sock.Tick();
+            // Ack sent
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             // Make sure ack sent
@@ -68,6 +68,7 @@ namespace UnitTests
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
             Assert.Contains(123, ackHeader.Acks);
+            Assert.Contains(124, ackHeader.Acks);
             Assert.IsFalse(ackHeader.GetNeedAck());
             Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);
         }
@@ -100,16 +101,14 @@ namespace UnitTests
         {
             _sock.AckTimeout = 1;
 
-            var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes(123456789), 0, 4);
-            var buffer = ms.ToArray();
+            var buffer = BitConverter.GetBytes(123456789);
             _sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
 
             var sent = _bareSock.Sends[0];
             var headerSent = new PacketHeader();
             headerSent.Init(sent.Buffer, sent.Offset);
 
-            ms.Seek(0, SeekOrigin.Begin);
+            var ms = new MemoryStream();
             var ackHeader = new PacketHeader();
             ackHeader.SetAck(headerSent.SeqNum);
             ackHeader.Length = (ushort)ackHeader.HeaderLength;
@@ -125,6 +124,19 @@ namespace UnitTests
             _sock.Tick();
 
             Assert.AreEqual(1, _bareSock.Sends.Count);
+        }
+
+        private static byte[] FakeSentPacket(ushort seqNum)
+        {
+            var header = new PacketHeader();
+            header.SetNeedAck();
+            header.SetSeqNum(seqNum);
+            header.Length = (ushort)(header.HeaderLength + 4);
+            var ms = new MemoryStream();
+            header.WriteTo(ms);
+            ms.Write(BitConverter.GetBytes(456 * seqNum), 0, 4);
+            var buffer = ms.ToArray();
+            return buffer;
         }
     }
 }

@@ -62,13 +62,13 @@ namespace Pixockets
             }
             if ((Flags & ContainsAck) != 0)
             {
-                int acksCount = buffer[pos];
+                int acksCount = buffer[pos++];
                 for (int i = 0; i < acksCount; ++i)
                 {
-                    ushort ack = BitConverter.ToUInt16(buffer, pos + 1);
+                    ushort ack = BitConverter.ToUInt16(buffer, pos);
+                    pos += 2;
                     Acks.Add(ack);
                 }
-                pos += 1 + acksCount * 2;
             }
             if ((Flags & ContainsFrag) != 0)
             {

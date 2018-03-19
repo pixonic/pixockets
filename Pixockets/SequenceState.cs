@@ -9,26 +9,30 @@ namespace Pixockets
         public int LastActive;
         private const int ReceivedSeqNumBufferSize = 32;
 
+        private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
+        private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
+        private readonly List<ushort> _ackQueue = new List<ushort>();
+        private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferSize];
+
         private bool _connected = false;
         private ushort _nextSeqNum;
         private ushort _nextFragId;
-        private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
-        private List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private int _lastReceivedSeqNum = -1;  // int for calculations
-        private ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferSize];
         private int _lastRecevedSeqNumIdx = 0;
 
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
+        private Pool<PacketHeader> _headersPool;
 
         public SequenceState()
         {
         }
 
-        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool)
+        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
             _buffersPool = buffersPool;
             _fragPacketsPool = fragPacketsPool;
+            _headersPool = headersPool;
             LastActive = Environment.TickCount;
         }
 
@@ -87,7 +91,6 @@ namespace Pixockets
 
         public bool CombineIfFull(PacketHeader header, IPEndPoint endPoint, SmartReceiverBase cbs, ref ReceivedSmartPacket receivedPacket)
         {
-            byte[] combinedBuffer;
             int fullLength = 0;
 
             // TODO: validate that headers of all fragments match
@@ -105,7 +108,7 @@ namespace Pixockets
                 fullLength += frag.Buffers[i].Length;
             }
 
-            combinedBuffer = _buffersPool.Get(fullLength);
+            byte[] combinedBuffer = _buffersPool.Get(fullLength);
             var targetOffset = 0;
             for (int i = 0; i < buffersCount; ++i)
             {
@@ -153,6 +156,27 @@ namespace Pixockets
                     _fragPacketsPool.Put(frag);
                 }
             }
+
+            while (_ackQueue.Count > 0)
+            {
+                var header = _headersPool.Get();
+
+                int acksPerPacket = Math.Min(_ackQueue.Count, 255);
+                // TODO: optimize if needed
+                for (int i = 0; i < acksPerPacket; i++)
+                {
+                    var seqNum = _ackQueue[i];
+                    header.SetAck(seqNum);
+                }
+                _ackQueue.RemoveRange(0, acksPerPacket);
+
+                header.Length = (ushort)header.HeaderLength;
+                var buffer = _buffersPool.Get(header.Length);
+                header.WriteTo(buffer, 0);
+                sock.Send(endPoint, buffer, 0, header.Length, true);
+
+                _headersPool.Put(header);
+            }
         }
 
         public void AddNotAcked(NotAckedPacket packet)
@@ -160,7 +184,12 @@ namespace Pixockets
             _notAcked.Add(packet);
         }
 
-        public void ReceiveAck(IPEndPoint endPoint, List<ushort> acks)
+        public void EnqueueAck(ushort seqNum)
+        {
+            _ackQueue.Add(seqNum);
+        }
+
+        public void ReceiveAck(List<ushort> acks)
         {
             var acksCount = acks.Count;
             for (int i = 0; i < acksCount; ++i)

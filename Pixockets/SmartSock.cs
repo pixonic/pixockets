@@ -19,8 +19,8 @@ namespace Pixockets
 
         public readonly SockBase SubSock;
 
-        private Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
-        private SmartReceiverBase _callbacks;
+        private readonly Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
+        private readonly SmartReceiverBase _callbacks;
         private readonly BufferPoolBase _buffersPool;
         private readonly Pool<FragmentedPacket> _fragPacketsPool = new Pool<FragmentedPacket>();
         private readonly Pool<SequenceState> _seqStatesPool = new Pool<SequenceState>();
@@ -220,7 +220,7 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
             {
-                SendAck(endPoint, header.SeqNum);
+                EnqueueAck(endPoint, header.SeqNum);
             }
 
             _headersPool.Put(header);
@@ -354,8 +354,11 @@ namespace Pixockets
             seqState.AddNotAcked(notAcked);
         }
 
-        private void SendAck(IPEndPoint endPoint, ushort seqNum)
+        private void EnqueueAck(IPEndPoint endPoint, ushort seqNum)
         {
+            var seqState = GetSeqState(endPoint);
+            seqState.EnqueueAck(seqNum);
+            /*
             var header = _headersPool.Get();
             header.SetAck(seqNum);
             header.Length = (ushort)header.HeaderLength;
@@ -366,12 +369,13 @@ namespace Pixockets
             SubSock.Send(endPoint, buffer, 0, header.Length, true);
 
             _headersPool.Put(header);
+            */
         }
 
         private void ReceiveAck(IPEndPoint endPoint, List<ushort> acks)
         {
             var seqState = GetSeqState(endPoint);
-            seqState.ReceiveAck(endPoint, acks);
+            seqState.ReceiveAck(acks);
         }
 
         private SequenceState GetSeqState(IPEndPoint endPoint)
@@ -380,7 +384,7 @@ namespace Pixockets
             if (!_seqStates.ContainsKey(endPoint))
             {
                 result = _seqStatesPool.Get();
-                result.Init(_buffersPool, _fragPacketsPool);
+                result.Init(_buffersPool, _fragPacketsPool, _headersPool);
                 _seqStates.Add(endPoint, result);
             }
             else
