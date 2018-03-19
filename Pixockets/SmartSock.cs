@@ -215,7 +215,7 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
-                ReceiveAck(endPoint, header.Ack);
+                ReceiveAck(endPoint, header.Acks);
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
@@ -368,10 +368,10 @@ namespace Pixockets
             _headersPool.Put(header);
         }
 
-        private void ReceiveAck(IPEndPoint endPoint, ushort ack)
+        private void ReceiveAck(IPEndPoint endPoint, List<ushort> acks)
         {
             var seqState = GetSeqState(endPoint);
-            seqState.ReceiveAck(endPoint, ack);
+            seqState.ReceiveAck(endPoint, acks);
         }
 
         private SequenceState GetSeqState(IPEndPoint endPoint)

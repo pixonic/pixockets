@@ -160,17 +160,23 @@ namespace Pixockets
             _notAcked.Add(packet);
         }
 
-        public void ReceiveAck(IPEndPoint endPoint, ushort ack)
+        public void ReceiveAck(IPEndPoint endPoint, List<ushort> acks)
         {
-            var notAckedCount = _notAcked.Count;
-            for (int i = 0; i < notAckedCount; ++i)
+            var acksCount = acks.Count;
+            for (int i = 0; i < acksCount; ++i)
             {
-                var packet = _notAcked[i];
-                if (packet.SeqNum == ack)
+                var notAckedCount = _notAcked.Count;
+                var ack = acks[i];
+
+                for (int j = 0; j < notAckedCount; ++j)
                 {
-                    _notAcked.RemoveAt(i);
-                    _buffersPool.Put(packet.Buffer);
-                    break;
+                    var packet = _notAcked[j];
+                    if (packet.SeqNum == ack)
+                    {
+                        _notAcked.RemoveAt(j);
+                        _buffersPool.Put(packet.Buffer);
+                        break;
+                    }
                 }
             }
         }

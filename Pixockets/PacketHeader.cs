@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Pixockets
@@ -17,7 +18,7 @@ namespace Pixockets
                 }
                 if ((Flags & ContainsAck) != 0)
                 {
-                    res += 2;
+                    res += 1 + 2 * Acks.Count;
                 }
                 if ((Flags & ContainsFrag) != 0)
                 {
@@ -38,7 +39,7 @@ namespace Pixockets
         // We need this to detect truncated datagrams
         public ushort Length;
         public ushort SeqNum;
-        public ushort Ack;  // Acked SeqNum
+        public readonly List<ushort> Acks;  // Acked SeqNums
         public ushort FragId;  // Id of this fragment
         public ushort FragNum;  // Number of this fragment
         public ushort FragCount;  // Count of fragments in this sequence
@@ -46,6 +47,7 @@ namespace Pixockets
         public PacketHeader()
         {
             Flags = 0;
+            Acks = new List<ushort>();
         }
 
         public void Init(byte[] buffer, int offset)
@@ -60,15 +62,20 @@ namespace Pixockets
             }
             if ((Flags & ContainsAck) != 0)
             {
-                Ack = BitConverter.ToUInt16(buffer, pos);
-                pos += 2;
+                int acksCount = buffer[pos];
+                for (int i = 0; i < acksCount; ++i)
+                {
+                    ushort ack = BitConverter.ToUInt16(buffer, pos + 1);
+                    Acks.Add(ack);
+                }
+                pos += 1 + acksCount * 2;
             }
             if ((Flags & ContainsFrag) != 0)
             {
                 FragId = BitConverter.ToUInt16(buffer, pos);
                 FragNum = BitConverter.ToUInt16(buffer, pos + 2);
                 FragCount = BitConverter.ToUInt16(buffer, pos + 4);
-                pos += 6;
+                //pos += 6;
             }
         }
 
@@ -87,9 +94,8 @@ namespace Pixockets
         public void SetAck(ushort seqNum)
         {
             Flags |= ContainsAck;
-            Ack = seqNum;
+            Acks.Add(seqNum);
         }
-
 
         public void SetNeedAck()
         {
@@ -128,7 +134,12 @@ namespace Pixockets
             }
             if ((Flags & ContainsAck) != 0)
             {
-                pos = WriteUInt16(Ack, buffer, pos);
+                var acksCount = (byte)Acks.Count;
+                buffer[pos++] = acksCount;
+                for (int i = 0; i < acksCount; ++i)
+                {
+                    pos = WriteUInt16(Acks[i], buffer, pos);
+                }
             }
             if ((Flags & ContainsFrag) != 0)
             {
@@ -157,6 +168,7 @@ namespace Pixockets
         public void Strip()
         {
             Flags = 0;
+            Acks.Clear();
         }
     }
 }

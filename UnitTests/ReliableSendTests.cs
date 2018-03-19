@@ -67,7 +67,7 @@ namespace UnitTests
             ackHeader.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
-            Assert.AreEqual(123, ackHeader.Ack);
+            Assert.Contains(123, ackHeader.Acks);
             Assert.IsFalse(ackHeader.GetNeedAck());
             Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);
         }
