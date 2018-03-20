@@ -10,7 +10,7 @@ namespace Pixockets
 
         public abstract void Connect(IPAddress address, int port);
 
-        public abstract void Receive(int port);
+        public abstract void Listen(int port);
 
         public abstract void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool);
 

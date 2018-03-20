@@ -24,7 +24,7 @@ namespace Pixockets
         {
             lock (_syncObject)
             {
-                _socket.Receive(port);
+                _socket.Listen(port);
             }
         }
 

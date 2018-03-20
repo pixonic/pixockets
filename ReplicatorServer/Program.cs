@@ -12,7 +12,7 @@ namespace ReplicatorServer
             var sock = new SmartSock(bufferPool, new BareSock(bufferPool), callbacks);
             callbacks.SetSocket(sock);
 
-            sock.Receive(2345);
+            sock.Listen(2345);
 
             while (true)
             {

@@ -14,7 +14,7 @@ namespace UnitTests
         {
             var bufferPool = new CoreBufferPool();
             BareSock sock = new BareSock(bufferPool);
-            sock.Receive(23459);
+            sock.Listen(23459);
 
             UdpClient udpClient = new UdpClient();
             udpClient.Connect(IPAddress.Loopback, 23459);

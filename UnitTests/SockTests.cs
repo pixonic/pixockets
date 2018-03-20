@@ -32,7 +32,7 @@ namespace UnitTests
         [Test]
         public void SockReceive()
         {
-            _sock.Receive(23456);
+            _sock.Listen(23456);
 
             UdpClient udpClient = new UdpClient();
             udpClient.Connect(IPAddress.Loopback, 23456);

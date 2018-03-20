@@ -47,9 +47,9 @@ namespace Pixockets
             SubSock.Connect(address, port);
         }
 
-        public void Receive(int port)
+        public void Listen(int port)
         {
-            SubSock.Receive(port);
+            SubSock.Listen(port);
         }
 
         public bool ReceiveFrom(ref ReceivedSmartPacket receivedPacket)

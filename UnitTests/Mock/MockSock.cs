@@ -29,7 +29,7 @@ namespace UnitTests.Mock
             ConnectEndPoint = new IPEndPoint(address, port);
         }
 
-        public override void Receive(int port)
+        public override void Listen(int port)
         {
             ReceiveOnPortCalls.Add(port);
         }

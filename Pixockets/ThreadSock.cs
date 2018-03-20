@@ -60,7 +60,7 @@ namespace Pixockets
             }
         }
 
-        public override void Receive(int port)
+        public override void Listen(int port)
         {
             _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
             _remoteEndPoint = _receiveEndPoint;

@@ -37,7 +37,7 @@ namespace UnitTests
         [Test]
         public void ThreadSockReceive()
         {
-            _sock.Receive(23466);
+            _sock.Listen(23466);
             Assert.AreEqual(IPAddress.Any, _sock.LocalEndPoint.Address);
             Assert.AreEqual(23466, _sock.LocalEndPoint.Port);
 
