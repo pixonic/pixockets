@@ -80,7 +80,7 @@ namespace TestServer
             var packet = new ReceivedSmartPacket();
             while (true)
             {
-                if (_servSock.ReceiveFrom(ref packet))
+                if (_servSock.Receive(ref packet))
                 {
                     OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
                     // TODO: return buffer to pool

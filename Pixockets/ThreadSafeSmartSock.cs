@@ -20,7 +20,7 @@ namespace Pixockets
             }
         }
 
-        public void Receive(int port)
+        public void Listen(int port)
         {
             lock (_syncObject)
             {
@@ -28,11 +28,11 @@ namespace Pixockets
             }
         }
 
-        public bool ReceiveFrom(ref ReceivedSmartPacket receivedPacket)
+        public bool Receive(ref ReceivedSmartPacket receivedPacket)
         {
             lock (_syncObject)
             {
-                return _socket.ReceiveFrom(ref receivedPacket);
+                return _socket.Receive(ref receivedPacket);
             }
         }
 

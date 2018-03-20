@@ -41,7 +41,7 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
 
             Thread.Sleep(20);
             _sock.Tick();

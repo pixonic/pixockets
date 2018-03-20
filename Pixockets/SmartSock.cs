@@ -52,13 +52,13 @@ namespace Pixockets
             SubSock.Listen(port);
         }
 
-        public bool ReceiveFrom(ref ReceivedSmartPacket receivedPacket)
+        public bool Receive(ref ReceivedSmartPacket receivedPacket)
         {
             bool haveResult = false;
             var packet = new ReceivedPacket();
             while (true)
             {
-                if (SubSock.ReceiveFrom(ref packet))
+                if (SubSock.Receive(ref packet))
                 {
                     haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, ref receivedPacket);
                 }

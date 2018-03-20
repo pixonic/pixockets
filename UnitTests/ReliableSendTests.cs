@@ -53,8 +53,8 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer2, 0, buffer2.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
 
             // Ack not sent yet
             Assert.AreEqual(0, _bareSock.Sends.Count);
@@ -84,8 +84,8 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer2, 0, buffer2.Length, endPoint);
 
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
 
             // Ack not sent yet
             Assert.AreEqual(0, _bareSock.Sends.Count);
@@ -151,7 +151,7 @@ namespace UnitTests
 
             var receivedPacket = new ReceivedSmartPacket();
             // Just ack in the packet, no payload
-            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
             Thread.Sleep(20);
             _sock.Tick();

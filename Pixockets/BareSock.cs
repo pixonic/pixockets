@@ -78,7 +78,7 @@ namespace Pixockets
             Send(RemoteEndPoint, buffer, offset, length, putBufferToPool);
         }
 
-        public override bool ReceiveFrom(ref ReceivedPacket packet)
+        public override bool Receive(ref ReceivedPacket packet)
         {
             return _receivedQueue.TryTake(out packet);
         }

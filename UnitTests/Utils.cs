@@ -12,7 +12,7 @@ namespace UnitTests
             var receivedPacket = new ReceivedPacket();
             for (int i = 0; i < 1000; ++i)
             {
-                if (sock.ReceiveFrom(ref receivedPacket))
+                if (sock.Receive(ref receivedPacket))
                 {
                     return receivedPacket;
                 }
@@ -26,7 +26,7 @@ namespace UnitTests
             for (int i = 0; i < 1000; ++i)
             {
                 var receivedPacket = new ReceivedSmartPacket();
-                if (sock.ReceiveFrom(ref receivedPacket))
+                if (sock.Receive(ref receivedPacket))
                 {
                     return receivedPacket;
                 }
@@ -41,7 +41,7 @@ namespace UnitTests
             for (int i = 0; i < 1000; ++i)
             {
                 var receivedPacket = new ReceivedSmartPacket();
-                if (sock.ReceiveFrom(ref receivedPacket))
+                if (sock.Receive(ref receivedPacket))
                 {
                     result.Add(receivedPacket);
                 }

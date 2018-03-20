@@ -128,7 +128,7 @@ namespace Pixockets
             }
         }
 
-        public override bool ReceiveFrom(ref ReceivedPacket packet)
+        public override bool Receive(ref ReceivedPacket packet)
         {
             return _recvQueue.TryTake(out packet);
         }

@@ -40,7 +40,7 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
                 
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, receivedPacket.Offset));
             Assert.AreEqual(5, receivedPacket.Offset); // Length + Flags + SeqNum
@@ -62,7 +62,7 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
 
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
         }

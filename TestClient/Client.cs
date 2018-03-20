@@ -37,7 +37,7 @@ namespace TestClient
                 var packet = new ReceivedSmartPacket();
                 while (true)
                 {
-                    if (sock.ReceiveFrom(ref packet))
+                    if (sock.Receive(ref packet))
                     {
                         callbacks.OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
                     }

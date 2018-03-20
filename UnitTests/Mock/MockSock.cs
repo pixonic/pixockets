@@ -49,7 +49,7 @@ namespace UnitTests.Mock
             });
         }
 
-        public override bool ReceiveFrom(ref ReceivedPacket packet)
+        public override bool Receive(ref ReceivedPacket packet)
         {
             if (Recvs.Count > 0)
             {

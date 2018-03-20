@@ -32,11 +32,11 @@ namespace UnitTests
             SendPacket(1);
 
             var receivedPacket1 = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket1));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket1));
             Assert.IsTrue(receivedPacket1.InOrder);
 
             var receivedPacket2 = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket2));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket2));
             Assert.IsTrue(receivedPacket2.InOrder);
         }
 
@@ -47,11 +47,11 @@ namespace UnitTests
             SendPacket(1);
 
             var receivedPacket1 = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket1));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket1));
             Assert.IsTrue(receivedPacket1.InOrder);
 
             var receivedPacket2 = new ReceivedSmartPacket();
-            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket2));
+            Assert.IsTrue(_sock.Receive(ref receivedPacket2));
             Assert.IsFalse(receivedPacket2.InOrder);
         }
 
@@ -159,7 +159,7 @@ namespace UnitTests
 
             SendPacket(1);
             var receivedPacket = new ReceivedSmartPacket();
-            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
         }
 
         [Test]
@@ -173,11 +173,11 @@ namespace UnitTests
 
             SendPacket(1);
             var receivedPacket1 = new ReceivedSmartPacket();
-            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket1));
+            Assert.IsFalse(_sock.Receive(ref receivedPacket1));
 
             SendPacket(2);
             var receivedPacket2 = new ReceivedSmartPacket();
-            Assert.IsFalse(_sock.ReceiveFrom(ref receivedPacket2));
+            Assert.IsFalse(_sock.Receive(ref receivedPacket2));
         }
 
         private void SendPacket(int n)
