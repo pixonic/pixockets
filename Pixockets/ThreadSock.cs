@@ -51,10 +51,7 @@ namespace Pixockets
                 }
                 SysSock.Connect(_remoteEndPoint);
             }
-        }
 
-        public override void Receive()
-        {
             _receiveEndPoint = AnyEndPoint;
 
             if (_receiveThread.ThreadState != ThreadState.Running)

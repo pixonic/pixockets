@@ -59,7 +59,6 @@ namespace TestClient
         private static void Connect(string addr, SmartSock sock)
         {
             sock.Connect(IPAddress.Parse(addr), 2345);
-            sock.Receive();
 
             var ep = (IPEndPoint)sock.LocalEndPoint;
             Console.WriteLine("{0}:{1}", ep.Address, ep.Port);

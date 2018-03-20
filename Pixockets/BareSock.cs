@@ -46,10 +46,7 @@ namespace Pixockets
                 }
                 SysSock.Connect(_remoteEndPoint);
             }
-        }
 
-        public override void Receive()
-        {
             _receiveEndPoint = AnyEndPoint;
             var eReceive = GetRecvArgs();
             ActualReceive(eReceive);

@@ -79,7 +79,6 @@ namespace ReplicatorClient
             _socket = new ThreadSafeSmartSock(smartSock);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
-            _socket.Receive();
 
             var ms = new MemoryStream();
             ms.WriteByte(0);  // Init request packet

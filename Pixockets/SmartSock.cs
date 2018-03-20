@@ -47,11 +47,6 @@ namespace Pixockets
             SubSock.Connect(address, port);
         }
 
-        public void Receive()
-        {
-            SubSock.Receive();
-        }
-
         public void Receive(int port)
         {
             SubSock.Receive(port);

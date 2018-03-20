@@ -29,7 +29,6 @@ namespace UnitTests
         {
             _sock.ConnectionTimeout = 1;
             _sock.Connect(IPAddress.Loopback, 23451);
-            _sock.Receive();
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length

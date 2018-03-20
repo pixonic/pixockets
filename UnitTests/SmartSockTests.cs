@@ -28,7 +28,6 @@ namespace UnitTests
         public void SmartSockReceive()
         {
             _sock.Connect(IPAddress.Loopback, 23451);
-            _sock.Receive();
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length
@@ -52,7 +51,6 @@ namespace UnitTests
         public void ReceivedPacketWithWrongLengthDropped()
         {
             _sock.Connect(IPAddress.Loopback, 23451);
-            _sock.Receive();
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)5), 0, 2);  // Wrong Length

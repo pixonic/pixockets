@@ -20,14 +20,6 @@ namespace Pixockets
             }
         }
 
-        public void Receive()
-        {
-            lock (_syncObject)
-            {
-                _socket.Receive();
-            }
-        }
-
         public void Receive(int port)
         {
             lock (_syncObject)

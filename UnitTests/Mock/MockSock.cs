@@ -9,7 +9,6 @@ namespace UnitTests.Mock
         public IPEndPoint ConnectEndPoint;
         public List<PacketToSend> Sends = new List<PacketToSend>();
         public List<ReceivedPacket> Recvs = new List<ReceivedPacket>();
-        public int ReceiveCalls;
         public List<int> ReceiveOnPortCalls = new List<int>();
 
         public override IPEndPoint LocalEndPoint
@@ -28,11 +27,6 @@ namespace UnitTests.Mock
         public override void Connect(IPAddress address, int port)
         {
             ConnectEndPoint = new IPEndPoint(address, port);
-        }
-
-        public override void Receive()
-        {
-            ReceiveCalls += 1;
         }
 
         public override void Receive(int port)

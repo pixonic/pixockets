@@ -84,7 +84,7 @@ namespace UnitTests
 
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
-            Assert.AreEqual(1, _bufferPool.Rented.Count);
+            Assert.AreEqual(2, _bufferPool.Rented.Count);
             Utils.WaitOnSet(_bufferPool.Returned);
             Assert.AreEqual(1, _bufferPool.Returned.Count);
             Assert.AreEqual(0, _bufferPool.Alien);
@@ -96,7 +96,6 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23468);
 
             _sock.Connect(IPAddress.Loopback, 23468);
-            _sock.Receive();
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 
@@ -107,13 +106,6 @@ namespace UnitTests
             Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(2, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
-        }
-
-        [Test]
-        public void ThreadSockReceiveError()
-        {
-            _sock.Receive();
-            // TODO: check error
         }
     }
 }

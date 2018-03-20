@@ -71,7 +71,6 @@ namespace UnitTests
             UdpClient udpClient = new UdpClient(23458);
 
             _sock.Connect(IPAddress.Loopback, 23458);
-            _sock.Receive();
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 
