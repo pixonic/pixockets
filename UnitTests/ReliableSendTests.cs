@@ -74,6 +74,39 @@ namespace UnitTests
         }
 
         [Test]
+        public void AcksSentWithPayload()
+        {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            var buffer1 = FakeSentPacket(234);
+            _bareSock.FakeReceive(buffer1, 0, buffer1.Length, endPoint);
+
+            var buffer2 = FakeSentPacket(235);
+            _bareSock.FakeReceive(buffer2, 0, buffer2.Length, endPoint);
+
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+            Assert.IsTrue(_sock.ReceiveFrom(ref receivedPacket));
+
+            // Ack not sent yet
+            Assert.AreEqual(0, _bareSock.Sends.Count);
+
+            var payload = BitConverter.GetBytes(987654321);
+            _sock.Send(endPoint, payload, 0, payload.Length);
+            // Msg with acks sent
+            Assert.AreEqual(1, _bareSock.Sends.Count);
+
+            // Make sure ack sent
+            var ackHeader = new PacketHeader();
+            ackHeader.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
+            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
+            Assert.Contains(234, ackHeader.Acks);
+            Assert.Contains(235, ackHeader.Acks);
+            Assert.IsFalse(ackHeader.GetNeedAck());
+            Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);
+        }
+
+        [Test]
         public void ReSendAfterTimeout()
         {
             _sock.AckTimeout = 1;
@@ -110,7 +143,7 @@ namespace UnitTests
 
             var ms = new MemoryStream();
             var ackHeader = new PacketHeader();
-            ackHeader.SetAck(headerSent.SeqNum);
+            ackHeader.AddAck(headerSent.SeqNum);
             ackHeader.Length = (ushort)ackHeader.HeaderLength;
             ackHeader.WriteTo(ms);
             buffer = ms.ToArray();

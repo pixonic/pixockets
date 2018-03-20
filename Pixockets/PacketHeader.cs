@@ -91,7 +91,7 @@ namespace Pixockets
             SeqNum = seqNum;
         }
 
-        public void SetAck(ushort seqNum)
+        public void AddAck(ushort seqNum)
         {
             Flags |= ContainsAck;
             Acks.Add(seqNum);

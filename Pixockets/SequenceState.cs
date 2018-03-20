@@ -24,6 +24,16 @@ namespace Pixockets
         private BufferPoolBase _buffersPool;
         private Pool<PacketHeader> _headersPool;
 
+        public int AckLoad
+        {
+            get { return Math.Min(_ackQueue.Count, 255) * 2; }
+        }
+
+        public int FullAckLoad
+        {
+            get { return _ackQueue.Count * 2; }
+        }
+
         public SequenceState()
         {
         }
@@ -132,7 +142,7 @@ namespace Pixockets
             receivedPacket.InOrder = inOrder;
             return true;
         }
-
+    
         public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)
         {
             var notAckedCount = _notAcked.Count;
@@ -161,14 +171,7 @@ namespace Pixockets
             {
                 var header = _headersPool.Get();
 
-                int acksPerPacket = Math.Min(_ackQueue.Count, 255);
-                // TODO: optimize if needed
-                for (int i = 0; i < acksPerPacket; i++)
-                {
-                    var seqNum = _ackQueue[i];
-                    header.SetAck(seqNum);
-                }
-                _ackQueue.RemoveRange(0, acksPerPacket);
+                AddAcks(header);
 
                 header.Length = (ushort)header.HeaderLength;
                 var buffer = _buffersPool.Get(header.Length);
@@ -177,6 +180,19 @@ namespace Pixockets
 
                 _headersPool.Put(header);
             }
+        }
+
+        public void AddAcks(PacketHeader header)
+        {
+            int acksPerPacket = Math.Min(_ackQueue.Count, 255);
+            // TODO: optimize if needed
+            for (int i = 0; i < acksPerPacket; i++)
+            {
+                var seqNum = _ackQueue[i];
+                header.AddAck(seqNum);
+            }
+
+            _ackQueue.RemoveRange(0, acksPerPacket);
         }
 
         public void AddNotAcked(NotAckedPacket packet)
