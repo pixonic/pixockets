@@ -10,18 +10,19 @@ namespace TestServer
     public class EchoServ : SmartReceiverBase
     {
         private SmartSock _servSock;
-        private ConcurrentDictionary<IPEndPoint, int> _clients = new ConcurrentDictionary<IPEndPoint, int>();
-        private Stopwatch _timer = new Stopwatch();        
+        private BufferPoolBase _bufferPool;
+        private readonly ConcurrentDictionary<IPEndPoint, int> _clients = new ConcurrentDictionary<IPEndPoint, int>();
+        private readonly Stopwatch _timer = new Stopwatch();
 
         public EchoServ()
         {
             _timer.Start();
         }
 
-        // TODO: pass byte buffer pool also
-        public void SetSocket(SmartSock socket)
+        public void SetSocket(SmartSock socket, BufferPoolBase bufferPool)
         {
             _servSock = socket;
+            _bufferPool = bufferPool;
         }
 
         public void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)
@@ -83,7 +84,7 @@ namespace TestServer
                 if (_servSock.Receive(ref packet))
                 {
                     OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, packet.InOrder);
-                    // TODO: return buffer to pool
+                    _bufferPool.Put(packet.Buffer);
                 }
                 else
                 {
