@@ -13,7 +13,7 @@ namespace UnitTests
         public void SendMoreThanMTUClamped()
         {
             var bufferPool = new CoreBufferPool();
-            BareSock sock = new BareSock(bufferPool);
+            BareSock sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
             sock.Listen(23459);
 
             UdpClient udpClient = new UdpClient();

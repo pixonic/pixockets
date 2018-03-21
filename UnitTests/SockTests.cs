@@ -19,7 +19,7 @@ namespace UnitTests
         public void Setup()
         {
             _bufferPool = new MockBufferPool();
-            _sock = new BareSock(_bufferPool);
+            _sock = new BareSock(_bufferPool, AddressFamily.InterNetwork);
         }
 
         [Test]

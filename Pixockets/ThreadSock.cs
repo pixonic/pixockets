@@ -13,12 +13,10 @@ namespace Pixockets
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
         public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
 
-        private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-        private readonly BufferPoolBase _buffersPool;
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
+        private readonly BufferPoolBase _buffersPool;
         private readonly Thread _sendThread;
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
@@ -27,32 +25,40 @@ namespace Pixockets
 
         private readonly object _syncObj = new object();
 
-
-        public ThreadSock(BufferPoolBase buffersPool)
+        public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
-            SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
 
             _buffersPool = buffersPool;
-            _sendThread = new Thread(new ThreadStart(SendLoop));
+            _sendThread = new Thread(SendLoop);
             _sendThread.IsBackground = true;
             _sendThread.Start();
-            _receiveThread = new Thread(new ThreadStart(ReceiveLoop));
+            _receiveThread = new Thread(ReceiveLoop);
             _receiveThread.IsBackground = true;
         }
 
         public override void Connect(IPAddress address, int port)
         {
             _remoteEndPoint = new IPEndPoint(address, port);
+            AddressFamily addressFamily;
             lock (_syncObj)
             {
+                addressFamily = SysSock.AddressFamily;
                 if (SysSock.IsBound)
                 {
-                    SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
                 }
                 SysSock.Connect(_remoteEndPoint);
             }
 
-            _receiveEndPoint = AnyEndPoint;
+            if (addressFamily == AddressFamily.InterNetwork)
+            {
+                _receiveEndPoint = AnyEndPoint;
+            }
+            else if (addressFamily == AddressFamily.InterNetworkV6)
+            {
+                _receiveEndPoint = AnyV6EndPoint;
+            }
 
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
@@ -62,7 +68,18 @@ namespace Pixockets
 
         public override void Listen(int port)
         {
-            _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
+            lock (_syncObj)
+            {
+                if (SysSock.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
+                }
+                else if (SysSock.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    _receiveEndPoint = new IPEndPoint(IPAddress.IPv6Any, port);
+                }
+            }
+
             _remoteEndPoint = _receiveEndPoint;
             SysSock.Bind(_remoteEndPoint);
 

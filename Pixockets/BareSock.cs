@@ -14,12 +14,10 @@ namespace Pixockets
 
         public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
 
-        private static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
-
-        private BufferPoolBase _buffersPool;
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
+        private readonly BufferPoolBase _buffersPool;
         private readonly SAEAPool _sendArgsPool = new SAEAPool();
         private readonly SAEAPool _recvArgsPool = new SAEAPool();
 
@@ -29,32 +27,53 @@ namespace Pixockets
 
         private object _syncObj = new object();
 
-        public BareSock(BufferPoolBase buffersPool)
+        public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
-            SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
             _buffersPool = buffersPool;
         }
 
         public override void Connect(IPAddress address, int port)
         {
             _remoteEndPoint = new IPEndPoint(address, port);
+            AddressFamily addressFamily;
             lock (_syncObj)
             {
+                addressFamily = SysSock.AddressFamily;
                 if (SysSock.IsBound)
                 {
-                    SysSock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                    SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
                 }
                 SysSock.Connect(_remoteEndPoint);
             }
 
-            _receiveEndPoint = AnyEndPoint;
+            if (addressFamily == AddressFamily.InterNetwork)
+            {
+                _receiveEndPoint = AnyEndPoint;
+            }
+            else if (addressFamily == AddressFamily.InterNetworkV6)
+            {
+                _receiveEndPoint = AnyV6EndPoint;
+            }
+
             var eReceive = GetRecvArgs();
             ActualReceive(eReceive);
         }
 
         public override void Listen(int port)
         {
-            _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
+            lock (_syncObj)
+            {
+                if (SysSock.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
+                }
+                else if (SysSock.AddressFamily == AddressFamily.InterNetworkV6)
+                {
+                    _receiveEndPoint = new IPEndPoint(IPAddress.IPv6Any, port);
+                }
+            }
+
             _remoteEndPoint = _receiveEndPoint;
             SysSock.Bind(_remoteEndPoint);
 

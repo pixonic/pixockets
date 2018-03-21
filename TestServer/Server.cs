@@ -1,4 +1,5 @@
-﻿using Pixockets;
+﻿using System.Net.Sockets;
+using Pixockets;
 using System.Threading;
 
 namespace TestServer
@@ -9,7 +10,7 @@ namespace TestServer
         {
             var callbacks = new EchoServ();
             var bufferPool = new CoreBufferPool();
-            var sock = new SmartSock(bufferPool, new BareSock(bufferPool), callbacks);
+            var sock = new SmartSock(bufferPool, new BareSock(bufferPool, AddressFamily.InterNetwork), callbacks);
             callbacks.SetSocket(sock, bufferPool);
 
             sock.Listen(2345);

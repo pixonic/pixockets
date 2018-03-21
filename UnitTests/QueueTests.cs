@@ -18,7 +18,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             var bufferPool = new CoreBufferPool();
-            BareSock sock = new BareSock(bufferPool);
+            BareSock sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
 
             sock.Connect(IPAddress.Loopback, 23450);
             sock.Send(BitConverter.GetBytes(1), 0, 4, true);

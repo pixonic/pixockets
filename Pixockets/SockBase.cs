@@ -5,6 +5,9 @@ namespace Pixockets
 {
     public abstract class SockBase
     {
+        protected static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        protected static readonly IPEndPoint AnyV6EndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
+
         public abstract IPEndPoint LocalEndPoint { get; }
         public abstract IPEndPoint RemoteEndPoint { get; }
 

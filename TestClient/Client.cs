@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 namespace TestClient
@@ -12,7 +13,7 @@ namespace TestClient
         {
             var callbacks = new PrintingReceiver();
             var bufferPool = new CoreBufferPool();
-            var sock = new SmartSock(bufferPool, new BareSock(bufferPool), callbacks);
+            var sock = new SmartSock(bufferPool, new BareSock(bufferPool, AddressFamily.InterNetwork), callbacks);
             var address = args[0];
 
             callbacks.Connecting = true;

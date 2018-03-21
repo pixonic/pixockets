@@ -18,7 +18,7 @@ namespace UnitTests
         public void Setup()
         {
             _bufferPool = new MockBufferPool();
-            _sock = new ThreadSock(_bufferPool);
+            _sock = new ThreadSock(_bufferPool, AddressFamily.InterNetwork);
         }
 
         [TearDown]
@@ -37,12 +37,12 @@ namespace UnitTests
         [Test]
         public void ThreadSockReceive()
         {
-            _sock.Listen(23466);
+            _sock.Listen(23476);
             Assert.AreEqual(IPAddress.Any, _sock.LocalEndPoint.Address);
-            Assert.AreEqual(23466, _sock.LocalEndPoint.Port);
+            Assert.AreEqual(23476, _sock.LocalEndPoint.Port);
 
             UdpClient udpClient = new UdpClient();
-            udpClient.Connect(IPAddress.Loopback, 23466);
+            udpClient.Connect(IPAddress.Loopback, 23476);
             udpClient.Send(BitConverter.GetBytes(123456789), 4);
 
             var receivedPacket = Utils.WaitOnReceive(_sock);
@@ -57,11 +57,11 @@ namespace UnitTests
         [Test]
         public void ThreadSockSend()
         {
-            UdpClient udpClient = new UdpClient(23467);
+            UdpClient udpClient = new UdpClient(23477);
             var receiveTask = udpClient.ReceiveAsync();
 
             // Send to specified EndPoint, don't put buffer to pool
-            var sendEP = new IPEndPoint(IPAddress.Loopback, 23467);
+            var sendEP = new IPEndPoint(IPAddress.Loopback, 23477);
             _sock.Send(sendEP, BitConverter.GetBytes(123456789), 0, 4, false);
 
             receiveTask.Wait(1000);
@@ -93,9 +93,9 @@ namespace UnitTests
         [Test]
         public void ThreadSockConnectAndReceiveFrom()
         {
-            UdpClient udpClient = new UdpClient(23468);
+            UdpClient udpClient = new UdpClient(23478);
 
-            _sock.Connect(IPAddress.Loopback, 23468);
+            _sock.Connect(IPAddress.Loopback, 23478);
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 
