@@ -1,13 +1,10 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace Pixockets
 {
     public abstract class SockBase
     {
-        protected static readonly IPEndPoint AnyEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        protected static readonly IPEndPoint AnyV6EndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
-
         public abstract IPEndPoint LocalEndPoint { get; }
         public abstract IPEndPoint RemoteEndPoint { get; }
 
@@ -23,6 +20,16 @@ namespace Pixockets
 
         public virtual void Close()
         {
+        }
+
+        protected static IPAddress AnyAddress(AddressFamily addressFamily)
+        {
+            if (addressFamily == AddressFamily.InterNetworkV6)
+            {
+                return IPAddress.IPv6Any;
+            }
+
+            return IPAddress.Any;
         }
     }
 }

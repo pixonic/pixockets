@@ -51,14 +51,7 @@ namespace Pixockets
                 SysSock.Connect(_remoteEndPoint);
             }
 
-            if (addressFamily == AddressFamily.InterNetwork)
-            {
-                _receiveEndPoint = AnyEndPoint;
-            }
-            else if (addressFamily == AddressFamily.InterNetworkV6)
-            {
-                _receiveEndPoint = AnyV6EndPoint;
-            }
+            _receiveEndPoint = new IPEndPoint(AnyAddress(addressFamily), 0);
 
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
@@ -70,18 +63,10 @@ namespace Pixockets
         {
             lock (_syncObj)
             {
-                if (SysSock.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    _receiveEndPoint = new IPEndPoint(IPAddress.Any, port);
-                }
-                else if (SysSock.AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    _receiveEndPoint = new IPEndPoint(IPAddress.IPv6Any, port);
-                }
+                _receiveEndPoint = new IPEndPoint(AnyAddress(SysSock.AddressFamily), port);
+                _remoteEndPoint = _receiveEndPoint;
+                SysSock.Bind(_remoteEndPoint);
             }
-
-            _remoteEndPoint = _receiveEndPoint;
-            SysSock.Bind(_remoteEndPoint);
 
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
