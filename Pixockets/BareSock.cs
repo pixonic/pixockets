@@ -125,10 +125,6 @@ namespace Pixockets
             {
                 OnPacketSent(e);
             }
-            else
-            {
-                Console.WriteLine("Unexpected operation completed");
-            }
         }
 
         private void OnReceiveCompleted(object sender, SocketAsyncEventArgs e)
@@ -139,10 +135,6 @@ namespace Pixockets
             if (e.LastOperation == SocketAsyncOperation.ReceiveMessageFrom)
             {
                 OnPacketReceived(e);
-            }
-            else
-            {
-                Console.WriteLine("Unexpected operation completed");
             }
         }
 

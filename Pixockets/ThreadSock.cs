@@ -125,7 +125,6 @@ namespace Pixockets
                 catch (Exception e)
                 {
                     // TODO: do something
-                    Console.WriteLine("Error sending packet: {0}", e.Message);
                 }
             }
         }
