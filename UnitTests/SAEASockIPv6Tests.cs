@@ -14,12 +14,17 @@ namespace UnitTests
         private MockBufferPool _bufferPool;
         private BareSock _sock;
 
-
         [SetUp]
         public void Setup()
         {
             _bufferPool = new MockBufferPool();
             _sock = new BareSock(_bufferPool, AddressFamily.InterNetworkV6);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
         }
 
         [Test]

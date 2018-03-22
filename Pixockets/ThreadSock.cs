@@ -137,8 +137,14 @@ namespace Pixockets
 
         public override void Close()
         {
+            SysSock.Close();
             _sendThread.Abort();
             _receiveThread.Abort();
+            _sendThread.Join();
+            if (_receiveThread.IsAlive)
+            {
+                _receiveThread.Join();
+            }
         }
     }
 }

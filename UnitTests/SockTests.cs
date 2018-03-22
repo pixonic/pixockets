@@ -22,6 +22,12 @@ namespace UnitTests
             _sock = new BareSock(_bufferPool, AddressFamily.InterNetwork);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
+        }
+
         [Test]
         public void SocketCreated()
         {

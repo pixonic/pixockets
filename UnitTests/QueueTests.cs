@@ -18,7 +18,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             var bufferPool = new CoreBufferPool();
-            BareSock sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
+            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
 
             sock.Connect(IPAddress.Loopback, 23450);
             sock.Send(BitConverter.GetBytes(1), 0, 4, true);
@@ -39,6 +39,8 @@ namespace UnitTests
             receiveTask.Wait(2000);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(3, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
+
+            sock.Close();
         }
     }
 }

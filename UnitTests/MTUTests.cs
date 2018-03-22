@@ -13,7 +13,7 @@ namespace UnitTests
         public void SendMoreThanMTUClamped()
         {
             var bufferPool = new CoreBufferPool();
-            BareSock sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
+            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
             sock.Listen(23459);
 
             UdpClient udpClient = new UdpClient();
@@ -24,6 +24,8 @@ namespace UnitTests
 
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(BareSock.MTU, receivedPacket.Length);
+
+            sock.Close();
         }
     }
 }

@@ -20,12 +20,13 @@ namespace Pixockets
         private readonly BufferPoolBase _buffersPool;
         private readonly SAEAPool _sendArgsPool = new SAEAPool();
         private readonly SAEAPool _recvArgsPool = new SAEAPool();
+        private SocketAsyncEventArgs _lastRecvArgs;
 
         private readonly SendOptions _returnToPool = new SendOptions { ReturnBufferToPool = true };
         private readonly SendOptions _dontReturnToPool = new SendOptions { ReturnBufferToPool = false };
         private readonly ThreadSafeQueue<ReceivedPacket> _receivedQueue = new ThreadSafeQueue<ReceivedPacket>();
 
-        private object _syncObj = new object();
+        private readonly object _syncObj = new object();
 
         public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
@@ -153,6 +154,8 @@ namespace Pixockets
                 eReceive = new SocketAsyncEventArgs();
                 eReceive.Completed += OnReceiveCompleted;
             }
+
+            _lastRecvArgs = eReceive;
             eReceive.RemoteEndPoint = _remoteEndPoint;
             var buffer = _buffersPool.Get(MTU);
             eReceive.SetBuffer(buffer, 0, MTU);
@@ -209,7 +212,20 @@ namespace Pixockets
             {
                 _buffersPool.Put(e.Buffer);
             }
-            _sendArgsPool.Put(e);
+            _sendArgsPool.Put(e);            
+        }
+
+        public override void Close()
+        {
+            if (_lastRecvArgs != null)
+            {
+                _lastRecvArgs.Dispose();
+                _lastRecvArgs = null;
+            }
+            lock (_syncObj)
+            {
+                SysSock.Close();
+            }
         }
     }
 }
