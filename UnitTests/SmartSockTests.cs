@@ -75,7 +75,7 @@ namespace UnitTests
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(buffer, 0, buffer.Length);
+            _sock.Send(buffer, 0, buffer.Length, false);
 
             Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _bareSock.Sends.Count);
@@ -92,7 +92,7 @@ namespace UnitTests
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
             
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
@@ -111,13 +111,13 @@ namespace UnitTests
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
 
             Thread.Sleep(20);
             _sock.Tick();
             Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
 
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
 
             // Two sends total
             Assert.AreEqual(2, _bareSock.Sends.Count);

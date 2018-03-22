@@ -56,7 +56,7 @@ namespace ReplicatorServer
                     ms.WriteByte(0);  // Init response
                     ms.Write(BitConverter.GetBytes(cliVal.Id), 0, 4);
                     var sendBuffer = ms.ToArray();
-                    _servSock.SendReliable(endPoint, sendBuffer, 0, sendBuffer.Length);
+                    _servSock.Send(endPoint, sendBuffer, 0, sendBuffer.Length, true);
                 }
                 else
                 {
@@ -124,7 +124,7 @@ namespace ReplicatorServer
         {
             foreach (var client in _clients)
             {
-                _servSock.Send(client.Key, buffer, offset, length);
+                _servSock.Send(client.Key, buffer, offset, length, false);
             }
         }
 

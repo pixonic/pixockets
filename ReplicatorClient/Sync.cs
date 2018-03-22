@@ -53,7 +53,7 @@ namespace ReplicatorClient
 
                     var buf = ms.ToArray();
 
-                    _socket.Send(buf, 0, buf.Length);
+                    _socket.Send(buf, 0, buf.Length, false);
                 }
 
                 _socket.Tick();
@@ -103,7 +103,7 @@ namespace ReplicatorClient
             _myV.Y = y;
             _myV.C = brush;
 
-            _socket.SendReliable(sendBuffer, 0, sendBuffer.Length);
+            _socket.Send(sendBuffer, 0, sendBuffer.Length, true);
         }
 
         public void AddObject(int id, Vertex follower)

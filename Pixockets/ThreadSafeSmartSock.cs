@@ -36,35 +36,18 @@ namespace Pixockets
             }
         }
 
-        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
         {
             lock (_syncObject)
             {
-                _socket.Send(endPoint, buffer, offset, length);
+                _socket.Send(endPoint, buffer, offset, length, reliable);
             }
         }
-
-        public void SendReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        public void Send(byte[] buffer, int offset, int length, bool reliable)
         {
             lock (_syncObject)
             {
-                _socket.SendReliable(endPoint, buffer, offset, length);
-            }
-        }
-
-        public void Send(byte[] buffer, int offset, int length)
-        {
-            lock (_syncObject)
-            {
-                _socket.Send(buffer, offset, length);
-            }
-        }
-
-        public void SendReliable(byte[] buffer, int offset, int length)
-        {
-            lock (_syncObject)
-            {
-                _socket.SendReliable(buffer, offset, length);
+                _socket.Send(buffer, offset, length, reliable);
             }
         }
 

@@ -33,7 +33,7 @@ namespace TestClient
                 }
 
                 var buffer = CreateMessage(cnt);
-                sock.Send(buffer, 0, buffer.Length);
+                sock.Send(buffer, 0, buffer.Length, false);
                 sock.Tick();
                 var packet = new ReceivedSmartPacket();
                 while (true)
@@ -68,7 +68,7 @@ namespace TestClient
             var count = 700 + rnd.Next(500);
             byte[] initMsg = CreateMessage(count);
             Console.WriteLine("Sending message with {0} numbers", count);
-            sock.SendReliable(initMsg, 0, initMsg.Length);
+            sock.Send(initMsg, 0, initMsg.Length, true);
         }
 
         private static byte[] CreateMessage(int count)

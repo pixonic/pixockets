@@ -30,7 +30,7 @@ namespace UnitTests
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
 
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
@@ -91,7 +91,7 @@ namespace UnitTests
             Assert.AreEqual(0, _bareSock.Sends.Count);
 
             var payload = BitConverter.GetBytes(987654321);
-            _sock.Send(endPoint, payload, 0, payload.Length);
+            _sock.Send(endPoint, payload, 0, payload.Length, true);
             // Msg with acks sent
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
@@ -102,7 +102,7 @@ namespace UnitTests
             Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
             Assert.Contains(234, ackHeader.Acks);
             Assert.Contains(235, ackHeader.Acks);
-            Assert.IsFalse(ackHeader.GetNeedAck());
+            Assert.IsTrue(ackHeader.GetNeedAck());
             Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);
         }
 
@@ -114,7 +114,7 @@ namespace UnitTests
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
 
             Thread.Sleep(20);
             _sock.Tick();
@@ -135,7 +135,7 @@ namespace UnitTests
             _sock.AckTimeout = 1;
 
             var buffer = BitConverter.GetBytes(123456789);
-            _sock.SendReliable(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
 
             var sent = _bareSock.Sends[0];
             var headerSent = new PacketHeader();

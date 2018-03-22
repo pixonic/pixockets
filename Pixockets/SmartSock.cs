@@ -74,40 +74,7 @@ namespace Pixockets
             return haveResult;
         }
 
-        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length)
-        {
-            var seqState = GetSeqState(endPoint);
-            // TODO: move constant to more appropriate place?
-            if (length > MaxPayload - seqState.AckLoad)
-            {
-                ushort fragId = seqState.NextFragId();
-                // Cut packet
-                // TODO: avoid trying to send if fragmentCount > 65536
-                var fragmentCount = (length + seqState.FullAckLoad + MaxPayload - 1) / MaxPayload;
-                var tailSize = length;
-                var fragmentOffset = 0;
-                for (int i = 0; i < fragmentCount; ++i)
-                {
-                    var fragmentSize = Math.Min(MaxPayload - seqState.AckLoad, tailSize);
-                    tailSize -= fragmentSize;
-
-                    var fullBuffer = WrapFragment(endPoint, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
-
-                    // It should be done after using fragmentOffset to cut fragment
-                    fragmentOffset += fragmentSize;
-
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, true);
-                }
-            }
-            else
-            {
-                var fullBuffer = Wrap(endPoint, buffer, offset, length);
-
-                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, true);
-            }
-        }
-
-        public void SendReliable(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
         {
             var seqState = GetSeqState(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
@@ -122,31 +89,25 @@ namespace Pixockets
                     var fragmentSize = Math.Min(MaxPayload - seqState.AckLoad, tailSize);
                     tailSize -= fragmentSize;
 
-                    var fullBuffer = WrapReliableFragment(seqState, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount);
+                    var fullBuffer = WrapFragment(seqState, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount, reliable);
                     // It should be done after using fragmentOffset to cut fragment
                     fragmentOffset += fragmentSize;
 
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, false);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, reliable);
                 }
             }
             else
             {
-                var fullBuffer = WrapReliable(seqState, buffer, offset, length);
+                var fullBuffer = Wrap(seqState, buffer, offset, length, reliable);
 
                 SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, false);
             }
         }
 
-        public void Send(byte[] buffer, int offset, int length)
+        public void Send(byte[] buffer, int offset, int length, bool reliable)
         {
             var endPoint = SubSock.RemoteEndPoint;
-            Send(endPoint, buffer, offset, length);
-        }
-
-        public void SendReliable(byte[] buffer, int offset, int length)
-        {
-            var endPoint = SubSock.RemoteEndPoint;
-            SendReliable(endPoint, buffer, offset, length);
+            Send(endPoint, buffer, offset, length, reliable);
         }
 
         public void Tick()
@@ -265,58 +226,36 @@ namespace Pixockets
             return delta;
         }
 
-        private ArraySegment<byte> Wrap(IPEndPoint endPoint, byte[] buffer, int offset, int length)
+        private ArraySegment<byte> Wrap(SequenceState seqState, byte[] buffer, int offset, int length, bool reliable)
         {
-            var seqState = GetSeqState(endPoint);
             ushort seqNum = seqState.NextSeqNum();
             var header = _headersPool.Get();
+            if (reliable)
+            {
+                header.SetNeedAck();
+            }
             header.SetSeqNum(seqNum);
             seqState.AddAcks(header);
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
 
-            _headersPool.Put(header);
-
-            return fullBuffer;
-        }
-
-        private ArraySegment<byte> WrapReliable(SequenceState seqState, byte[] buffer, int offset, int length)
-        {
-            ushort seqNum = seqState.NextSeqNum();
-            var header = _headersPool.Get();
-            header.SetNeedAck();
-            header.SetSeqNum(seqNum);
-            seqState.AddAcks(header);
-
-            var fullBuffer = AttachHeader(buffer, offset, length, header);
-
-            _headersPool.Put(header);
-
-            AddNotAcked(seqState, seqNum, fullBuffer);
-
-            return fullBuffer;
-        }
-
-        private ArraySegment<byte> WrapFragment(IPEndPoint endPoint, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
-        {
-            var seqState = GetSeqState(endPoint);
-            ushort seqNum = seqState.NextSeqNum();
-            var header = _headersPool.Get();
-            header.SetSeqNum(seqNum);  // TODO: do we really need it?
-            header.SetFrag(fragId, fragNum, fragCount);
-            seqState.AddAcks(header);
-
-            var fullBuffer = AttachHeader(buffer, offset, length, header);
+            if (reliable)
+            {
+                AddNotAcked(seqState, seqNum, fullBuffer);
+            }
 
             _headersPool.Put(header);
 
             return fullBuffer;
         }
 
-        private ArraySegment<byte> WrapReliableFragment(SequenceState seqState, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount)
+        private ArraySegment<byte> WrapFragment(SequenceState seqState, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount, bool reliable)
         {
             var header = _headersPool.Get();
-            header.SetNeedAck();
+            if (reliable)
+            {
+                header.SetNeedAck();
+            }
             ushort seqNum = seqState.NextSeqNum();
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
@@ -324,7 +263,10 @@ namespace Pixockets
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
 
-            AddNotAcked(seqState, seqNum, fullBuffer);
+            if (reliable)
+            {
+                AddNotAcked(seqState, seqNum, fullBuffer);
+            }
 
             _headersPool.Put(header);
 

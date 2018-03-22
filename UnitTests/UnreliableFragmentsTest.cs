@@ -35,7 +35,7 @@ namespace UnitTests
             ms.Write(new byte[] { 77 }, 0, 1);
             ms.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
 
             Assert.AreEqual(2, _bareSock.Sends.Count);
 
