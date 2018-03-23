@@ -23,28 +23,30 @@ var cnt = 0;
 var packet = new ReceivedSmartPacket();
 while (!Console.KeyAvailable)
 {
-	var buffer = BitConverter.GetBytes(cnt++);
-	sock.Send(buffer, 0, buffer.Length, false);
-	sock.Tick();
-	while (true)
-	{
-		if (sock.Receive(ref packet))
-		{
-			if (!packet.InOrder)
-			{
-				Console.WriteLine("!!! OutOfOrder !!!");
-			}
-			var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-			Console.WriteLine("Recv: {0}", recv);
-		}
-		else
-		{
-			break;
-		}
-	}
-    Thread.Sleep(50);	
+    var buffer = BitConverter.GetBytes(cnt++);
+    sock.Send(buffer, 0, buffer.Length, false);
+    sock.Tick();
+    while (true)
+    {
+        if (sock.Receive(ref packet))
+        {
+            if (!packet.InOrder)
+            {
+                Console.WriteLine("!!! OutOfOrder !!!");
+            }
+            var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
+            Console.WriteLine("Recv: {0}", recv);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    Thread.Sleep(50);
 }
-sock.Close();
+
+sock.SubSock.Close();
 
 ```
 ### Server
@@ -52,29 +54,32 @@ sock.Close();
 var bufferPool = new CoreBufferPool();
 var sock = new SmartSock(bufferPool, new ThreadSock(bufferPool, AddressFamily.InterNetwork), null);
 sock.Listen(2345);
-var cnt = 0;
 var packet = new ReceivedSmartPacket();
 while (!Console.KeyAvailable)
 {
-	while (true)
-	{
-		if (sock.Receive(ref packet))
-		{
-			if (!packet.InOrder)
-			{
-				Console.WriteLine("!!! OutOfOrder !!!");
-			}
-			var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-			Console.WriteLine("Recv: {0}", recv);
-			sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, Packet.Length, false);
-		}
-		else
-		{
-			break;
-		}
-	}
-	sock.Tick();
+    while (true)
+    {
+        if (sock.Receive(ref packet))
+        {
+            if (!packet.InOrder)
+            {
+                Console.WriteLine("!!! OutOfOrder !!!");
+            }
+
+            var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
+            Console.WriteLine("Recv: {0}", recv);
+            sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, false);
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    sock.Tick();
     Thread.Sleep(50);
 }
-sock.Close();
+
+sock.SubSock.Close();
+
 ```
