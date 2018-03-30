@@ -9,11 +9,21 @@ namespace Pixockets
 {
     public class CoreBufferPool: BufferPoolBase
     {
-        private readonly ArrayPool<byte> _arrayPool = new DefaultArrayPool<byte>();
+        private readonly ArrayPool<byte> _arrayPool;
 
 #if DEBUG
         private readonly HashSet<byte[]> _unique = new HashSet<byte[]>();
 #endif
+
+        public CoreBufferPool()
+            : this(new DefaultArrayPool<byte>())
+        {
+        }
+
+        public CoreBufferPool(ArrayPool<byte> arrayPool)
+        {
+            _arrayPool = arrayPool;
+        }
 
         public override byte[] Get(int minLen)
         {
