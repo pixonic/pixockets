@@ -313,15 +313,11 @@ namespace Pixockets
         private SequenceState GetSeqState(IPEndPoint endPoint)
         {
             SequenceState result;
-            if (!_seqStates.ContainsKey(endPoint))
+            if (!_seqStates.TryGetValue(endPoint, out result))
             {
                 result = _seqStatesPool.Get();
                 result.Init(_buffersPool, _fragPacketsPool, _headersPool);
                 _seqStates.Add(endPoint, result);
-            }
-            else
-            {
-                result = _seqStates[endPoint];
             }
 
             return result;
