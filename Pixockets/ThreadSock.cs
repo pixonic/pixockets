@@ -96,9 +96,20 @@ namespace Pixockets
             while (true)
             {
                 var packet = _sendQueue.Take();
-                SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
-                if (packet.PutBufferToPool)
-                    _buffersPool.Put(packet.Buffer);
+                try
+                {
+                    SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
+                }
+                catch (Exception)
+                {
+                    // TODO: do something
+                    return;
+                }
+                finally
+                {
+                    if (packet.PutBufferToPool)
+                        _buffersPool.Put(packet.Buffer);
+                }
             }
         }
 
@@ -122,9 +133,10 @@ namespace Pixockets
                         _recvQueue.Add(packet);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // TODO: do something
+                    return;
                 }
             }
         }
