@@ -45,18 +45,14 @@ namespace Core.Buffers
             }
 
             // Create the buckets.
-            int poolId = Id;
             int maxBuckets = Utilities.SelectBucketIndex(maxArrayLength);
             var buckets = new Bucket[maxBuckets + 1];
             for (int i = 0; i < buckets.Length; i++)
             {
-                buckets[i] = new Bucket(Utilities.GetMaxSizeForBucket(i), maxArraysPerBucket, poolId);
+                buckets[i] = new Bucket(Utilities.GetMaxSizeForBucket(i), maxArraysPerBucket);
             }
             _buckets = buckets;
         }
-
-        /// <summary>Gets an ID for the pool to use with events.</summary>
-        private int Id { get { return GetHashCode(); } }
 
         public override T[] Rent(int minimumLength)
         {

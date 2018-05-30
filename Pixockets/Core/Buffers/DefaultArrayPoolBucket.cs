@@ -13,7 +13,6 @@ namespace Core.Buffers
         {
             internal readonly int _bufferLength;
             private readonly T[][] _buffers;
-            private readonly int _poolId;
 
             private readonly object _syncObj = new object();
             private int _index;
@@ -21,15 +20,11 @@ namespace Core.Buffers
             /// <summary>
             /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
             /// </summary>
-            internal Bucket(int bufferLength, int numberOfBuffers, int poolId)
+            internal Bucket(int bufferLength, int numberOfBuffers)
             {
                 _buffers = new T[numberOfBuffers][];
                 _bufferLength = bufferLength;
-                _poolId = poolId;
             }
-
-            /// <summary>Gets an ID for the bucket to use with events.</summary>
-            private int Id { get { return GetHashCode(); } }
 
             /// <summary>Takes an array from the bucket.  If the bucket is empty, returns null.</summary>
             internal T[] Rent()
