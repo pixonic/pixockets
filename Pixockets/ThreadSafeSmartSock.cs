@@ -58,5 +58,13 @@ namespace Pixockets
                 _socket.Tick();
             }
         }
+
+        public void Close()
+        {
+            lock (_syncObject)
+            {
+                _socket.Close();
+            }
+        }
     }
 }

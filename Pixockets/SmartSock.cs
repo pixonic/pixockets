@@ -136,6 +136,17 @@ namespace Pixockets
             _toDelete.Clear();
         }
 
+        public void Close()
+        {
+            SubSock.Close();
+            foreach (var seqState in _seqStates)
+            {
+                _callbacks.OnDisconnect(seqState.Key);
+                _seqStatesPool.Put(seqState.Value);
+            }
+            _seqStates.Clear();
+        }
+
         private bool OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
         {
             bool haveResult = false;
