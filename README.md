@@ -26,21 +26,14 @@ while (!Console.KeyAvailable)
     var buffer = BitConverter.GetBytes(cnt++);
     sock.Send(buffer, 0, buffer.Length, false);
     sock.Tick();
-    while (true)
+    while (sock.Receive(ref packet))
     {
-        if (sock.Receive(ref packet))
+        if (!packet.InOrder)
         {
-            if (!packet.InOrder)
-            {
-                Console.WriteLine("!!! OutOfOrder !!!");
-            }
-            var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-            Console.WriteLine("Recv: {0}", recv);
+            Console.WriteLine("!!! OutOfOrder !!!");
         }
-        else
-        {
-            break;
-        }
+        var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
+        Console.WriteLine("Recv: {0}", recv);
     }
 
     Thread.Sleep(50);
@@ -57,23 +50,16 @@ sock.Listen(2345);
 var packet = new ReceivedSmartPacket();
 while (!Console.KeyAvailable)
 {
-    while (true)
+    while (sock.Receive(ref packet))
     {
-        if (sock.Receive(ref packet))
+        if (!packet.InOrder)
         {
-            if (!packet.InOrder)
-            {
-                Console.WriteLine("!!! OutOfOrder !!!");
-            }
+            Console.WriteLine("!!! OutOfOrder !!!");
+        }
 
-            var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-            Console.WriteLine("Recv: {0}", recv);
-            sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, false);
-        }
-        else
-        {
-            break;
-        }
+        var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
+        Console.WriteLine("Recv: {0}", recv);
+        sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, false);
     }
 
     sock.Tick();
