@@ -34,6 +34,7 @@ while (!Console.KeyAvailable)
         }
         var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
         Console.WriteLine("Recv: {0}", recv);
+        bufferPool.Put(packet.Buffer);		
     }
 
     Thread.Sleep(50);
@@ -60,6 +61,7 @@ while (!Console.KeyAvailable)
         var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
         Console.WriteLine("Recv: {0}", recv);
         sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, false);
+        bufferPool.Put(packet.Buffer);		
     }
 
     sock.Tick();
