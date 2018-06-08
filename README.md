@@ -39,7 +39,7 @@ while (!Console.KeyAvailable)
     Thread.Sleep(50);
 }
 
-sock.SubSock.Close();
+sock.Close();
 
 ```
 ### Server
@@ -66,6 +66,6 @@ while (!Console.KeyAvailable)
     Thread.Sleep(50);
 }
 
-sock.SubSock.Close();
+sock.Close();
 
 ```
