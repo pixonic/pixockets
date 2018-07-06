@@ -25,17 +25,25 @@ namespace UnitTests
             _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
+        }
+
         [Test]
         public void SendReliableFragmented()
         {
             _sock.MaxPayload = 3;
+
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)12345), 0, 2);
             ms.Write(new byte[] { 77 }, 0, 1);
             ms.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
+            _sock.Send(remoteEndPoint, buffer, 0, buffer.Length, true);
 
             Assert.AreEqual(2, _bareSock.Sends.Count);
 
@@ -55,6 +63,19 @@ namespace UnitTests
             Assert.AreEqual(23456, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(1, header.SeqNum);
             Assert.IsTrue(header.GetNeedAck());
+
+            // Ack buffers
+            var header1 = new PacketHeader();
+            header1.AddAck(0);
+            header1.AddAck(1);
+            header1.SetSeqNum(1);
+            header1.Length = (ushort)header1.HeaderLength;
+            var buffer1 = _bufferPool.Get(header1.Length);
+            header1.WriteTo(buffer1, 0);
+
+            _bareSock.FakeReceive(buffer1, 0, header1.Length, remoteEndPoint);
+
+            var receivedPackets = Utils.ReceiveAll(_sock);
         }
 
         [Test]

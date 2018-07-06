@@ -24,6 +24,12 @@ namespace UnitTests
             _sock = new SmartSock(bufferPool, _bareSock, _cbs);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
+        }
+
         [Test]
         public void SendReliable()
         {

@@ -156,7 +156,6 @@ namespace Pixockets
 
         private void ActualReceive(SocketAsyncEventArgs recvArgs)
         {
-            bool willRaiseEvent;
             lock (_syncObj)
             {
                 if (SysSock == null)
@@ -166,15 +165,21 @@ namespace Pixockets
                 }
 
                 recvArgs.RemoteEndPoint = _receiveEndPoint;
-                willRaiseEvent = SysSock.ReceiveMessageFromAsync(recvArgs);
-            }
+                try
+                {
+                    bool willRaiseEvent = SysSock.ReceiveMessageFromAsync(recvArgs);
+                    if (!willRaiseEvent)
+                    {
+                        var eReceive = GetRecvArgs();
+                        ActualReceive(eReceive);
 
-            if (!willRaiseEvent)
-            {
-                var eReceive = GetRecvArgs();
-                ActualReceive(eReceive);
-
-                OnPacketReceived(recvArgs);
+                        OnPacketReceived(recvArgs);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    SysSock = null;
+                }
             }
         }
 

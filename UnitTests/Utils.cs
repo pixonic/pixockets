@@ -45,6 +45,10 @@ namespace UnitTests
                 {
                     result.Add(receivedPacket);
                 }
+                else
+                {
+                    break;
+                }
             }
             return result;
         }

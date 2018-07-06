@@ -25,6 +25,12 @@ namespace UnitTests
             _endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            _sock.Close();
+        }
+
         [Test]
         public void InOrderArrival()
         {
