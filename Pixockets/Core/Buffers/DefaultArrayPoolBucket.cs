@@ -4,9 +4,9 @@
 
 using System;
 
-namespace Core.Buffers
+namespace Pixockets.Core.Buffers
 {
-    internal sealed partial class DefaultArrayPool<T>: ArrayPool<T>
+    public sealed partial class DefaultArrayPool<T>: ArrayPool<T>
     {
         /// <summary>Provides a thread-safe bucket containing buffers that can be Rent'd and Return'd.</summary>
         private sealed class Bucket

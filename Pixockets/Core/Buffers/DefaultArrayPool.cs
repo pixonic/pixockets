@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using Core.Buffers;
 
-namespace Core.Buffers
+namespace Pixockets.Core.Buffers
 {
-    internal sealed partial class DefaultArrayPool<T> : ArrayPool<T>
+    public sealed partial class DefaultArrayPool<T> : ArrayPool<T>
     {
         /// <summary>The default maximum length of each array in the pool (2^16).</summary>
         private const int DefaultMaxArrayLength = 1024 * 64;  // 1024 * 1024 (2^20);
@@ -17,11 +18,11 @@ namespace Core.Buffers
 
         private readonly Bucket[] _buckets;
 
-        internal DefaultArrayPool() : this(DefaultMaxArrayLength, DefaultMaxNumberOfArraysPerBucket)
+        public DefaultArrayPool() : this(DefaultMaxArrayLength, DefaultMaxNumberOfArraysPerBucket)
         {
         }
 
-        internal DefaultArrayPool(int maxArrayLength, int maxArraysPerBucket)
+        public DefaultArrayPool(int maxArrayLength, int maxArraysPerBucket)
         {
             if (maxArrayLength <= 0)
             {

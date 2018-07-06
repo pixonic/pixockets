@@ -1,4 +1,4 @@
-﻿using Core.Buffers;
+﻿using Pixockets.Core.Buffers;
 
 #if DEBUG
 using System;
@@ -16,7 +16,7 @@ namespace Pixockets
 #endif
 
         public CoreBufferPool()
-            : this(new DefaultArrayPool<byte>())
+            : this(new Core.Buffers.DefaultArrayPool<byte>())
         {
         }
 
