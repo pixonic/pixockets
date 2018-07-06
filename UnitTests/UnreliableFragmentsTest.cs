@@ -42,18 +42,22 @@ namespace UnitTests
             var packetToSend = _bareSock.Sends[0];
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
+
             Assert.AreEqual(_sock.MaxPayload + header.HeaderLength, header.Length);
             Assert.AreEqual(12345, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
             Assert.IsFalse(header.GetNeedAck());
+            Assert.IsTrue(packetToSend.PutBufferToPool, "Unreliable packets should return to pool after send");
 
             packetToSend = _bareSock.Sends[1];
             header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
+
             Assert.AreEqual(buffer.Length - _sock.MaxPayload + header.HeaderLength, header.Length);
             Assert.AreEqual(23456, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(1, header.SeqNum);
             Assert.IsFalse(header.GetNeedAck());
+            Assert.IsTrue(packetToSend.PutBufferToPool, "Unreliable packets should return to pool after send");
         }
 
         [Test]

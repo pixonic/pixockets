@@ -47,6 +47,7 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
             Assert.IsTrue(header.GetNeedAck());
+            Assert.IsFalse(packetToSend.PutBufferToPool, "Reliable packets should wait for Ack before going to pool");
         }
 
         [Test]

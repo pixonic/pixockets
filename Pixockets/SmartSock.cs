@@ -76,6 +76,8 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
         {
+            // Reliable packets should wait for ack before going to pool
+            var putBufferToPool = !reliable;
             var seqState = GetSeqState(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
             {
@@ -93,14 +95,14 @@ namespace Pixockets
                     // It should be done after using fragmentOffset to cut fragment
                     fragmentOffset += fragmentSize;
 
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, reliable);
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
                 }
             }
             else
             {
                 var fullBuffer = Wrap(seqState, buffer, offset, length, reliable);
 
-                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, false);
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
             }
         }
 

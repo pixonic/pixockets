@@ -46,6 +46,7 @@ namespace UnitTests.Mock
                 Buffer = buffer,
                 Offset = offset,
                 Length = length,
+                PutBufferToPool = putBufferToPool,
             });
         }
 

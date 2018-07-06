@@ -87,9 +87,12 @@ namespace UnitTests
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var header = new PacketHeader();
-            header.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            var packetToSend = _bareSock.Sends[0];
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
+
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(_bareSock.Sends[0].Buffer, header.HeaderLength));
+            Assert.AreEqual(123456789, BitConverter.ToInt32(packetToSend.Buffer, header.HeaderLength));
+            Assert.IsTrue(packetToSend.PutBufferToPool, "Unreliable packets should return to pool after send");
         }
 
         [Test]
@@ -103,10 +106,13 @@ namespace UnitTests
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var header = new PacketHeader();
-            header.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
+            var packetToSend = _bareSock.Sends[0];
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
+
             Assert.AreEqual(0, header.SeqNum);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
-            Assert.AreEqual(123456789, BitConverter.ToInt32(_bareSock.Sends[0].Buffer, header.HeaderLength));
+            Assert.AreEqual(123456789, BitConverter.ToInt32(packetToSend.Buffer, header.HeaderLength));
+            Assert.IsTrue(packetToSend.PutBufferToPool, "Unreliable packets should return to pool after send");
         }
 
         [Test]

@@ -55,14 +55,17 @@ namespace UnitTests
             Assert.AreEqual(12345, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(0, header.SeqNum);
             Assert.IsTrue(header.GetNeedAck());
+            Assert.IsFalse(packetToSend.PutBufferToPool, "Reliable packets should wait for Ack before going to pool");
 
             packetToSend = _bareSock.Sends[1];
             header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
+
             Assert.AreEqual(buffer.Length - _sock.MaxPayload + header.HeaderLength, header.Length);
             Assert.AreEqual(23456, BitConverter.ToInt16(packetToSend.Buffer, header.HeaderLength));
             Assert.AreEqual(1, header.SeqNum);
             Assert.IsTrue(header.GetNeedAck());
+            Assert.IsFalse(packetToSend.PutBufferToPool, "Reliable packets should wait for Ack before going to pool");
 
             // Ack buffers
             var header1 = new PacketHeader();
