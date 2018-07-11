@@ -9,16 +9,17 @@ using UnitTests.Mock;
 namespace UnitTests
 {
     [TestFixture]
-    public class BareSockIPv6Tests
+    public class BareSockTests
     {
         private MockBufferPool _bufferPool;
         private BareSock _sock;
+
 
         [SetUp]
         public void Setup()
         {
             _bufferPool = new MockBufferPool();
-            _sock = new BareSock(_bufferPool, AddressFamily.InterNetworkV6);
+            _sock = new BareSock(_bufferPool, AddressFamily.InterNetwork);
         }
 
         [TearDown]
@@ -37,10 +38,10 @@ namespace UnitTests
         [Test]
         public void SockReceive()
         {
-            _sock.Listen(23446);
+            _sock.Listen(23456);
 
-            UdpClient udpClient = new UdpClient(AddressFamily.InterNetworkV6);
-            udpClient.Connect(IPAddress.IPv6Loopback, 23446);
+            UdpClient udpClient = new UdpClient();
+            udpClient.Connect(IPAddress.Loopback, 23456);
             udpClient.Send(BitConverter.GetBytes(123456789), 4);
 
             var receivedPacket = Utils.WaitOnReceive(_sock);
@@ -55,10 +56,10 @@ namespace UnitTests
         [Test]
         public void SockSend()
         {
-            UdpClient udpClient = new UdpClient(23447, AddressFamily.InterNetworkV6);
+            UdpClient udpClient = new UdpClient(23457);
             var receiveTask = udpClient.ReceiveAsync();
 
-            _sock.Send(new IPEndPoint(IPAddress.IPv6Loopback, 23447), BitConverter.GetBytes(123456789), 0, 4, true);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4, true);
 
             receiveTask.Wait(1000);
 
@@ -73,9 +74,9 @@ namespace UnitTests
         [Test]
         public void SockConnectAndReceiveFrom()
         {
-            UdpClient udpClient = new UdpClient(23448, AddressFamily.InterNetworkV6);
+            UdpClient udpClient = new UdpClient(23458);
 
-            _sock.Connect(IPAddress.IPv6Loopback, 23448);
+            _sock.Connect(IPAddress.Loopback, 23458);
 
             udpClient.Send(BitConverter.GetBytes(123456789), 4, (IPEndPoint)_sock.SysSock.LocalEndPoint);
 

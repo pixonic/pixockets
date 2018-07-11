@@ -58,7 +58,7 @@
     <Compile Include="ThreadSafeQueueTests.cs" />
     <Compile Include="ThreadSockIPv6Tests.cs" />
     <Compile Include="ThreadSockTests.cs" />
-    <Compile Include="SockTests.cs" />
+    <Compile Include="BareSockTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ReliableFragmentsTest.cs" />
     <Compile Include="UnreliableFragmentsTest.cs" />
