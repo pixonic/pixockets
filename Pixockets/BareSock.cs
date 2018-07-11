@@ -4,7 +4,6 @@ using System.Net.Sockets;
 
 namespace Pixockets
 {
-    // TODO: support IPV6
     public class BareSock : SockBase
     {
         public const int MTU = 1200;
