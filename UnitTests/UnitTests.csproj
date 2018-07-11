@@ -54,9 +54,8 @@
     <Compile Include="ReliableSendTests.cs" />
     <Compile Include="SequenceTests.cs" />
     <Compile Include="SmartSockTests.cs" />
-    <Compile Include="SAEASockIPv6Tests.cs" />
+    <Compile Include="BareSockIPv6Tests.cs" />
     <Compile Include="ThreadSafeQueueTests.cs" />
-    <Compile Include="ThreadSafeStackTests.cs" />
     <Compile Include="ThreadSockIPv6Tests.cs" />
     <Compile Include="ThreadSockTests.cs" />
     <Compile Include="SockTests.cs" />

@@ -9,7 +9,7 @@ using UnitTests.Mock;
 namespace UnitTests
 {
     [TestFixture]
-    public class SAEASockIPv6Tests
+    public class BareSockIPv6Tests
     {
         private MockBufferPool _bufferPool;
         private BareSock _sock;

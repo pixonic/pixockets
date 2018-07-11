@@ -121,7 +121,7 @@ namespace Pixockets
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {
-                    var bytesReceived = SysSock.ReceiveFrom(buffer, ref remoteEP);
+                    var bytesReceived = SysSock.ReceiveFrom(buffer, MTU, SocketFlags.None, ref remoteEP);
                     if (bytesReceived > 0)
                     {
                         var packet = new ReceivedPacket();
