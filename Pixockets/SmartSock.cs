@@ -54,24 +54,33 @@ namespace Pixockets
 
         public bool Receive(ref ReceivedSmartPacket receivedPacket)
         {
-            bool haveResult = false;
-            var packet = new ReceivedPacket();
-            while (true)
+            try
             {
-                if (SubSock.Receive(ref packet))
+                bool haveResult = false;
+                var packet = new ReceivedPacket();
+                while (true)
                 {
-                    haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint, ref receivedPacket);
+                    if (SubSock.Receive(ref packet))
+                    {
+                        haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
+                            ref receivedPacket);
+                    }
+                    else
+                    {
+                        break;
+                    }
+
+                    if (haveResult)
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    break;
-                }
-                if (haveResult)
-                {
-                    break;
-                }
+                return haveResult;
             }
-            return haveResult;
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
