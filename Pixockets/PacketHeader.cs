@@ -52,30 +52,44 @@ namespace Pixockets
 
         public void Init(byte[] buffer, int offset)
         {
-            Length = BitConverter.ToUInt16(buffer, offset);
-            Flags = buffer[offset + 2];
-            int pos = offset + 3;
-            if ((Flags & ContainsSeq) != 0)
+            try
             {
-                SeqNum = BitConverter.ToUInt16(buffer, pos);
-                pos += 2;
-            }
-            if ((Flags & ContainsAck) != 0)
-            {
-                int acksCount = buffer[pos++];
-                for (int i = 0; i < acksCount; ++i)
+                Length = BitConverter.ToUInt16(buffer, offset);
+                Flags = buffer[offset + 2];
+                int pos = offset + 3;
+                if ((Flags & ContainsSeq) != 0)
                 {
-                    ushort ack = BitConverter.ToUInt16(buffer, pos);
+                    SeqNum = BitConverter.ToUInt16(buffer, pos);
                     pos += 2;
-                    Acks.Add(ack);
+                }
+                if ((Flags & ContainsAck) != 0)
+                {
+                    int acksCount = buffer[pos++];
+                    for (int i = 0; i < acksCount; ++i)
+                    {
+                        ushort ack = BitConverter.ToUInt16(buffer, pos);
+                        pos += 2;
+                        Acks.Add(ack);
+                    }
+                }
+                if ((Flags & ContainsFrag) != 0)
+                {
+                    FragId = BitConverter.ToUInt16(buffer, pos);
+                    FragNum = BitConverter.ToUInt16(buffer, pos + 2);
+                    FragCount = BitConverter.ToUInt16(buffer, pos + 4);
+                    //pos += 6;
                 }
             }
-            if ((Flags & ContainsFrag) != 0)
+            catch (Exception)
             {
-                FragId = BitConverter.ToUInt16(buffer, pos);
-                FragNum = BitConverter.ToUInt16(buffer, pos + 2);
-                FragCount = BitConverter.ToUInt16(buffer, pos + 4);
-                //pos += 6;
+                // Bad format,
+                // Zero all
+                Length = 0;
+                Flags = 0;
+                SeqNum = 0;
+                FragId = 0;
+                FragNum = 0;
+                FragCount = 0;
             }
         }
 
