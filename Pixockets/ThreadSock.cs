@@ -24,10 +24,12 @@ namespace Pixockets
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
         private readonly object _syncObj = new object();
+        private volatile bool _closing;
 
         public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
+            _closing = false;
 
             _buffersPool = buffersPool;
             _sendThread = new Thread(SendLoop);
@@ -39,6 +41,9 @@ namespace Pixockets
 
         public override void Connect(IPAddress address, int port)
         {
+            if (_closing)
+                return;
+
             _remoteEndPoint = new IPEndPoint(address, port);
             AddressFamily addressFamily;
             lock (_syncObj)
@@ -61,6 +66,9 @@ namespace Pixockets
 
         public override void Listen(int port)
         {
+            if (_closing)
+                return;
+
             lock (_syncObj)
             {
                 _receiveEndPoint = new IPEndPoint(AnyAddress(SysSock.AddressFamily), port);
@@ -93,7 +101,7 @@ namespace Pixockets
 
         private void SendLoop()
         {
-            while (true)
+            while (!_closing)
             {
                 var packet = _sendQueue.Take();
                 try
@@ -103,7 +111,6 @@ namespace Pixockets
                 catch (Exception)
                 {
                     // TODO: do something
-                    return;
                 }
                 finally
                 {
@@ -115,7 +122,7 @@ namespace Pixockets
 
         private void ReceiveLoop()
         {
-            while (true)
+            while (!_closing)
             {
                 var buffer = _buffersPool.Get(MTU);
                 EndPoint remoteEP = _receiveEndPoint;
@@ -136,7 +143,6 @@ namespace Pixockets
                 catch (Exception)
                 {
                     // TODO: do something
-                    return;
                 }
             }
         }
@@ -148,6 +154,7 @@ namespace Pixockets
 
         public override void Close()
         {
+            _closing = true;
             SysSock.Close();
             _sendThread.Abort();
             _receiveThread.Abort();
