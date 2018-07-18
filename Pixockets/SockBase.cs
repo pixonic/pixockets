@@ -1,10 +1,13 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Pixockets
 {
     public abstract class SockBase
     {
+        public const int MTU = 1200;
+
         public abstract IPEndPoint LocalEndPoint { get; }
         public abstract IPEndPoint RemoteEndPoint { get; }
 
@@ -30,6 +33,15 @@ namespace Pixockets
             }
 
             return IPAddress.Any;
+        }
+
+        protected static void ValidateLength(int length)
+        {
+            if (length > MTU)
+            {
+                throw new ArgumentOutOfRangeException(
+                    "length", length, string.Format("Length should be less then MTU ({0})", MTU));
+            }
         }
     }
 }

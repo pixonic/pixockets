@@ -115,10 +115,39 @@ namespace Pixockets
             }
         }
 
+        // This function has almost the same code as the version above for performance reasons
+        // The only difference is the usage of EndPoint-less version of SubSock.Send
         public void Send(byte[] buffer, int offset, int length, bool reliable)
         {
             var endPoint = SubSock.RemoteEndPoint;
-            Send(endPoint, buffer, offset, length, reliable);
+            // Reliable packets should wait for ack before going to pool
+            var putBufferToPool = !reliable;
+            var seqState = GetSeqState(endPoint);
+            if (length > MaxPayload - seqState.AckLoad)
+            {
+                ushort fragId = seqState.NextFragId();
+                // Cut packet
+                var fragmentCount = (length + seqState.FullAckLoad + MaxPayload - 1) / MaxPayload;
+                var tailSize = length;
+                var fragmentOffset = 0;
+                for (int i = 0; i < fragmentCount; ++i)
+                {
+                    var fragmentSize = Math.Min(MaxPayload - seqState.AckLoad, tailSize);
+                    tailSize -= fragmentSize;
+
+                    var fullBuffer = WrapFragment(seqState, buffer, fragmentOffset, fragmentSize, fragId, (ushort)i, (ushort)fragmentCount, reliable);
+                    // It should be done after using fragmentOffset to cut fragment
+                    fragmentOffset += fragmentSize;
+
+                    SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                }
+            }
+            else
+            {
+                var fullBuffer = Wrap(seqState, buffer, offset, length, reliable);
+
+                SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+            }
         }
 
         public void Tick()

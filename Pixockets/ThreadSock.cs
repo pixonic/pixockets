@@ -5,9 +5,9 @@ using System.Threading;
 
 namespace Pixockets
 {
+    // WARNING: this class uses Socket.SendTo method which is not working in Unity for iOS
     public class ThreadSock : SockBase
     {
-        public const int MTU = 1200;
         public Socket SysSock = null;
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
@@ -89,6 +89,8 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
+            ValidateLength(length);
+
             var packet = new PacketToSend();
             packet.EndPoint = endPoint;
             packet.Buffer = buffer;
@@ -106,6 +108,7 @@ namespace Pixockets
                 var packet = _sendQueue.Take();
                 try
                 {
+                    // This seems not implemented in Unity for iOS
                     SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 }
                 catch (Exception)

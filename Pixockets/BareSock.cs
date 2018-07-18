@@ -6,7 +6,6 @@ namespace Pixockets
 {
     public class BareSock : SockBase
     {
-        public const int MTU = 1200;
         public Socket SysSock = null;
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
@@ -48,11 +47,7 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            if (length > MTU)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "length", length, string.Format("Length should be less then MTU ({0})", MTU));
-            }
+            ValidateLength(length);
 
             try
             {
@@ -72,7 +67,21 @@ namespace Pixockets
 
         public override void Send(byte[] buffer, int offset, int length, bool putBufferToPool)
         {
-            Send(RemoteEndPoint, buffer, offset, length, putBufferToPool);
+            try
+            {
+                // It uses Send instead of SendTo because SendTo seems not implemented in Unity on iOS
+                SysSock.Send(buffer, offset, length, SocketFlags.None);
+            }
+            catch (Exception)
+            {
+                // TODO: do something
+                return;
+            }
+            finally
+            {
+                if (putBufferToPool)
+                    _buffersPool.Put(buffer);
+            }
         }
 
         public override bool Receive(ref ReceivedPacket packet)

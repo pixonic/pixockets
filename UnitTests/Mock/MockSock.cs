@@ -36,6 +36,8 @@ namespace UnitTests.Mock
 
         public override void Send(byte[] buffer, int offset, int length, bool putBufferToPool)
         {
+            ValidateLength(length);
+
             Send(ConnectEndPoint, buffer, offset, length, putBufferToPool);
         }
 
