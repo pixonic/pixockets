@@ -214,15 +214,12 @@ namespace Pixockets
             }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
-                bool inOrder = seqState.IsInOrder(header.SeqNum);
                 bool isDuplicate = seqState.IsDuplicate(header.SeqNum);
                 if (!isDuplicate)
                 {
+                    bool inOrder = seqState.IsInOrder(header.SeqNum);
                     haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
-                    if (inOrder)
-                    {
-                        seqState.RegisterIncoming(header.SeqNum);
-                    }
+                    seqState.RegisterIncoming(header.SeqNum);
                 }
                 else
                 {
