@@ -7,12 +7,13 @@ namespace Pixockets
     public class SequenceState : IPoolable
     {
         public int LastActive;
-        private const int ReceivedSeqNumBufferSize = 32;
+        private const int ReceivedSeqNumBufferMaxSize = 32;
 
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private readonly List<ushort> _ackQueue = new List<ushort>();
-        private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferSize];
+        private int _receivedSeqNumBufferSize;
+        private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
 
         private bool _connected = false;
         private ushort _nextSeqNum;
@@ -247,6 +248,7 @@ namespace Pixockets
             _frags.Clear();
 
             _lastReceivedSeqNum = -1;
+            _receivedSeqNumBufferSize = 0;
             Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
         }
 
@@ -254,7 +256,8 @@ namespace Pixockets
         {
             _lastReceivedSeqNum = seqNum;
             _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
-            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferSize)
+            _receivedSeqNumBufferSize = Math.Min(_receivedSeqNumBufferSize + 1, ReceivedSeqNumBufferMaxSize);
+            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
             {
                 _lastRecevedSeqNumIdx = 0;
             }
@@ -282,7 +285,7 @@ namespace Pixockets
 
         public bool IsDuplicate(ushort seqNum)
         {
-            for (int i = 0; i < ReceivedSeqNumBufferSize; ++i)
+            for (int i = 0; i < _receivedSeqNumBufferSize; ++i)
             {
                 if (_lastRecevedSeqNums[i] == seqNum)
                 {

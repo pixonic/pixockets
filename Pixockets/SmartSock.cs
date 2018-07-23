@@ -215,13 +215,18 @@ namespace Pixockets
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
                 bool inOrder = seqState.IsInOrder(header.SeqNum);
-                if (inOrder || !seqState.IsDuplicate(header.SeqNum))
+                bool isDuplicate = seqState.IsDuplicate(header.SeqNum);
+                if (!isDuplicate)
                 {
                     haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
+                    if (inOrder)
+                    {
+                        seqState.RegisterIncoming(header.SeqNum);
+                    }
                 }
-                if (inOrder)
+                else
                 {
-                    seqState.RegisterIncoming(header.SeqNum);
+                    _buffersPool.Put(buffer);
                 }
             }
 
