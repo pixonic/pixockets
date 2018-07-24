@@ -60,8 +60,16 @@ namespace Pixockets
             {
                 if (SubSock.Receive(ref packet))
                 {
-                    haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
-                        ref receivedPacket);
+                    try
+                    {
+                        haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
+                            ref receivedPacket);
+                    }
+                    catch (Exception)
+                    {
+                        haveResult = false;
+                        _buffersPool.Put(packet.Buffer);
+                    }
                 }
                 else
                 {
