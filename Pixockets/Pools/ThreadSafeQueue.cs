@@ -8,10 +8,9 @@ namespace Pixockets
         private class ArrayNode : IPoolable
         {
             public const int MaxCount = 32;
-            public const int MaxIndex = 31;
 
             public ArrayNode Next;
-            public T[] Items = new T[MaxCount];
+            public readonly T[] Items = new T[MaxCount];
             public int Lo;
             public int Hi;
 
@@ -22,11 +21,11 @@ namespace Pixockets
             }
         }
 
-        private Pool<ArrayNode> _nodesPool = new Pool<ArrayNode>();
+        private readonly Pool<ArrayNode> _nodesPool = new Pool<ArrayNode>();
+        private readonly AutoResetEvent _added = new AutoResetEvent(false);
+        private readonly object _syncRoot = new object();
         private ArrayNode _head;
         private ArrayNode _tail;
-        private AutoResetEvent _added = new AutoResetEvent(false);
-        private readonly object _syncRoot = new object();
         private int _count;
 
         public ThreadSafeQueue()

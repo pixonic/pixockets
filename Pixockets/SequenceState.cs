@@ -97,6 +97,7 @@ namespace Pixockets
             if (fragIdx > 0 && frag.Buffers[fragIdx].FragNum == frag.Buffers[fragIdx - 1].FragNum)
             {
                 frag.Buffers.RemoveAt(fragIdx);
+                _buffersPool.Put(buffer);
             }
         }
 

@@ -103,10 +103,11 @@ namespace UnitTests
             var buffer1 = CreateFirstFragment();
             _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
             // Duplicate
-            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            var buffer1Duplicate = CreateFirstFragment();
+            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2.Array, buffer1.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }

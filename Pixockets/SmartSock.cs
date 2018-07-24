@@ -54,33 +54,26 @@ namespace Pixockets
 
         public bool Receive(ref ReceivedSmartPacket receivedPacket)
         {
-            try
+            bool haveResult = false;
+            var packet = new ReceivedPacket();
+            while (true)
             {
-                bool haveResult = false;
-                var packet = new ReceivedPacket();
-                while (true)
+                if (SubSock.Receive(ref packet))
                 {
-                    if (SubSock.Receive(ref packet))
-                    {
-                        haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
-                            ref receivedPacket);
-                    }
-                    else
-                    {
-                        break;
-                    }
-
-                    if (haveResult)
-                    {
-                        break;
-                    }
+                    haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
+                        ref receivedPacket);
                 }
-                return haveResult;
+                else
+                {
+                    break;
+                }
+
+                if (haveResult)
+                {
+                    break;
+                }
             }
-            catch (Exception)
-            {
-                return false;
-            }
+            return haveResult;
         }
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
@@ -205,6 +198,7 @@ namespace Pixockets
             {
                 // Wrong packet
                 _headersPool.Put(header);
+                _buffersPool.Put(buffer);
                 return false;
             }
 
@@ -221,15 +215,11 @@ namespace Pixockets
                     haveResult = OnReceiveComplete(buffer, offset, length, endPoint, header, inOrder, ref receivedPacket);
                     seqState.RegisterIncoming(header.SeqNum);
                 }
-                else
-                {
-                    _buffersPool.Put(buffer);
-                }
             }
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
-                ReceiveAck(endPoint, header.Acks);
+                seqState.ReceiveAck(header.Acks);
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
@@ -237,6 +227,10 @@ namespace Pixockets
                 seqState.EnqueueAck(header.SeqNum);
             }
 
+            if (!haveResult && (header.Flags & PacketHeader.ContainsFrag) == 0)
+            {
+                _buffersPool.Put(buffer);
+            }
             _headersPool.Put(header);
 
             return haveResult;
@@ -349,18 +343,6 @@ namespace Pixockets
             notAcked.SeqNum = seqNum;
 
             seqState.AddNotAcked(notAcked);
-        }
-
-        private void EnqueueAck(IPEndPoint endPoint, ushort seqNum)
-        {
-            var seqState = GetSeqState(endPoint);
-            seqState.EnqueueAck(seqNum);
-        }
-
-        private void ReceiveAck(IPEndPoint endPoint, List<ushort> acks)
-        {
-            var seqState = GetSeqState(endPoint);
-            seqState.ReceiveAck(acks);
         }
 
         private SequenceState GetSeqState(IPEndPoint endPoint)

@@ -10,18 +10,19 @@ namespace UnitTests
     [TestFixture]
     public class SequenceTests
     {
-        MockSmartCallbacks _cbs;
-        MockSock _bareSock;
-        SmartSock _sock;
-        IPEndPoint _endPoint;
+        private MockSmartCallbacks _cbs;
+        private MockSock _bareSock;
+        private BufferPoolBase _bufferPool;
+        private SmartSock _sock;
+        private IPEndPoint _endPoint;
 
         [SetUp]
         public void Setup()
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            var bufferPool = new CoreBufferPool();
-            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
+            _bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
             _endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
         }
 
@@ -189,19 +190,19 @@ namespace UnitTests
         private void SendPacket(int n)
         {
             var buffer = CreatePacket(n);
-            _bareSock.FakeReceive(buffer, 0, buffer.Length, _endPoint);
+            _bareSock.FakeReceive(buffer.Array, buffer.Offset, buffer.Count, _endPoint);
         }
 
-        private static byte[] CreatePacket(int n)
+        private ArraySegment<byte> CreatePacket(int n)
         {
             var header = new PacketHeader();
             header.SetSeqNum((ushort)n);
             header.Length = (ushort)(header.HeaderLength + 4);
-            var ms = new MemoryStream();
+            var buffer = _bufferPool.Get(header.Length);
+            var ms = new MemoryStream(buffer);
             header.WriteTo(ms);
-            ms.Write(BitConverter.GetBytes(n), 0, 4);
-            var buffer = ms.ToArray();
-            return buffer;
+            ms.Write(BitConverter.GetBytes(n), 0, 4);            
+            return new ArraySegment<byte>(buffer, 0, header.Length);
         }
     }
 }

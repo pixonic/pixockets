@@ -12,6 +12,7 @@ namespace UnitTests
     public class ReliableSendTests
     {
         private MockSmartCallbacks _cbs;
+        private BufferPoolBase _bufferPool;
         private MockSock _bareSock;
         private SmartSock _sock;
 
@@ -20,8 +21,8 @@ namespace UnitTests
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            var bufferPool = new CoreBufferPool();
-            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
+            _bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
         }
 
         [TearDown]
@@ -148,13 +149,12 @@ namespace UnitTests
             var headerSent = new PacketHeader();
             headerSent.Init(sent.Buffer, sent.Offset);
 
-            var ms = new MemoryStream();
             var ackHeader = new PacketHeader();
             ackHeader.AddAck(headerSent.SeqNum);
             ackHeader.Length = (ushort)ackHeader.HeaderLength;
-            ackHeader.WriteTo(ms);
-            buffer = ms.ToArray();
-            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            buffer = _bufferPool.Get(ackHeader.Length);
+            ackHeader.WriteTo(buffer, 0);
+            _bareSock.FakeReceive(buffer, 0, ackHeader.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
             var receivedPacket = new ReceivedSmartPacket();
             // Just ack in the packet, no payload
