@@ -16,7 +16,7 @@ namespace Pixockets
 #endif
 
         public CoreBufferPool()
-            : this(new Core.Buffers.DefaultArrayPool<byte>())
+            : this(new DefaultArrayPool<byte>())
         {
         }
 
