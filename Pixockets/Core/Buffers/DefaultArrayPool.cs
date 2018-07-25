@@ -14,7 +14,7 @@ namespace Pixockets.Core.Buffers
         /// <summary>The default maximum number of arrays per bucket that are available for rent.</summary>
         private const int DefaultMaxNumberOfArraysPerBucket = 64; // 50
         /// <summary>Lazily-allocated empty array used when arrays of length 0 are requested.</summary>
-        private static T[] s_emptyArray; // we support contracts earlier than those with Array.Empty<T>()
+        private static T[] _sEmptyArray; // we support contracts earlier than those with Array.Empty<T>()
 
         private readonly Bucket[] _buckets;
 
@@ -35,14 +35,14 @@ namespace Pixockets.Core.Buffers
 
             // Our bucketing algorithm has a min length of 2^4 and a max length of 2^30.
             // Constrain the actual max used to those values.
-            const int MinimumArrayLength = 0x10, MaximumArrayLength = 0x40000000;
-            if (maxArrayLength > MaximumArrayLength)
+            const int minimumArrayLength = 0x10, maximumArrayLength = 0x40000000;
+            if (maxArrayLength > maximumArrayLength)
             {
-                maxArrayLength = MaximumArrayLength;
+                maxArrayLength = maximumArrayLength;
             }
-            else if (maxArrayLength < MinimumArrayLength)
+            else if (maxArrayLength < minimumArrayLength)
             {
-                maxArrayLength = MinimumArrayLength;
+                maxArrayLength = minimumArrayLength;
             }
 
             // Create the buckets.
@@ -68,17 +68,17 @@ namespace Pixockets.Core.Buffers
             {
                 // No need for events with the empty array.  Our pool is effectively infinite
                 // and we'll never allocate for rents and never store for returns.
-                return s_emptyArray ?? (s_emptyArray = new T[0]);
+                return _sEmptyArray ?? (_sEmptyArray = new T[0]);
             }
 
-            T[] buffer = null;
+            T[] buffer;
 
             int index = Utilities.SelectBucketIndex(minimumLength);
             if (index < _buckets.Length)
             {
                 // Search for an array starting at the 'index' bucket. If the bucket is empty, bump up to the
                 // next higher bucket and try that one, but only try at most a few buckets.
-                const int MaxBucketsToTry = 2;
+                const int maxBucketsToTry = 2;
                 int i = index;
                 do
                 {
@@ -89,11 +89,11 @@ namespace Pixockets.Core.Buffers
                         return buffer;
                     }
                 }
-                while (++i < _buckets.Length && i != index + MaxBucketsToTry);
+                while (++i < _buckets.Length && i != index + maxBucketsToTry);
 
                 // The pool was exhausted for this buffer size.  Allocate a new buffer with a size corresponding
                 // to the appropriate bucket.
-                buffer = new T[_buckets[index]._bufferLength];
+                buffer = new T[_buckets[index].BufferLength];
             }
             else
             {

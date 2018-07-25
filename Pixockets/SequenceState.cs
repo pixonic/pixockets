@@ -12,14 +12,14 @@ namespace Pixockets
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private readonly List<ushort> _ackQueue = new List<ushort>();
-        private int _receivedSeqNumBufferSize;
         private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
 
-        private bool _connected = false;
+        private int _receivedSeqNumBufferSize;
+        private bool _connected;
         private ushort _nextSeqNum;
         private ushort _nextFragId;
         private int _lastReceivedSeqNum = -1;  // int for calculations
-        private int _lastRecevedSeqNumIdx = 0;
+        private int _lastRecevedSeqNumIdx;
 
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
@@ -33,10 +33,6 @@ namespace Pixockets
         public int FullAckLoad
         {
             get { return _ackQueue.Count * 2; }
-        }
-
-        public SequenceState()
-        {
         }
 
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
@@ -101,7 +97,7 @@ namespace Pixockets
             }
         }
 
-        public bool CombineIfFull(PacketHeader header, IPEndPoint endPoint, SmartReceiverBase cbs, ref ReceivedSmartPacket receivedPacket)
+        public bool CombineIfFull(PacketHeader header, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
         {
             int fullLength = 0;
 

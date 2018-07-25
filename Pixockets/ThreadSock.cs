@@ -8,7 +8,7 @@ namespace Pixockets
     // WARNING: this class uses Socket.SendTo method which is not working in Unity for iOS
     public class ThreadSock : SockBase
     {
-        public Socket SysSock = null;
+        public Socket SysSock;
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
         public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }

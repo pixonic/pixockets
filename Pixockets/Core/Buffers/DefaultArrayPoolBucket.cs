@@ -11,7 +11,7 @@ namespace Pixockets.Core.Buffers
         /// <summary>Provides a thread-safe bucket containing buffers that can be Rent'd and Return'd.</summary>
         private sealed class Bucket
         {
-            internal readonly int _bufferLength;
+            internal readonly int BufferLength;
             private readonly T[][] _buffers;
 
             private readonly object _syncObj = new object();
@@ -23,7 +23,7 @@ namespace Pixockets.Core.Buffers
             internal Bucket(int bufferLength, int numberOfBuffers)
             {
                 _buffers = new T[numberOfBuffers][];
-                _bufferLength = bufferLength;
+                BufferLength = bufferLength;
             }
 
             /// <summary>Takes an array from the bucket.  If the bucket is empty, returns null.</summary>
@@ -52,7 +52,7 @@ namespace Pixockets.Core.Buffers
                 // for that slot, in which case we should do so now.
                 if (allocateBuffer)
                 {
-                    buffer = new T[_bufferLength];
+                    buffer = new T[BufferLength];
                 }
 
                 return buffer;
@@ -66,7 +66,7 @@ namespace Pixockets.Core.Buffers
             internal void Return(T[] array)
             {
                 // Check to see if the buffer is the correct size for this bucket
-                if (array.Length != _bufferLength)
+                if (array.Length != BufferLength)
                 {
                     // Just ignore alien buffers
                     throw new ArgumentException("BufferNotFromPool", "array");

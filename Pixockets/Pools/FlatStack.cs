@@ -4,7 +4,7 @@ namespace Pixockets
 {
     public class FlatStack<T>
     {
-        private List<T> _items = new List<T>();
+        private readonly List<T> _items = new List<T>();
 
         public bool TryPop(out T result)
         {

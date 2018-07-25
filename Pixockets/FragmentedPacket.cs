@@ -7,7 +7,7 @@ namespace Pixockets
     {
         public ushort FragId;
         public ushort FragCount;
-        public List<FragmentBuffer> Buffers = new List<FragmentBuffer>();
+        public readonly List<FragmentBuffer> Buffers = new List<FragmentBuffer>();
         public int LastActive;
 
         public void Strip()
@@ -34,6 +34,9 @@ namespace Pixockets
 
         public bool Equals(FragmentedPacket other)
         {
+            if (other == null)
+                return false;
+
             return FragId == other.FragId;
         }
     }

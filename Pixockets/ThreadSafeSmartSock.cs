@@ -4,9 +4,9 @@ namespace Pixockets
 {
     public class ThreadSafeSmartSock
     {
-        private SmartSock _socket;
-        private object _syncObject = new object();
-        
+        private readonly SmartSock _socket;
+        private readonly object _syncObject = new object();
+
         public ThreadSafeSmartSock(SmartSock socket)
         {
             _socket = socket;

@@ -267,7 +267,7 @@ namespace Pixockets
             var seqState = GetSeqState(endPoint);
             seqState.AddFragment(buffer, offset, length, header);
 
-            return seqState.CombineIfFull(header, endPoint, _callbacks, ref receivedPacket);
+            return seqState.CombineIfFull(header, endPoint, ref receivedPacket);
         }
 
         // TODO: move it to some common class

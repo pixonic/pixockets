@@ -159,7 +159,7 @@ namespace Pixockets
             {
                 pos = WriteUInt16(FragId, buffer, pos);
                 pos = WriteUInt16(FragNum, buffer, pos);
-                pos = WriteUInt16(FragCount, buffer, pos);
+                /*pos = */WriteUInt16(FragCount, buffer, pos);
             }
         }
 

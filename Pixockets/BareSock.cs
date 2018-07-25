@@ -6,7 +6,7 @@ namespace Pixockets
 {
     public class BareSock : SockBase
     {
-        public Socket SysSock = null;
+        public Socket SysSock;
 
         public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
 
@@ -56,7 +56,6 @@ namespace Pixockets
             catch (Exception)
             {
                 // TODO: do something
-                return;
             }
             finally
             {
@@ -75,7 +74,6 @@ namespace Pixockets
             catch (Exception)
             {
                 // TODO: do something
-                return;
             }
             finally
             {

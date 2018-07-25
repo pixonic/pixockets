@@ -45,7 +45,6 @@
     <Compile Include="Pools\ThreadSafeQueue.cs" />
     <Compile Include="Pools\FlatStack.cs" />
     <Compile Include="ReceivedPacket.cs" />
-    <Compile Include="SendOptions.cs" />
     <Compile Include="SmartReceiverBase.cs" />
     <Compile Include="SequenceState.cs" />
     <Compile Include="SockBase.cs" />
