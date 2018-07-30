@@ -30,7 +30,7 @@ namespace Pixockets.Core.Buffers
             }
             if (arraysPerBucket <= 0)
             {
-                throw new ArgumentOutOfRangeException("maxArraysPerBucket");
+                throw new ArgumentOutOfRangeException("arraysPerBucket");
             }
 
             // Our bucketing algorithm has a min length of 2^4 and a max length of 2^30.
