@@ -11,11 +11,11 @@ namespace Pixockets.Core.Buffers
         /// <summary>Provides a thread-safe bucket containing buffers that can be Rent'd and Return'd.</summary>
         private sealed class Bucket
         {
-            internal readonly int BufferLength;
-            private readonly T[][] _buffers;
+            private readonly int _bufferLength;
+            private T[][] _buffers;
 
             private readonly object _syncObj = new object();
-            private int _index;
+            private int _length;
 
             /// <summary>
             /// Creates the pool with numberOfBuffers arrays where each buffer is of bufferLength length.
@@ -23,39 +23,24 @@ namespace Pixockets.Core.Buffers
             internal Bucket(int bufferLength, int numberOfBuffers)
             {
                 _buffers = new T[numberOfBuffers][];
-                BufferLength = bufferLength;
+                _bufferLength = bufferLength;
             }
 
             /// <summary>Takes an array from the bucket.  If the bucket is empty, returns null.</summary>
             internal T[] Rent()
             {
-                T[][] buffers = _buffers;
-                T[] buffer = null;
-
-                // While holding the lock, grab whatever is at the next available index and
-                // update the index.  We do as little work as possible while holding the spin
-                // lock to minimize contention with other threads.
-                bool allocateBuffer = false;
-
                 lock (_syncObj)
                 {
-                    if (_index < buffers.Length)
+                    if (_length > 0)
                     {
-                        buffer = buffers[_index];
-                        buffers[_index++] = null;
-                        allocateBuffer = buffer == null;
+                        _length--;
+                        var buffer = _buffers[_length];
+                        _buffers[_length] = null;
+                        return buffer;
                     }
-                }
 
-                // While we were holding the lock, we grabbed whatever was at the next available index, if
-                // there was one.  If we tried and if we got back null, that means we hadn't yet allocated
-                // for that slot, in which case we should do so now.
-                if (allocateBuffer)
-                {
-                    buffer = new T[BufferLength];
+                    return new T[_bufferLength];
                 }
-
-                return buffer;
             }
 
             /// <summary>
@@ -66,22 +51,22 @@ namespace Pixockets.Core.Buffers
             internal void Return(T[] array)
             {
                 // Check to see if the buffer is the correct size for this bucket
-                if (array.Length != BufferLength)
+                if (array.Length != _bufferLength)
                 {
-                    // Just ignore alien buffers
                     throw new ArgumentException("BufferNotFromPool", "array");
                 }
 
-                // While holding the spin lock, if there's room available in the bucket,
-                // put the buffer into the next available slot.  Otherwise, we just drop it.
-                // The try/finally is necessary to properly handle thread aborts on platforms
-                // which have them.
                 lock (_syncObj)
                 {
-                    if (_index != 0)
+                    if (_length == _buffers.Length)
                     {
-                        _buffers[--_index] = array;
+                        var moreBuffers = new T[_length * 2][];
+                        Array.Copy(_buffers, moreBuffers, _length);
+                        Array.Clear(_buffers, 0, _length);
+                        _buffers = moreBuffers;
                     }
+
+                    _buffers[_length++] = array;
                 }
             }
         }
