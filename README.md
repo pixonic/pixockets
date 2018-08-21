@@ -1,5 +1,6 @@
 # pixockets
 A rapid lightweight UDP library.
+It is specialized for soft realtime applications with heavy per-connection traffic.
 
 ## Features
 * Small memory traffic
