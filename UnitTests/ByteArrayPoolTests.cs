@@ -25,11 +25,26 @@ namespace UnitTests
             var byteArrayPool = new DefaultArrayPool<byte>();
 
             var capacitor = new List<byte[]>();
+            // Rent
             for (int i = 0; i < BuffersToRent; ++i)
             {
                 var buffer = byteArrayPool.Rent(arraySize);
                 capacitor.Add(buffer);
             }
+            // Return
+            for (int i = 0; i < BuffersToRent; ++i)
+            {
+                var buffer = capacitor[i];
+                byteArrayPool.Return(buffer);
+            }
+            capacitor.Clear();
+            // Rent again
+            for (int i = 0; i < BuffersToRent; ++i)
+            {
+                var buffer = byteArrayPool.Rent(arraySize);
+                capacitor.Add(buffer);
+            }
+            // Return again
             for (int i = 0; i < BuffersToRent; ++i)
             {
                 var buffer = capacitor[i];
