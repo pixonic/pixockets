@@ -84,6 +84,18 @@ namespace Pixockets
 
         public override bool Receive(ref ReceivedPacket packet)
         {
+            try
+            {
+                if (SysSock.Available == 0)
+                {
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
             var buffer = _buffersPool.Get(MTU);
             EndPoint remoteEP = _receiveEndPoint;
             try
