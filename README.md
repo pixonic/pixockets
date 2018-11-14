@@ -26,7 +26,6 @@ while (!Console.KeyAvailable)
 {
     var buffer = BitConverter.GetBytes(cnt++);
     sock.Send(buffer, 0, buffer.Length, false);
-    sock.Tick();
     while (sock.Receive(ref packet))
     {
         if (!packet.InOrder)
@@ -38,6 +37,7 @@ while (!Console.KeyAvailable)
         bufferPool.Put(packet.Buffer);
     }
 
+    sock.Tick();
     Thread.Sleep(50);
 }
 
