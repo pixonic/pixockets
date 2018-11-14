@@ -108,5 +108,17 @@ namespace UnitTests
                 Assert.AreEqual(i, item);
             }
         }
+
+        [Test]
+        public void AddMoreThanLimit()
+        {
+            for (int i = 0; i < ThreadSafeQueue<int>.SizeLimit + 100; i++)
+            {
+                _queue.Add(i);
+            }
+
+            Assert.AreEqual(100, _queue.Take());
+        }
+
     }
 }

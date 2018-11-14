@@ -21,6 +21,8 @@ namespace Pixockets
             }
         }
 
+        public const int SizeLimit = 50000;
+
         private readonly Pool<ArrayNode> _nodesPool = new Pool<ArrayNode>();
         private readonly AutoResetEvent _added = new AutoResetEvent(false);
         private readonly object _syncRoot = new object();
@@ -38,6 +40,10 @@ namespace Pixockets
             lock (_syncRoot)
             {
                 AddLast(item);
+                if (_count > SizeLimit)
+                {
+                    var trashIt = RemoveFirst();
+                }
             }
             _added.Set();
         }
