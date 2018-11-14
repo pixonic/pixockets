@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Pixockets;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -93,10 +94,18 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
+
+            // Test sending acks back on tick
+            _sock.Tick();
+            var packetToSend = _bareSock.Sends[0];
+            var header = new PacketHeader();
+            header.Init(packetToSend.Buffer, packetToSend.Offset);
+            Assert.AreEqual(2, header.Acks.Count);
+            CollectionAssert.AreEqual(new List<ushort> {100, 101}, header.Acks);
         }
 
         [Test]
-        public void DuplicateReliableFragmentsIgnored()
+        public void DuplicateReliableFragmentIgnored()
         {
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
 
@@ -110,6 +119,29 @@ namespace UnitTests
             _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
 
             AssertCombinedPacketReceived();
+        }
+
+        [Test]
+        public void DuplicateReliableFragmentsIgnored()
+        {
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+
+            var buffer1 = CreateFirstFragment();
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+
+            var buffer2 = CreateSecondFragment();
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+
+            AssertCombinedPacketReceived();
+
+            // Duplicate fragments
+            var buffer1Duplicate = CreateFirstFragment();
+            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, remoteEndPoint);
+            var buffer2Duplicate = CreateSecondFragment();
+            _bareSock.FakeReceive(buffer2Duplicate.Array, buffer2Duplicate.Offset, buffer2Duplicate.Count, remoteEndPoint);
+
+            var receivedPackets = Utils.ReceiveAll(_sock);
+            Assert.AreEqual(0, receivedPackets.Count);
         }
 
         [Test]

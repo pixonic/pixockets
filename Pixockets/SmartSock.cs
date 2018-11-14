@@ -8,7 +8,7 @@ namespace Pixockets
     {
         public int ConnectionTimeout = 10000;
         public int AckTimeout = 2000;  // Should be less than max tick
-        public int MaxPayload = 1100;  // Shold be less than SubSock.MTU - HeaderLength
+        public int MaxPayload = 1100;  // Should be less than SubSock.MTU - HeaderLength
         public int FragmentTimeout = 2000;
 
         private const int DeltaThreshold = 1000000000;
@@ -212,7 +212,12 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.ContainsFrag) != 0)
             {
-                haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
+                bool isDuplicate = seqState.IsDuplicate(header.SeqNum);
+                if (!isDuplicate)
+                {
+                    haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
+                    seqState.RegisterIncoming(header.SeqNum);
+                }
             }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
