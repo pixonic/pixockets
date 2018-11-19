@@ -26,6 +26,9 @@ namespace Pixockets
         private readonly object _syncObj = new object();
         private volatile bool _closing;
 
+        private const int SendQueueLimit = 10000;
+        private const int RecvQueueLimit = 10000;
+
         public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -99,6 +102,16 @@ namespace Pixockets
             packet.PutBufferToPool = putBufferToPool;
 
             _sendQueue.Add(packet);
+
+            if (_sendQueue.Count > SendQueueLimit)
+            {
+                // Trash oldest
+                if (_sendQueue.TryTake(out packet))
+                {
+                    if (packet.PutBufferToPool)
+                        _buffersPool.Put(packet.Buffer);
+                }
+            }
         }
 
         private void SendLoop()
@@ -144,6 +157,13 @@ namespace Pixockets
                         bufferUsed = true;
 
                         _recvQueue.Add(packet);
+
+                        if (_recvQueue.Count > RecvQueueLimit)
+                        {
+                            // Trash oldest
+                            if (_recvQueue.TryTake(out packet))
+                                _buffersPool.Put(packet.Buffer);
+                        }
                     }
                 }
                 catch (Exception)

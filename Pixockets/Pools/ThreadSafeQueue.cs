@@ -28,7 +28,18 @@ namespace Pixockets
         private readonly object _syncRoot = new object();
         private ArrayNode _head;
         private ArrayNode _tail;
-        private int _count;
+        private volatile int _count;
+
+        public int Count
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _count;
+                }
+            }
+        }
 
         public ThreadSafeQueue()
         {
