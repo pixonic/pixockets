@@ -104,7 +104,9 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, 0));
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(4, receivedPacket.Length);
-            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            // Depends on other thread
+            Assert.IsTrue(_bufferPool.Rented.Count >= 1);
+            Assert.IsTrue(_bufferPool.Rented.Count <= 2);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
     }
