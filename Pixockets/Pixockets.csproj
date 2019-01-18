@@ -37,6 +37,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BareSockClient.cs" />
     <Compile Include="FragmentBuffer.cs" />
     <Compile Include="FragmentedPacket.cs" />
     <Compile Include="NotAckedPacket.cs" />

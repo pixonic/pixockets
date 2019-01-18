@@ -15,13 +15,13 @@ namespace Pixockets
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
-        private readonly BufferPoolBase _buffersPool;
+        protected readonly BufferPoolBase BuffersPool;
 
         public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
             SysSock.Blocking = false;
-            _buffersPool = buffersPool;
+            BuffersPool = buffersPool;
         }
 
         public override void Connect(IPAddress address, int port)
@@ -60,7 +60,7 @@ namespace Pixockets
             finally
             {
                 if (putBufferToPool)
-                    _buffersPool.Put(buffer);
+                    BuffersPool.Put(buffer);
             }
         }
 
@@ -78,7 +78,7 @@ namespace Pixockets
             finally
             {
                 if (putBufferToPool)
-                    _buffersPool.Put(buffer);
+                    BuffersPool.Put(buffer);
             }
         }
 
@@ -96,7 +96,7 @@ namespace Pixockets
                 return false;
             }
 
-            var buffer = _buffersPool.Get(MTU);
+            var buffer = BuffersPool.Get(MTU);
             EndPoint remoteEP = _receiveEndPoint;
             try
             {
@@ -116,7 +116,7 @@ namespace Pixockets
                 // TODO: do something
             }
 
-            _buffersPool.Put(buffer);
+            BuffersPool.Put(buffer);
             return false;
         }
 
