@@ -12,10 +12,10 @@ namespace Pixockets
 
         public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
 
-        private IPEndPoint _remoteEndPoint;
-        private IPEndPoint _receiveEndPoint;
-
         private readonly BufferPoolBase _buffersPool;
+
+        private IPEndPoint _remoteEndPoint;
+        private bool _connectedMode;
 
         public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
         {
@@ -34,15 +34,14 @@ namespace Pixockets
                 SysSock.Blocking = false;
             }
             SysSock.Connect(_remoteEndPoint);
-
-            _receiveEndPoint = new IPEndPoint(AnyAddress(addressFamily), 0);
+            _connectedMode = true;
         }
 
         public override void Listen(int port)
         {
-            _receiveEndPoint = new IPEndPoint(AnyAddress(SysSock.AddressFamily), port);
-            _remoteEndPoint = _receiveEndPoint;
+            _remoteEndPoint = new IPEndPoint(AnyAddress(SysSock.AddressFamily), port);
             SysSock.Bind(_remoteEndPoint);
+            _connectedMode = false;
         }
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
@@ -97,10 +96,15 @@ namespace Pixockets
             }
 
             var buffer = _buffersPool.Get(MTU);
-            EndPoint remoteEP = _receiveEndPoint;
+            EndPoint remoteEP = _remoteEndPoint;
             try
             {
-                var bytesReceived = SysSock.ReceiveFrom(buffer, MTU, SocketFlags.None, ref remoteEP);
+                int bytesReceived = 0;
+                if (_connectedMode)
+                    bytesReceived = SysSock.Receive(buffer, MTU, SocketFlags.None);
+                else
+                    bytesReceived = SysSock.ReceiveFrom(buffer, MTU, SocketFlags.None, ref remoteEP);
+
                 if (bytesReceived > 0)
                 {
                     packet.Buffer = buffer;
