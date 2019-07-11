@@ -4,6 +4,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Pixockets.Debug;
 using UnitTests.Mock;
 
 namespace UnitTests
@@ -18,7 +19,7 @@ namespace UnitTests
             var receiveTask = udpClient.ReceiveAsync();
 
             var bufferPool = new CoreBufferPool();
-            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
+            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork, new LoggerStub());
 
             sock.Connect(IPAddress.Loopback, 23450);
             sock.Send(BitConverter.GetBytes(1), 0, 4, false);

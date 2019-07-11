@@ -3,6 +3,7 @@ using Pixockets;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Remoting;
+using Pixockets.Debug;
 using UnitTests.Mock;
 
 namespace UnitTests
@@ -14,7 +15,7 @@ namespace UnitTests
         public void SendMoreThanMTUDroppedOnReceiveByBareSock()
         {
             var bufferPool = new CoreBufferPool();
-            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork);
+            var sock = new BareSock(bufferPool, AddressFamily.InterNetwork, new LoggerStub());
             sock.Listen(23459);
 
             UdpClient udpClient = new UdpClient();
@@ -34,7 +35,7 @@ namespace UnitTests
         public void SendMoreThanMTUDroppedOnReceiveByThreadSock()
         {
             var bufferPool = new CoreBufferPool();
-            var sock = new ThreadSock(bufferPool, AddressFamily.InterNetwork);
+            var sock = new ThreadSock(bufferPool, AddressFamily.InterNetwork, new LoggerStub());
             sock.Listen(23460);
 
             UdpClient udpClient = new UdpClient();

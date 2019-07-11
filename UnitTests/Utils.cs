@@ -16,7 +16,7 @@ namespace UnitTests
                 {
                     return receivedPacket;
                 }
-                Thread.Sleep(1);
+                Thread.Sleep(10);
             }
             return receivedPacket;
         }

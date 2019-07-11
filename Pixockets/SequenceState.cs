@@ -151,6 +151,7 @@ namespace Pixockets
                 {
                     sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length, false);
                     packet.SendTicks = now;
+                    _notAcked[i] = packet;
                 }
             }
 

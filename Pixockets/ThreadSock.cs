@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Pixockets.Debug;
 
 namespace Pixockets
 {
@@ -17,6 +18,7 @@ namespace Pixockets
         private IPEndPoint _receiveEndPoint;
 
         private readonly BufferPoolBase _buffersPool;
+        private readonly ILogger _logger;
         private readonly Thread _sendThread;
         private readonly ThreadSafeQueue<PacketToSend> _sendQueue = new ThreadSafeQueue<PacketToSend>();
 
@@ -29,12 +31,13 @@ namespace Pixockets
         private const int SendQueueLimit = 10000;
         private const int RecvQueueLimit = 10000;
 
-        public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
+        public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily, ILogger logger)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
             _closing = false;
 
             _buffersPool = buffersPool;
+            _logger = logger;
             _sendThread = new Thread(SendLoop);
             _sendThread.IsBackground = true;
             _sendThread.Start();
@@ -124,9 +127,9 @@ namespace Pixockets
                     // This seems not implemented in Unity for iOS
                     SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    // TODO: do something
+                    _logger.Exception(e);
                 }
                 finally
                 {
@@ -166,9 +169,9 @@ namespace Pixockets
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    // TODO: do something
+                    _logger.Exception(e);
                 }
 
                 if (!bufferUsed)

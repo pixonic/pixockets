@@ -4,6 +4,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Pixockets.Debug;
 using UnitTests.Mock;
 
 namespace UnitTests
@@ -18,7 +19,7 @@ namespace UnitTests
         public void Setup()
         {
             _bufferPool = new MockBufferPool();
-            _sock = new ThreadSock(_bufferPool, AddressFamily.InterNetwork);
+            _sock = new ThreadSock(_bufferPool, AddressFamily.InterNetwork, new LoggerStub());
         }
 
         [TearDown]
