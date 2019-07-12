@@ -1,7 +1,7 @@
 ﻿using System.Net.Sockets;
 using Pixockets;
 using System.Threading;
-using Pixockets.Debug;
+using Pixockets.DebugTools;
 
 namespace ReplicatorServer
 {

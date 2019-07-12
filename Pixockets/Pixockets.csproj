@@ -37,8 +37,8 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Debug\ILogger.cs" />
-    <Compile Include="Debug\LoggerStub.cs" />
+    <Compile Include="DebugTools\ILogger.cs" />
+    <Compile Include="DebugTools\LoggerStub.cs" />
     <Compile Include="FragmentBuffer.cs" />
     <Compile Include="FragmentedPacket.cs" />
     <Compile Include="NotAckedPacket.cs" />

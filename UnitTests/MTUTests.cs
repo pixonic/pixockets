@@ -3,7 +3,7 @@ using Pixockets;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Remoting;
-using Pixockets.Debug;
+using Pixockets.DebugTools;
 using UnitTests.Mock;
 
 namespace UnitTests

@@ -4,9 +4,9 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using Pixockets.Debug;
 using UnitTests.Mock;
 using NSubstitute;
+using Pixockets.DebugTools;
 
 namespace UnitTests
 {
