@@ -6,6 +6,7 @@ using System.Threading;
 using System.IO;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Pixockets.DebugTools;
 
 namespace ReplicatorClient
 {
@@ -76,7 +77,7 @@ namespace ReplicatorClient
 
         public void Connect(float x, float y)
         {
-            var smartSock = new SmartSock(_bufferPool, new ThreadSock(_bufferPool, AddressFamily.InterNetwork), this);
+            var smartSock = new SmartSock(_bufferPool, new ThreadSock(_bufferPool, AddressFamily.InterNetwork, new LoggerStub()), this);
             _socket = new ThreadSafeSmartSock(smartSock);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
