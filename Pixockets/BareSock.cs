@@ -11,7 +11,7 @@ namespace Pixockets
 
         public override IPEndPoint LocalEndPoint
         {
-            get { return (IPEndPoint) SysSock.LocalEndPoint; }
+            get { return (IPEndPoint)SysSock.LocalEndPoint; }
         }
 
         public override IPEndPoint RemoteEndPoint
@@ -60,7 +60,7 @@ namespace Pixockets
 
             try
             {
-                //Some implementations throw exception if sendto is called on a connected SOCK_DGRAM socket.
+                // Some implementations throw exception if sendto is called on a connected SOCK_DGRAM socket.
                 if (!_connectedMode)
                     SysSock.SendTo(buffer, offset, length, SocketFlags.None, endPoint);
                 else
