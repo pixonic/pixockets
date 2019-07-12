@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using Pixockets.DebugTools;
 
 namespace Pixockets
 {
@@ -8,20 +9,28 @@ namespace Pixockets
     {
         public Socket SysSock;
 
-        public override IPEndPoint LocalEndPoint { get { return (IPEndPoint)SysSock.LocalEndPoint; } }
+        public override IPEndPoint LocalEndPoint
+        {
+            get { return (IPEndPoint)SysSock.LocalEndPoint; }
+        }
 
-        public override IPEndPoint RemoteEndPoint { get { return _remoteEndPoint; } }
+        public override IPEndPoint RemoteEndPoint
+        {
+            get { return _remoteEndPoint; }
+        }
 
         private readonly BufferPoolBase _buffersPool;
+        private readonly ILogger _logger;
 
         private IPEndPoint _remoteEndPoint;
         private bool _connectedMode;
 
-        public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
+        public BareSock(BufferPoolBase buffersPool, AddressFamily addressFamily, ILogger logger)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
             SysSock.Blocking = false;
             _buffersPool = buffersPool;
+            _logger = logger;
         }
 
         public override void Connect(IPAddress address, int port)
@@ -33,6 +42,7 @@ namespace Pixockets
                 SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
                 SysSock.Blocking = false;
             }
+
             SysSock.Connect(_remoteEndPoint);
             _connectedMode = true;
         }
@@ -50,11 +60,15 @@ namespace Pixockets
 
             try
             {
-                SysSock.SendTo(buffer, offset, length, SocketFlags.None, endPoint);
+                // Some implementations throw exception if sendto is called on a connected SOCK_DGRAM socket.
+                if (!_connectedMode)
+                    SysSock.SendTo(buffer, offset, length, SocketFlags.None, endPoint);
+                else
+                    SysSock.Send(buffer, offset, length, SocketFlags.None);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // TODO: do something
+                _logger.Exception(e);
             }
             finally
             {
@@ -70,9 +84,9 @@ namespace Pixockets
                 // It uses Send instead of SendTo because SendTo seems not implemented in Unity on iOS
                 SysSock.Send(buffer, offset, length, SocketFlags.None);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // TODO: do something
+                _logger.Exception(e);
             }
             finally
             {
@@ -90,8 +104,9 @@ namespace Pixockets
                     return false;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.Exception(e);
                 return false;
             }
 
@@ -110,14 +125,14 @@ namespace Pixockets
                     packet.Buffer = buffer;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
-                    packet.EndPoint = (IPEndPoint)remoteEP;
+                    packet.EndPoint = (IPEndPoint) remoteEP;
 
                     return true;
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // TODO: do something
+                _logger.Exception(e);
             }
 
             _buffersPool.Put(buffer);
