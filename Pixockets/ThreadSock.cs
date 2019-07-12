@@ -165,6 +165,11 @@ namespace Pixockets
                                 _buffersPool.Put(packet.Buffer);
                         }
                     }
+                    else
+                    {
+                        // If blocking call isn't actually blocking, sleep for a while
+                        Thread.Sleep(10);
+                    }
                 }
                 catch (Exception)
                 {
