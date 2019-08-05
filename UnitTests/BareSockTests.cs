@@ -96,12 +96,12 @@ namespace UnitTests
         [Test]
         public void SendToOnConnectedModeTest()
         {
-            UdpClient udpClient = new UdpClient(23457);
+            UdpClient udpClient = new UdpClient(23455);
             var receiveTask = udpClient.ReceiveAsync();
-            _sock.Connect(IPAddress.Loopback, 23457);
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23457), BitConverter.GetBytes(123456789), 0, 4, true);
+            _sock.Connect(IPAddress.Loopback, 23455);
+            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23455), BitConverter.GetBytes(123456789), 0, 4, true);
 
-            receiveTask.Wait(1000);   
+            receiveTask.Wait(1000);
             _logger.DidNotReceiveWithAnyArgs().Exception(null);
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
