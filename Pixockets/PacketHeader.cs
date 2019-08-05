@@ -12,6 +12,10 @@ namespace Pixockets
             get
             {
                 int res = MinHeaderLength;
+                if ((Flags & ContainsSessionId) != 0)
+                {
+                    res += 2;
+                }
                 if ((Flags & ContainsSeq) != 0)
                 {
                     res += 2;
@@ -32,7 +36,7 @@ namespace Pixockets
         public const byte ContainsSeq = 0x1;
         public const byte ContainsAck = 0x2;
         public const byte ContainsFrag = 0x4;
-        private const byte Reserved1 = 0x8;
+        public const byte ContainsSessionId = 0x8;
         public const byte NeedsAck = 0x10;
 
         public byte Flags;
@@ -43,6 +47,7 @@ namespace Pixockets
         public ushort FragId;  // Id of this fragment
         public ushort FragNum;  // Number of this fragment
         public ushort FragCount;  // Count of fragments in this sequence
+        public ushort SessionId;
 
         public PacketHeader()
         {
@@ -57,6 +62,11 @@ namespace Pixockets
                 Length = BitConverter.ToUInt16(buffer, offset);
                 Flags = buffer[offset + 2];
                 int pos = offset + 3;
+                if ((Flags & ContainsSessionId) != 0)
+                {
+                    SessionId = BitConverter.ToUInt16(buffer, pos);
+                    pos += 2;
+                }
                 if ((Flags & ContainsSeq) != 0)
                 {
                     SeqNum = BitConverter.ToUInt16(buffer, pos);
@@ -116,6 +126,12 @@ namespace Pixockets
             Flags |= NeedsAck;
         }
 
+        public void SetSessionId(ushort sessionId)
+        {
+            Flags |= ContainsSessionId;
+            SessionId = sessionId;
+        }
+
         public bool GetNeedAck()
         {
             return (Flags & NeedsAck) != 0;
@@ -142,6 +158,10 @@ namespace Pixockets
             int pos = offset;
             pos = WriteUInt16(Length, buffer, pos);
             buffer[pos++] = Flags;
+            if ((Flags & ContainsSessionId) != 0)
+            {
+                pos = WriteUInt16(SessionId, buffer, pos);
+            }
             if ((Flags & ContainsSeq) != 0)
             {
                 pos = WriteUInt16(SeqNum, buffer, pos);
@@ -163,7 +183,7 @@ namespace Pixockets
             }
         }
 
-        private int WriteUInt16(ushort value, byte[] buffer, int pos)
+        public static int WriteUInt16(ushort value, byte[] buffer, int pos)
         {
             if (BitConverter.IsLittleEndian)
             {

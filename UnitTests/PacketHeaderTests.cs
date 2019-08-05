@@ -38,6 +38,27 @@ namespace UnitTests
         }
 
         [Test]
+        public void SessionIdSerializationTest()
+        {
+            var sessionId = (ushort)322;
+
+            var header1 = new PacketHeader();
+            header1.SetSessionId(sessionId);
+
+            Assert.IsTrue((header1.Flags & PacketHeader.ContainsSessionId) != 0);
+            Assert.AreEqual(sessionId, header1.SessionId);
+
+            var buffer = new byte[header1.HeaderLength];
+            header1.WriteTo(buffer, 0);
+
+            var header2 = new PacketHeader();
+            header2.Init(buffer, 0);
+
+            Assert.IsTrue((header2.Flags & PacketHeader.ContainsSessionId) != 0);
+            Assert.AreEqual(sessionId, header2.SessionId);
+        }
+
+        [Test]
         public void GarbageDeserializationReturnsEmptyPacket()
         {
             TestGarbage(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 });
