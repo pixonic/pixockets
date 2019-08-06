@@ -6,8 +6,10 @@ namespace Pixockets
 {
     public class SequenceState : IPoolable
     {
+        public const int EmptySessionId = 0;
         public int LastActive;
         private const int ReceivedSeqNumBufferMaxSize = 32;
+        private static readonly Random Rnd = new Random();
 
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
@@ -20,6 +22,7 @@ namespace Pixockets
         private ushort _nextFragId;
         private int _lastReceivedSeqNum = -1;  // int for calculations
         private int _lastRecevedSeqNumIdx;
+        public ushort SessionId;
 
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
@@ -37,10 +40,16 @@ namespace Pixockets
 
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
+            Init(buffersPool, fragPacketsPool, headersPool, (ushort)(Rnd.Next(ushort.MaxValue) + 1));
+        }
+
+        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool, ushort sessionId)
+        {
             _buffersPool = buffersPool;
             _fragPacketsPool = fragPacketsPool;
             _headersPool = headersPool;
             LastActive = Environment.TickCount;
+            SessionId = sessionId;
         }
 
         public bool CheckConnected()
@@ -140,7 +149,7 @@ namespace Pixockets
             receivedPacket.InOrder = inOrder;
             return true;
         }
-    
+
         public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)
         {
             var notAckedCount = _notAcked.Count;
