@@ -16,7 +16,7 @@ namespace Pixockets
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private readonly List<ushort> _ackQueue = new List<ushort>();
-        private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
+        private readonly ushort[] _lastReceivedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
 
         private int _receivedSeqNumBufferSize;
         private bool _connected;
@@ -257,13 +257,13 @@ namespace Pixockets
 
             _lastReceivedSeqNum = -1;
             _receivedSeqNumBufferSize = 0;
-            Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
+            Array.Clear(_lastReceivedSeqNums, 0, _lastReceivedSeqNums.Length);
         }
 
         public void RegisterIncoming(ushort seqNum)
         {
             _lastReceivedSeqNum = seqNum;
-            _lastRecevedSeqNums[_lastReceivedSeqNumIdx++] = seqNum;
+            _lastReceivedSeqNums[_lastReceivedSeqNumIdx++] = seqNum;
             _receivedSeqNumBufferSize = Math.Min(_receivedSeqNumBufferSize + 1, ReceivedSeqNumBufferMaxSize);
             if (_lastReceivedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
             {
@@ -295,7 +295,7 @@ namespace Pixockets
         {
             for (int i = 0; i < _receivedSeqNumBufferSize; ++i)
             {
-                if (_lastRecevedSeqNums[i] == seqNum)
+                if (_lastReceivedSeqNums[i] == seqNum)
                 {
                     return true;
                 }
