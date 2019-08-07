@@ -197,13 +197,16 @@ namespace Pixockets
 
             // Update activity timestamp on receive packet
             var seqState = GetSeqStateOnReceive(endPoint, header);
-            seqState.LastActive = Environment.TickCount;
-            if (seqState.CheckConnected())
+            if (seqState != null)
             {
-                _callbacks.OnConnect(endPoint);
+                seqState.LastActive = Environment.TickCount;
+                if (seqState.CheckConnected())
+                {
+                    _callbacks.OnConnect(endPoint);
+                }
             }
 
-            if (length != header.Length)
+            if (length != header.Length || seqState == null)
             {
                 // Wrong packet
                 _headersPool.Put(header);
@@ -379,30 +382,18 @@ namespace Pixockets
             SequenceState seqState;
             if (!_seqStates.TryGetValue(endPoint, out seqState))
             {
-                seqState = _seqStatesPool.Get();
-                if ((header.Flags & PacketHeader.ContainsSessionId) != 0)
-                    seqState.Init(_buffersPool, _fragPacketsPool, _headersPool, header.SessionId);
-                else
+                if (header.SessionId == SequenceState.EmptySessionId)
+                {
+                    seqState = _seqStatesPool.Get();
                     seqState.Init(_buffersPool, _fragPacketsPool, _headersPool);
-                _seqStates.Add(endPoint, seqState);
+                    _seqStates.Add(endPoint, seqState);
+                }
             }
-            else if ((header.Flags & PacketHeader.ContainsSessionId) != 0 && seqState.SessionId != header.SessionId)
+            else if (seqState.SessionId != header.SessionId)
             {
                 if (seqState.SessionId == SequenceState.EmptySessionId)
                 {
                     seqState.SessionId = header.SessionId;
-                }
-                else
-                {
-                    // Recycle old SeqState
-                    _seqStates.Remove(endPoint);
-                    _callbacks.OnDisconnect(endPoint);
-                    _seqStatesPool.Put(seqState);
-
-                    // Create new one
-                    seqState = _seqStatesPool.Get();
-                    seqState.Init(_buffersPool, _fragPacketsPool, _headersPool, header.SessionId);
-                    _seqStates.Add(endPoint, seqState);
                 }
             }
             return seqState;

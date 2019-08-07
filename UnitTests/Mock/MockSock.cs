@@ -11,6 +11,11 @@ namespace UnitTests.Mock
         public List<ReceivedPacket> Recvs = new List<ReceivedPacket>();
         public List<int> ReceiveOnPortCalls = new List<int>();
 
+        public PacketToSend LastSend
+        {
+            get { return Sends[Sends.Count - 1]; }
+        }
+
         public override IPEndPoint LocalEndPoint
         {
             get

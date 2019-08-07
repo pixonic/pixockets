@@ -68,6 +68,7 @@
     <Compile Include="QueueTests.cs" />
     <Compile Include="ReliableSendTests.cs" />
     <Compile Include="SequenceTests.cs" />
+    <Compile Include="SessionTests.cs" />
     <Compile Include="SmartSockTests.cs" />
     <Compile Include="BareSockIPv6Tests.cs" />
     <Compile Include="ThreadSafeQueueTests.cs" />

@@ -38,7 +38,6 @@ namespace UnitTests
 
             var header = new PacketHeader(4);
             header.SetSeqNum(1);
-            header.SetSessionId(321);
             header.Length = (ushort)(header.HeaderLength + 4);
             var ms = new MemoryStream();
             header.WriteTo(ms);

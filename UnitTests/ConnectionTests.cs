@@ -11,17 +11,18 @@ namespace UnitTests
     [TestFixture]
     public class ConnectionTests
     {
-        MockSmartCallbacks _cbs;
-        MockSock _bareSock;
-        SmartSock _sock;
+        private MockSmartCallbacks _cbs;
+        private MockSock _bareSock;
+        private SmartSock _sock;
+        private BufferPoolBase _bufferPool;
 
         [SetUp]
         public void Setup()
         {
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
-            var bufferPool = new CoreBufferPool();
-            _sock = new SmartSock(bufferPool, _bareSock, _cbs);
+            _bufferPool = new CoreBufferPool();
+            _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
         }
 
         [TearDown]
@@ -36,15 +37,16 @@ namespace UnitTests
             _sock.ConnectionTimeout = 1;
             _sock.Connect(IPAddress.Loopback, 23451);
 
+            var header = new PacketHeader();
+            header.SetSeqNum(1);
+            header.Length = (ushort)(header.HeaderLength + 4);
             var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length
-            ms.WriteByte(PacketHeader.ContainsSeq);  // Flags
-            ms.Write(BitConverter.GetBytes((ushort)1), 0, 2);  // SeqNum
+            header.WriteTo(ms);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
-            var buffer = ms.ToArray();
+            var buffer = Utils.ToBuffer(ms, _bufferPool);
 
             // Simulate send from UdpClient
-            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer.Array, buffer.Offset, buffer.Count, new IPEndPoint(IPAddress.Loopback, 54321));
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
