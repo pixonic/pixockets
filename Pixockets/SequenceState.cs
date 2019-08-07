@@ -8,6 +8,8 @@ namespace Pixockets
     {
         public const int EmptySessionId = 0;
         public int LastActive;
+        public ushort SessionId;
+
         private const int ReceivedSeqNumBufferMaxSize = 32;
         private static readonly Random Rnd = new Random();
 
@@ -21,8 +23,7 @@ namespace Pixockets
         private ushort _nextSeqNum;
         private ushort _nextFragId;
         private int _lastReceivedSeqNum = -1;  // int for calculations
-        private int _lastRecevedSeqNumIdx;
-        public ushort SessionId;
+        private int _lastReceivedSeqNumIdx;
 
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
@@ -262,11 +263,11 @@ namespace Pixockets
         public void RegisterIncoming(ushort seqNum)
         {
             _lastReceivedSeqNum = seqNum;
-            _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
+            _lastRecevedSeqNums[_lastReceivedSeqNumIdx++] = seqNum;
             _receivedSeqNumBufferSize = Math.Min(_receivedSeqNumBufferSize + 1, ReceivedSeqNumBufferMaxSize);
-            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
+            if (_lastReceivedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
             {
-                _lastRecevedSeqNumIdx = 0;
+                _lastReceivedSeqNumIdx = 0;
             }
         }
 
