@@ -70,7 +70,7 @@ namespace UnitTests
             var header = new PacketHeader();
             header.Init(packet.Buffer, packet.Offset);
 
-            Assert.AreNotEqual(SequenceState.EmptySessionId, header.SessionId);
+            Assert.AreNotEqual(PacketHeader.EmptySessionId, header.SessionId);
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace UnitTests
             var header = new PacketHeader();
             header.Init(packet.Buffer, packet.Offset);
 
-            Assert.AreNotEqual(SequenceState.EmptySessionId, header.SessionId);
+            Assert.AreNotEqual(PacketHeader.EmptySessionId, header.SessionId);
 
             ushort otherSessionId = (ushort)(header.SessionId > 30000 ? 12345 : 45678);
             FakeSendPacket(otherSessionId, 123456789, clientEndPoint, ref seqNum);

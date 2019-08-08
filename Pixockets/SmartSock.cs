@@ -370,7 +370,7 @@ namespace Pixockets
             if (!_seqStates.TryGetValue(endPoint, out result))
             {
                 result = _seqStatesPool.Get();
-                result.Init(_buffersPool, _fragPacketsPool, _headersPool, SequenceState.EmptySessionId);
+                result.Init(_buffersPool, _fragPacketsPool, _headersPool, PacketHeader.EmptySessionId);
                 _seqStates.Add(endPoint, result);
             }
 
@@ -382,7 +382,7 @@ namespace Pixockets
             SequenceState seqState;
             if (!_seqStates.TryGetValue(endPoint, out seqState))
             {
-                if (header.SessionId == SequenceState.EmptySessionId)
+                if (header.SessionId == PacketHeader.EmptySessionId)
                 {
                     seqState = _seqStatesPool.Get();
                     seqState.Init(_buffersPool, _fragPacketsPool, _headersPool);
@@ -391,11 +391,11 @@ namespace Pixockets
             }
             else if (seqState.SessionId != header.SessionId)
             {
-                if (seqState.SessionId == SequenceState.EmptySessionId)
+                if (seqState.SessionId == PacketHeader.EmptySessionId)
                 {
                     seqState.SessionId = header.SessionId;
                 }
-                else if (header.SessionId != SequenceState.EmptySessionId)
+                else if (header.SessionId != PacketHeader.EmptySessionId)
                 {
                     return null;
                 }

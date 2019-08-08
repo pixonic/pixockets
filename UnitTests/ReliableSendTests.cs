@@ -79,6 +79,8 @@ namespace UnitTests
             Assert.Contains(124, ackHeader.Acks);
             Assert.IsFalse(ackHeader.GetNeedAck());
             Assert.IsTrue((ackHeader.Flags & PacketHeader.ContainsAck) != 0);
+            Assert.IsFalse((ackHeader.Flags & PacketHeader.ContainsSeq) != 0, "No need to write SeqNum in pure Acknowledgement packet");
+            Assert.IsTrue(ackHeader.SessionId != PacketHeader.EmptySessionId, "Acks should already have Non-Empty SessionId");
         }
 
         [Test]

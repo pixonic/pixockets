@@ -7,6 +7,7 @@ namespace Pixockets
     public class PacketHeader : IPoolable
     {
         public const int MinHeaderLength = 5;
+        public const int EmptySessionId = 0;
 
         public int HeaderLength {
             get
@@ -198,6 +199,7 @@ namespace Pixockets
         public void Strip()
         {
             Flags = 0;
+            SessionId = EmptySessionId;
             Acks.Clear();
         }
     }
