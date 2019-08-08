@@ -88,6 +88,38 @@ namespace UnitTests
         }
 
         [Test]
+        public void ServerDropPacketWithChangedSessionId()
+        {
+            var clientEndPoint = new IPEndPoint(IPAddress.Loopback, 54321);
+
+            ushort seqNum = 1;
+            FakeSendPacket(0, 123456789, clientEndPoint, ref seqNum);
+
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsTrue(_sock.Receive(ref receivedPacket));
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(0, _cbs.OnDisconnectCalls.Count);
+
+            // Reply from server
+            _sock.Send(clientEndPoint, BitConverter.GetBytes(123456789), 0, 4, false);
+
+            Assert.AreEqual(1, _bareSock.Sends.Count);
+
+            var packet = _bareSock.Sends[0];
+            var header = new PacketHeader();
+            header.Init(packet.Buffer, packet.Offset);
+
+            Assert.AreNotEqual(SequenceState.EmptySessionId, header.SessionId);
+
+            ushort otherSessionId = (ushort)(header.SessionId > 30000 ? 12345 : 45678);
+            FakeSendPacket(otherSessionId, 123456789, clientEndPoint, ref seqNum);
+
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);  // Only initial Connect
+            Assert.AreEqual(0, _cbs.OnDisconnectCalls.Count);
+        }
+
+        [Test]
         public void ClientImbuesSessionId()
         {
             var serverEndPoint = new IPEndPoint(IPAddress.Loopback, 23451);
@@ -99,7 +131,7 @@ namespace UnitTests
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
-            
+
             _sock.Send(BitConverter.GetBytes(123456789), 0, 4, false);
 
             var packet = _bareSock.LastSend;

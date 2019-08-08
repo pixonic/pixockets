@@ -395,7 +395,12 @@ namespace Pixockets
                 {
                     seqState.SessionId = header.SessionId;
                 }
+                else if (header.SessionId != SequenceState.EmptySessionId)
+                {
+                    return null;
+                }
             }
+
             return seqState;
         }
     }
