@@ -33,7 +33,7 @@ namespace Pixockets
         public const byte ContainsSeq = 0x1;
         public const byte ContainsAck = 0x2;
         public const byte ContainsFrag = 0x4;
-        public const byte Reserved1 = 0x8;
+        private const byte Reserved1 = 0x8;
         public const byte NeedsAck = 0x10;
         public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | NeedsAck);
 
@@ -180,7 +180,7 @@ namespace Pixockets
             }
         }
 
-        public static int WriteUInt16(ushort value, byte[] buffer, int pos)
+        private static int WriteUInt16(ushort value, byte[] buffer, int pos)
         {
             if (BitConverter.IsLittleEndian)
             {
