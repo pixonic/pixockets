@@ -7,19 +7,22 @@ namespace Pixockets
     public class SequenceState : IPoolable
     {
         public int LastActive;
+        public ushort SessionId;
+
         private const int ReceivedSeqNumBufferMaxSize = 32;
+        private static readonly Random Rnd = new Random();
 
         private readonly List<NotAckedPacket> _notAcked = new List<NotAckedPacket>();
         private readonly List<FragmentedPacket> _frags = new List<FragmentedPacket>();
         private readonly List<ushort> _ackQueue = new List<ushort>();
-        private readonly ushort[] _lastRecevedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
+        private readonly ushort[] _lastReceivedSeqNums = new ushort[ReceivedSeqNumBufferMaxSize];
 
         private int _receivedSeqNumBufferSize;
         private bool _connected;
         private ushort _nextSeqNum;
         private ushort _nextFragId;
         private int _lastReceivedSeqNum = -1;  // int for calculations
-        private int _lastRecevedSeqNumIdx;
+        private int _lastReceivedSeqNumIdx;
 
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
@@ -37,10 +40,16 @@ namespace Pixockets
 
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
+            Init(buffersPool, fragPacketsPool, headersPool, (ushort)(Rnd.Next(ushort.MaxValue) + 1));
+        }
+
+        public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool, ushort sessionId)
+        {
             _buffersPool = buffersPool;
             _fragPacketsPool = fragPacketsPool;
             _headersPool = headersPool;
             LastActive = Environment.TickCount;
+            SessionId = sessionId;
         }
 
         public bool CheckConnected()
@@ -140,7 +149,7 @@ namespace Pixockets
             receivedPacket.InOrder = inOrder;
             return true;
         }
-    
+
         public void Tick(IPEndPoint endPoint, SockBase sock, int now, int ackTimeout, int fragmentTimeout)
         {
             var notAckedCount = _notAcked.Count;
@@ -169,14 +178,12 @@ namespace Pixockets
             while (_ackQueue.Count > 0)
             {
                 var header = _headersPool.Get();
-
                 AddAcks(header);
-
+                header.SetSessionId(SessionId);
                 header.Length = (ushort)header.HeaderLength;
                 var buffer = _buffersPool.Get(header.Length);
                 header.WriteTo(buffer, 0);
                 sock.Send(endPoint, buffer, 0, header.Length, true);
-
                 _headersPool.Put(header);
             }
         }
@@ -247,17 +254,17 @@ namespace Pixockets
 
             _lastReceivedSeqNum = -1;
             _receivedSeqNumBufferSize = 0;
-            Array.Clear(_lastRecevedSeqNums, 0, _lastRecevedSeqNums.Length);
+            Array.Clear(_lastReceivedSeqNums, 0, _lastReceivedSeqNums.Length);
         }
 
         public void RegisterIncoming(ushort seqNum)
         {
             _lastReceivedSeqNum = seqNum;
-            _lastRecevedSeqNums[_lastRecevedSeqNumIdx++] = seqNum;
+            _lastReceivedSeqNums[_lastReceivedSeqNumIdx++] = seqNum;
             _receivedSeqNumBufferSize = Math.Min(_receivedSeqNumBufferSize + 1, ReceivedSeqNumBufferMaxSize);
-            if (_lastRecevedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
+            if (_lastReceivedSeqNumIdx == ReceivedSeqNumBufferMaxSize)
             {
-                _lastRecevedSeqNumIdx = 0;
+                _lastReceivedSeqNumIdx = 0;
             }
         }
 
@@ -285,7 +292,7 @@ namespace Pixockets
         {
             for (int i = 0; i < _receivedSeqNumBufferSize; ++i)
             {
-                if (_lastRecevedSeqNums[i] == seqNum)
+                if (_lastReceivedSeqNums[i] == seqNum)
                 {
                     return true;
                 }

@@ -1,5 +1,7 @@
-﻿using Pixockets;
+﻿using System;
+using Pixockets;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using UnitTests.Mock;
 
@@ -71,6 +73,14 @@ namespace UnitTests
                 if (set.Count > 0)
                     break;
             }
+        }
+
+        public static ArraySegment<byte> ToBuffer(MemoryStream ms, BufferPoolBase bufferPool)
+        {
+            var buffer = bufferPool.Get((int)ms.Length);
+            var array = ms.ToArray();
+            Array.Copy(array, buffer, array.Length);
+            return new ArraySegment<byte>(buffer, 0, array.Length);
         }
     }
 }

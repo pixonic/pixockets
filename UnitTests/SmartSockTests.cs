@@ -36,10 +36,11 @@ namespace UnitTests
         {
             _sock.Connect(IPAddress.Loopback, 23451);
 
+            var header = new PacketHeader(4);
+            header.SetSeqNum(1);
+            header.Length = (ushort)(header.HeaderLength + 4);
             var ms = new MemoryStream();
-            ms.Write(BitConverter.GetBytes((ushort)9), 0, 2);  // Length
-            ms.WriteByte(PacketHeader.ContainsSeq);  // Flags
-            ms.Write(BitConverter.GetBytes((ushort)1), 0, 2); // SeqNum
+            header.WriteTo(ms);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
             var buffer = ms.ToArray();
 
@@ -48,9 +49,9 @@ namespace UnitTests
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
-                
+
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, receivedPacket.Offset));
-            Assert.AreEqual(5, receivedPacket.Offset); // Length + Flags + SeqNum
+            Assert.AreEqual(7, receivedPacket.Offset); // Length + Flags + SeqNum + SessionId
             Assert.AreEqual(4, receivedPacket.Length);
         }
 
@@ -103,7 +104,7 @@ namespace UnitTests
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
             _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
-            
+
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var header = new PacketHeader();

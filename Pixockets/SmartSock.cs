@@ -88,7 +88,7 @@ namespace Pixockets
         {
             // Reliable packets should wait for ack before going to pool
             var putBufferToPool = !reliable;
-            var seqState = GetSeqState(endPoint);
+            var seqState = GetSeqStateOnSend(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
             {
                 ushort fragId = seqState.NextFragId();
@@ -123,7 +123,7 @@ namespace Pixockets
             var endPoint = SubSock.RemoteEndPoint;
             // Reliable packets should wait for ack before going to pool
             var putBufferToPool = !reliable;
-            var seqState = GetSeqState(endPoint);
+            var seqState = GetSeqStateOnSend(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
             {
                 ushort fragId = seqState.NextFragId();
@@ -192,17 +192,21 @@ namespace Pixockets
         {
             bool haveResult = false;
 
-            // Update activity timestamp on receive packet
-            var seqState = GetSeqState(endPoint);
-            seqState.LastActive = Environment.TickCount;
-            if (seqState.CheckConnected())
-            {
-                _callbacks.OnConnect(endPoint);
-            }
-
             var header = _headersPool.Get();
             header.Init(buffer, offset);
-            if (length != header.Length)
+
+            // Update activity timestamp on receive packet
+            var seqState = GetSeqStateOnReceive(endPoint, header);
+            if (seqState != null)
+            {
+                seqState.LastActive = Environment.TickCount;
+                if (seqState.CheckConnected())
+                {
+                    _callbacks.OnConnect(endPoint);
+                }
+            }
+
+            if (length != header.Length || seqState == null)
             {
                 // Wrong packet
                 _headersPool.Put(header);
@@ -269,7 +273,7 @@ namespace Pixockets
 
         private bool OnReceiveFragment(byte[] buffer, int offset, int length, IPEndPoint endPoint, PacketHeader header, ref ReceivedSmartPacket receivedPacket)
         {
-            var seqState = GetSeqState(endPoint);
+            var seqState = GetSeqStateOnReceive(endPoint, header);
             seqState.AddFragment(buffer, offset, length, header);
 
             return seqState.CombineIfFull(header, endPoint, ref receivedPacket);
@@ -290,6 +294,7 @@ namespace Pixockets
         {
             ushort seqNum = seqState.NextSeqNum();
             var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
             if (reliable)
             {
                 header.SetNeedAck();
@@ -312,6 +317,7 @@ namespace Pixockets
         private ArraySegment<byte> WrapFragment(SequenceState seqState, byte[] buffer, int offset, int length, ushort fragId, ushort fragNum, ushort fragCount, bool reliable)
         {
             var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
             if (reliable)
             {
                 header.SetNeedAck();
@@ -336,8 +342,8 @@ namespace Pixockets
         private ArraySegment<byte> AttachHeader(byte[] buffer, int offset, int length, PacketHeader header)
         {
             var headLen = header.HeaderLength;
-            header.Length = (ushort)(headLen + length);
             var fullLength = length + headLen;
+            header.Length = (ushort)fullLength;
             var fullBuffer = _buffersPool.Get(fullLength);
             header.WriteTo(fullBuffer, 0);
             // TODO: find more optimal way
@@ -358,17 +364,44 @@ namespace Pixockets
             seqState.AddNotAcked(notAcked);
         }
 
-        private SequenceState GetSeqState(IPEndPoint endPoint)
+        private SequenceState GetSeqStateOnSend(IPEndPoint endPoint)
         {
             SequenceState result;
             if (!_seqStates.TryGetValue(endPoint, out result))
             {
                 result = _seqStatesPool.Get();
-                result.Init(_buffersPool, _fragPacketsPool, _headersPool);
+                result.Init(_buffersPool, _fragPacketsPool, _headersPool, PacketHeader.EmptySessionId);
                 _seqStates.Add(endPoint, result);
             }
 
             return result;
+        }
+
+        private SequenceState GetSeqStateOnReceive(IPEndPoint endPoint, PacketHeader header)
+        {
+            SequenceState seqState;
+            if (!_seqStates.TryGetValue(endPoint, out seqState))
+            {
+                if (header.SessionId == PacketHeader.EmptySessionId)
+                {
+                    seqState = _seqStatesPool.Get();
+                    seqState.Init(_buffersPool, _fragPacketsPool, _headersPool);
+                    _seqStates.Add(endPoint, seqState);
+                }
+            }
+            else if (seqState.SessionId != header.SessionId)
+            {
+                if (seqState.SessionId == PacketHeader.EmptySessionId)
+                {
+                    seqState.SessionId = header.SessionId;
+                }
+                else if (header.SessionId != PacketHeader.EmptySessionId)
+                {
+                    return null;
+                }
+            }
+
+            return seqState;
         }
     }
 }

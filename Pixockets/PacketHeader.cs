@@ -6,7 +6,8 @@ namespace Pixockets
 {
     public class PacketHeader : IPoolable
     {
-        public const int MinHeaderLength = 3;
+        public const int MinHeaderLength = 5;
+        public const int EmptySessionId = 0;
 
         public int HeaderLength {
             get
@@ -34,6 +35,7 @@ namespace Pixockets
         public const byte ContainsFrag = 0x4;
         private const byte Reserved1 = 0x8;
         public const byte NeedsAck = 0x10;
+        public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | NeedsAck);
 
         public byte Flags;
         // We need this to detect truncated datagrams
@@ -43,10 +45,12 @@ namespace Pixockets
         public ushort FragId;  // Id of this fragment
         public ushort FragNum;  // Number of this fragment
         public ushort FragCount;  // Count of fragments in this sequence
+        public ushort SessionId;
 
         public PacketHeader()
         {
             Flags = 0;
+            SessionId = 0;
             Acks = new List<ushort>();
         }
 
@@ -57,6 +61,8 @@ namespace Pixockets
                 Length = BitConverter.ToUInt16(buffer, offset);
                 Flags = buffer[offset + 2];
                 int pos = offset + 3;
+                SessionId = BitConverter.ToUInt16(buffer, pos);
+                pos += 2;
                 if ((Flags & ContainsSeq) != 0)
                 {
                     SeqNum = BitConverter.ToUInt16(buffer, pos);
@@ -79,6 +85,9 @@ namespace Pixockets
                     FragCount = BitConverter.ToUInt16(buffer, pos + 4);
                     //pos += 6;
                 }
+
+                if ((Flags & ShouldBeZero) != 0)
+                    throw new FormatException("Wrong Header Format");
             }
             catch (Exception)
             {
@@ -90,6 +99,7 @@ namespace Pixockets
                 FragId = 0;
                 FragNum = 0;
                 FragCount = 0;
+                SessionId = 0;
             }
         }
 
@@ -97,6 +107,7 @@ namespace Pixockets
         {
             Length = length;
             Flags = 0;
+            SessionId = 0;
         }
 
         public void SetSeqNum(ushort seqNum)
@@ -114,6 +125,11 @@ namespace Pixockets
         public void SetNeedAck()
         {
             Flags |= NeedsAck;
+        }
+
+        public void SetSessionId(ushort sessionId)
+        {
+            SessionId = sessionId;
         }
 
         public bool GetNeedAck()
@@ -142,6 +158,7 @@ namespace Pixockets
             int pos = offset;
             pos = WriteUInt16(Length, buffer, pos);
             buffer[pos++] = Flags;
+            pos = WriteUInt16(SessionId, buffer, pos);
             if ((Flags & ContainsSeq) != 0)
             {
                 pos = WriteUInt16(SeqNum, buffer, pos);
@@ -163,7 +180,7 @@ namespace Pixockets
             }
         }
 
-        private int WriteUInt16(ushort value, byte[] buffer, int pos)
+        private static int WriteUInt16(ushort value, byte[] buffer, int pos)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -182,6 +199,7 @@ namespace Pixockets
         public void Strip()
         {
             Flags = 0;
+            SessionId = EmptySessionId;
             Acks.Clear();
         }
     }
