@@ -125,7 +125,7 @@ namespace Pixockets
                     packet.Buffer = buffer;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
-                    packet.EndPoint = (IPEndPoint) remoteEP;
+                    packet.EndPoint = (IPEndPoint)remoteEP;
 
                     return true;
                 }
