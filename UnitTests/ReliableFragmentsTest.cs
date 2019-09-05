@@ -12,10 +12,11 @@ namespace UnitTests
     [TestFixture]
     public class ReliableFragmentsTest
     {
-        MockSmartCallbacks _cbs;
-        CoreBufferPool _bufferPool;
-        MockSock _bareSock;
-        SmartSock _sock;
+        private MockSmartCallbacks _cbs;
+        private CoreBufferPool _bufferPool;
+        private MockSock _bareSock;
+        private SmartSock _sock;
+        private IPEndPoint _remoteEndPoint;
 
         [SetUp]
         public void Setup()
@@ -24,6 +25,7 @@ namespace UnitTests
             _bareSock = new MockSock();
             _bufferPool = new CoreBufferPool();
             _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
+            _remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
         }
 
         [TearDown]
@@ -37,18 +39,20 @@ namespace UnitTests
         {
             _sock.MaxPayload = 3;
 
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, _remoteEndPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes((ushort)12345), 0, 2);
             ms.Write(new byte[] { 77 }, 0, 1);
             ms.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
             var buffer = ms.ToArray();
-            _sock.Send(remoteEndPoint, buffer, 0, buffer.Length, true);
+            _sock.Send(_remoteEndPoint, buffer, 0, buffer.Length, true);
 
-            Assert.AreEqual(2, _bareSock.Sends.Count);
+            Assert.AreEqual(3, _bareSock.Sends.Count);  // 2 for payload + connect response
 
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.Sends[1];
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
@@ -58,7 +62,7 @@ namespace UnitTests
             Assert.IsTrue(header.GetNeedAck());
             Assert.IsFalse(packetToSend.PutBufferToPool, "Reliable packets should wait for Ack before going to pool");
 
-            packetToSend = _bareSock.Sends[1];
+            packetToSend = _bareSock.Sends[2];
             header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
@@ -77,7 +81,7 @@ namespace UnitTests
             var buffer1 = _bufferPool.Get(header1.Length);
             header1.WriteTo(buffer1, 0);
 
-            _bareSock.FakeReceive(buffer1, 0, header1.Length, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1, 0, header1.Length, _remoteEndPoint);
 
             var receivedPackets = Utils.ReceiveAll(_sock);
         }
@@ -85,19 +89,20 @@ namespace UnitTests
         [Test]
         public void ReceiveReliableFragmented()
         {
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _sock.Connect(_remoteEndPoint.Address, _remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, _remoteEndPoint, _bufferPool);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, _remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, _remoteEndPoint);
 
             AssertCombinedPacketReceived();
 
             // Test sending acks back on tick
             _sock.Tick();
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.LastSend;
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(2, header.Acks.Count);
@@ -107,16 +112,17 @@ namespace UnitTests
         [Test]
         public void DuplicateReliableFragmentIgnored()
         {
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _sock.Connect(_remoteEndPoint.Address, _remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, _remoteEndPoint, _bufferPool);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, _remoteEndPoint);
             // Duplicate
             var buffer1Duplicate = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, _remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, _remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }
@@ -124,21 +130,22 @@ namespace UnitTests
         [Test]
         public void DuplicateReliableFragmentsIgnored()
         {
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _sock.Connect(_remoteEndPoint.Address, _remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, _remoteEndPoint, _bufferPool);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, _remoteEndPoint);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, _remoteEndPoint);
 
             AssertCombinedPacketReceived();
 
             // Duplicate fragments
             var buffer1Duplicate = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1Duplicate.Array, buffer1Duplicate.Offset, buffer1Duplicate.Count, _remoteEndPoint);
             var buffer2Duplicate = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2Duplicate.Array, buffer2Duplicate.Offset, buffer2Duplicate.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2Duplicate.Array, buffer2Duplicate.Offset, buffer2Duplicate.Count, _remoteEndPoint);
 
             var receivedPackets = Utils.ReceiveAll(_sock);
             Assert.AreEqual(0, receivedPackets.Count);
@@ -147,13 +154,14 @@ namespace UnitTests
         [Test]
         public void ReceiveSwappedReliableFragments()
         {
-            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _sock.Connect(_remoteEndPoint.Address, _remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, _remoteEndPoint, _bufferPool);
 
             var buffer2 = CreateSecondFragment();
-            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, _remoteEndPoint);
 
             var buffer1 = CreateFirstFragment();
-            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
+            _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, _remoteEndPoint);
 
             AssertCombinedPacketReceived();
         }

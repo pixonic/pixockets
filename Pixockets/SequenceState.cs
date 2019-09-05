@@ -38,6 +38,11 @@ namespace Pixockets
             get { return _ackQueue.Count * 2; }
         }
 
+        public bool IsConnected
+        {
+            get { return SessionId != PacketHeader.EmptySessionId; }
+        }
+
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
             Init(buffersPool, fragPacketsPool, headersPool, (ushort)(Rnd.Next(ushort.MaxValue) + 1));
@@ -54,7 +59,7 @@ namespace Pixockets
 
         public bool CheckConnected()
         {
-            if (!_connected)
+            if (!_connected && SessionId != PacketHeader.EmptySessionId)
             {
                 _connected = true;
                 return true;

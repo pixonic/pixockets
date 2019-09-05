@@ -32,11 +32,34 @@ namespace UnitTests
         }
 
         [Test]
+        public void SmartSockIgnoreReceivedPacketsBeforeConnected()
+        {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23451);
+            _sock.Connect(endPoint.Address, endPoint.Port);  // NotConnected -> Connecting
+
+            var header = new PacketHeader();
+            header.SetSeqNum(1);
+            header.Length = (ushort)(header.HeaderLength + 4);
+            var ms = new MemoryStream();
+            header.WriteTo(ms);
+            ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
+            var buffer = Utils.ToBuffer(ms, _bufferPool);
+
+            // Simulate send from UdpClient
+            _bareSock.FakeReceive(buffer.Array, buffer.Offset, buffer.Count, endPoint);
+
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+        }
+
+        [Test]
         public void SmartSockReceive()
         {
-            _sock.Connect(IPAddress.Loopback, 23451);
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23451);
+            _sock.Connect(endPoint.Address, endPoint.Port);
+            Utils.SendConnectResponse(_bareSock, endPoint, _bufferPool);
 
-            var header = new PacketHeader(4);
+            var header = new PacketHeader();
             header.SetSeqNum(1);
             header.Length = (ushort)(header.HeaderLength + 4);
             var ms = new MemoryStream();
@@ -45,7 +68,7 @@ namespace UnitTests
             var buffer = ms.ToArray();
 
             // Simulate send from UdpClient
-            _bareSock.FakeReceive(buffer, 0, buffer.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer, 0, buffer.Length, endPoint);
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
@@ -58,16 +81,19 @@ namespace UnitTests
         [Test]
         public void ReceivedPacketWithWrongLengthDropped()
         {
-            _sock.Connect(IPAddress.Loopback, 23451);
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 54321);
+            _sock.Connect(remoteEndPoint.Address, remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, remoteEndPoint, _bufferPool);
 
-            var header = new PacketHeader(5);  // Wrong Length
-            var buffer = _bufferPool.Get(header.Length);
+            var header = new PacketHeader();  // Wrong Length
+            header.Length = 5;
+            var buffer = _bufferPool.Get(header.HeaderLength);
             var ms = new MemoryStream(buffer);
             header.WriteTo(ms);
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);  // Payload
 
             // Simulate send from UdpClient
-            _bareSock.FakeReceive(buffer, 0, (int)ms.Length, new IPEndPoint(IPAddress.Loopback, 54321));
+            _bareSock.FakeReceive(buffer, 0, (int)ms.Length, remoteEndPoint);
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsFalse(_sock.Receive(ref receivedPacket));
@@ -78,18 +104,22 @@ namespace UnitTests
         [Test]
         public void SmartSockSendConnected()
         {
-            _sock.Connect(IPAddress.Loopback, 23452);
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _sock.Connect(endPoint.Address, endPoint.Port);
+            Utils.SendConnectResponse(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
             _sock.Send(buffer, 0, buffer.Length, false);
 
-            Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
 
             var header = new PacketHeader();
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.LastSend;
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
@@ -100,15 +130,20 @@ namespace UnitTests
         [Test]
         public void SmartSockSend()
         {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, false);
 
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
 
             var header = new PacketHeader();
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.LastSend;
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
             Assert.AreEqual(0, header.SeqNum);
@@ -121,17 +156,22 @@ namespace UnitTests
         public void SequenceNumberResetAfterConnectionTimeout()
         {
             _sock.ConnectionTimeout = 1;
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
 
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, false);
 
             Thread.Sleep(20);
             _sock.Tick();
-            Assert.AreEqual(0, _cbs.OnConnectCalls.Count);
 
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, false);
 
             // Two sends total
             Assert.AreEqual(2, _bareSock.Sends.Count);

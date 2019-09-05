@@ -34,14 +34,19 @@ namespace UnitTests
         [Test]
         public void SendReliable()
         {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, true);
 
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
 
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.LastSend;
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
@@ -54,27 +59,31 @@ namespace UnitTests
         [Test]
         public void ReceiveReliable()
         {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+
             var buffer1 = FakeSentPacket(123);
-            _bareSock.FakeReceive(buffer1, 0, buffer1.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            _bareSock.FakeReceive(buffer1, 0, buffer1.Length, endPoint);
 
             var buffer2 = FakeSentPacket(124);
-            _bareSock.FakeReceive(buffer2, 0, buffer2.Length, new IPEndPoint(IPAddress.Loopback, 23452));
+            _bareSock.FakeReceive(buffer2, 0, buffer2.Length, endPoint);
 
             var receivedPacket = new ReceivedSmartPacket();
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
 
-            // Ack not sent yet
-            Assert.AreEqual(0, _bareSock.Sends.Count);
+            // Ack not sent yet, just connect response
+            Assert.AreEqual(1, _bareSock.Sends.Count);
             _sock.Tick();
             // Ack sent
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
 
             // Make sure ack sent
             var ackHeader = new PacketHeader();
-            ackHeader.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
-            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
-            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
+            var packet = _bareSock.LastSend;
+            ackHeader.Init(packet.Buffer, packet.Offset);
+            Assert.GreaterOrEqual(packet.Buffer.Length, ackHeader.Length);
+            Assert.GreaterOrEqual(packet.Buffer.Length, ackHeader.HeaderLength);
             Assert.Contains(123, ackHeader.Acks);
             Assert.Contains(124, ackHeader.Acks);
             Assert.IsFalse(ackHeader.GetNeedAck());
@@ -87,6 +96,8 @@ namespace UnitTests
         public void AcksSentWithPayload()
         {
             var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+
             var buffer1 = FakeSentPacket(234);
             _bareSock.FakeReceive(buffer1, 0, buffer1.Length, endPoint);
 
@@ -97,19 +108,20 @@ namespace UnitTests
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
             Assert.IsTrue(_sock.Receive(ref receivedPacket));
 
-            // Ack not sent yet
-            Assert.AreEqual(0, _bareSock.Sends.Count);
+            // Ack not sent yet, just connect response
+            Assert.AreEqual(1, _bareSock.Sends.Count);
 
             var payload = BitConverter.GetBytes(987654321);
             _sock.Send(endPoint, payload, 0, payload.Length, true);
             // Msg with acks sent
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
 
             // Make sure ack sent
             var ackHeader = new PacketHeader();
-            ackHeader.Init(_bareSock.Sends[0].Buffer, _bareSock.Sends[0].Offset);
-            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.Length);
-            Assert.GreaterOrEqual(_bareSock.Sends[0].Buffer.Length, ackHeader.HeaderLength);
+            var packet = _bareSock.LastSend;
+            ackHeader.Init(packet.Buffer, packet.Offset);
+            Assert.GreaterOrEqual(packet.Buffer.Length, ackHeader.Length);
+            Assert.GreaterOrEqual(packet.Buffer.Length, ackHeader.HeaderLength);
             Assert.Contains(234, ackHeader.Acks);
             Assert.Contains(235, ackHeader.Acks);
             Assert.IsTrue(ackHeader.GetNeedAck());
@@ -121,16 +133,21 @@ namespace UnitTests
         {
             _sock.AckTimeout = 1;
 
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+
             var ms = new MemoryStream();
             ms.Write(BitConverter.GetBytes(123456789), 0, 4);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, true);
 
             Thread.Sleep(20);
             _sock.Tick();
 
-            Assert.AreEqual(2, _bareSock.Sends.Count);
-            var packetToSend = _bareSock.Sends[1];
+            Assert.AreEqual(3, _bareSock.Sends.Count);
+            var packetToSend = _bareSock.LastSend;
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
             Assert.AreEqual(buffer.Length + header.HeaderLength, header.Length);
@@ -144,10 +161,15 @@ namespace UnitTests
         {
             _sock.AckTimeout = 1;
 
-            var buffer = BitConverter.GetBytes(123456789);
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, true);
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, remoteEndPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
-            var sent = _bareSock.Sends[0];
+            var buffer = BitConverter.GetBytes(123456789);
+            _sock.Send(remoteEndPoint, buffer, 0, buffer.Length, true);
+
+            var sent = _bareSock.Sends[1];
             var headerSent = new PacketHeader();
             headerSent.Init(sent.Buffer, sent.Offset);
 
@@ -158,14 +180,14 @@ namespace UnitTests
             ackHeader.WriteTo(buffer, 0);
             _bareSock.FakeReceive(buffer, 0, ackHeader.Length, new IPEndPoint(IPAddress.Loopback, 23452));
 
-            var receivedPacket = new ReceivedSmartPacket();
+            receivedPacket = new ReceivedSmartPacket();
             // Just ack in the packet, no payload
             Assert.IsFalse(_sock.Receive(ref receivedPacket));
 
             Thread.Sleep(20);
             _sock.Tick();
 
-            Assert.AreEqual(1, _bareSock.Sends.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
         }
 
         private static byte[] FakeSentPacket(ushort seqNum)

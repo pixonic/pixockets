@@ -2,6 +2,7 @@
 using Pixockets;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Threading;
 using UnitTests.Mock;
 
@@ -82,5 +83,37 @@ namespace UnitTests
             Array.Copy(array, buffer, array.Length);
             return new ArraySegment<byte>(buffer, 0, array.Length);
         }
+
+        public static void SendConnectRequest(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        {
+            var header = new PacketHeader();
+            header.SetSessionId(PacketHeader.EmptySessionId);
+            header.SetConnect();
+
+            var buffer = bufferPool.Get(header.HeaderLength);
+            header.Length = (ushort)header.HeaderLength;
+            header.WriteTo(buffer, 0);
+
+            var putBufferToPool = true;
+
+            bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
+        }
+
+        public static void SendConnectResponse(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        {
+            ushort sessionId = 427;
+            var header = new PacketHeader();
+            header.SetSessionId(sessionId);
+            header.SetConnect();
+
+            var buffer = bufferPool.Get(header.HeaderLength);
+            header.Length = (ushort)header.HeaderLength;
+            header.WriteTo(buffer, 0);
+
+            var putBufferToPool = true;
+
+            bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
+        }
+
     }
 }

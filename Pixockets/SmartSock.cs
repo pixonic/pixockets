@@ -4,6 +4,13 @@ using System.Net;
 
 namespace Pixockets
 {
+    public enum PixockState
+    {
+        NotConnected = 0,
+        Connecting,
+        Connected,
+    }
+
     public class SmartSock
     {
         public int ConnectionTimeout = 10000;
@@ -28,6 +35,23 @@ namespace Pixockets
 
         private readonly List<KeyValuePair<IPEndPoint, SequenceState>> _toDelete = new List<KeyValuePair<IPEndPoint, SequenceState>>();
 
+        public PixockState State
+        {
+            get
+            {
+                SequenceState localSeqenceState;
+                var endPoint = RemoteEndPoint;
+                if (endPoint != null && _seqStates.TryGetValue(endPoint, out localSeqenceState))
+                {
+                    if (localSeqenceState.SessionId == PacketHeader.EmptySessionId)
+                        return PixockState.Connecting;
+
+                    return PixockState.Connected;
+                }
+                return PixockState.NotConnected;
+            }
+        }
+
         public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
             _buffersPool = buffersPool;
@@ -45,6 +69,8 @@ namespace Pixockets
         public void Connect(IPAddress address, int port)
         {
             SubSock.Connect(address, port);
+
+            SendConnectionRequest();
         }
 
         public void Listen(int port)
@@ -86,9 +112,15 @@ namespace Pixockets
 
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
         {
+            var seqState = GetSeqStateOnSend(endPoint);
+            // Don't send until connected
+            if (seqState.SessionId == PacketHeader.EmptySessionId)
+            {
+                return;
+            }
+
             // Reliable packets should wait for ack before going to pool
             var putBufferToPool = !reliable;
-            var seqState = GetSeqStateOnSend(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
             {
                 ushort fragId = seqState.NextFragId();
@@ -121,9 +153,15 @@ namespace Pixockets
         public void Send(byte[] buffer, int offset, int length, bool reliable)
         {
             var endPoint = SubSock.RemoteEndPoint;
+            var seqState = GetSeqStateOnSend(endPoint);
+            // Don't send until connected
+            if (seqState.SessionId == PacketHeader.EmptySessionId)
+            {
+                return;
+            }
+
             // Reliable packets should wait for ack before going to pool
             var putBufferToPool = !reliable;
-            var seqState = GetSeqStateOnSend(endPoint);
             if (length > MaxPayload - seqState.AckLoad)
             {
                 ushort fragId = seqState.NextFragId();
@@ -188,6 +226,44 @@ namespace Pixockets
             _seqStates.Clear();
         }
 
+
+        private void SendConnectionRequest()
+        {
+            var endPoint = SubSock.RemoteEndPoint;
+            var seqState = GetSeqStateOnSend(endPoint);
+            var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
+            header.SetConnect();
+            header.Length = (ushort)header.HeaderLength;
+
+            var buffer = _buffersPool.Get(header.HeaderLength);
+            header.WriteTo(buffer, 0);
+
+            var putBufferToPool = true;
+
+            SubSock.Send(buffer, 0, header.HeaderLength, putBufferToPool);
+
+            _headersPool.Put(header);
+        }
+
+
+        private void SendConnectionResponse(IPEndPoint endPoint, SequenceState seqState)
+        {
+            var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
+            header.SetConnect();
+            header.Length = (ushort)header.HeaderLength;
+
+            var buffer = _buffersPool.Get(header.HeaderLength);
+            header.WriteTo(buffer, 0);
+
+            var putBufferToPool = true;
+
+            SubSock.Send(endPoint, buffer, 0, header.HeaderLength, putBufferToPool);
+
+            _headersPool.Put(header);
+        }
+
         private bool OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, ref ReceivedSmartPacket receivedPacket)
         {
             bool haveResult = false;
@@ -195,18 +271,28 @@ namespace Pixockets
             var header = _headersPool.Get();
             header.Init(buffer, offset);
 
-            // Update activity timestamp on receive packet
             var seqState = GetSeqStateOnReceive(endPoint, header);
-            if (seqState != null)
-            {
-                seqState.LastActive = Environment.TickCount;
-                if (seqState.CheckConnected())
-                {
-                    _callbacks.OnConnect(endPoint);
-                }
-            }
 
             if (length != header.Length || seqState == null)
+            {
+                // Wrong packet
+                _headersPool.Put(header);
+                _buffersPool.Put(buffer);
+                return false;
+            }
+
+            // Update activity timestamp on receive packet
+            seqState.LastActive = Environment.TickCount;
+            if (seqState.CheckConnected())
+            {
+                // Send response only for request
+                if (header.SessionId == PacketHeader.EmptySessionId)
+                    SendConnectionResponse(endPoint, seqState);
+
+                _callbacks.OnConnect(endPoint);
+            }
+
+            if (!seqState.IsConnected)
             {
                 // Wrong packet
                 _headersPool.Put(header);
@@ -382,7 +468,7 @@ namespace Pixockets
             SequenceState seqState;
             if (!_seqStates.TryGetValue(endPoint, out seqState))
             {
-                if (header.SessionId == PacketHeader.EmptySessionId)
+                if (header.SessionId == PacketHeader.EmptySessionId && (header.Flags & PacketHeader.Connect) != 0)
                 {
                     seqState = _seqStatesPool.Get();
                     seqState.Init(_buffersPool, _fragPacketsPool, _headersPool);

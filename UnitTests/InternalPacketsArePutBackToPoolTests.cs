@@ -42,7 +42,8 @@ namespace UnitTests
         [Test]
         public void WrongLengthPacketIsPutToPool()
         {
-            var header = new PacketHeader(3);
+            var header = new PacketHeader();
+            header.Length = 3;
 
             TestWith(header);
         }

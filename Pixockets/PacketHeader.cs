@@ -33,9 +33,9 @@ namespace Pixockets
         public const byte ContainsSeq = 0x1;
         public const byte ContainsAck = 0x2;
         public const byte ContainsFrag = 0x4;
-        private const byte Reserved1 = 0x8;
+        public const byte Connect = 0x8;
         public const byte NeedsAck = 0x10;
-        public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | NeedsAck);
+        public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | Connect | NeedsAck);
 
         public byte Flags;
         // We need this to detect truncated datagrams
@@ -103,13 +103,6 @@ namespace Pixockets
             }
         }
 
-        public PacketHeader(ushort length)
-        {
-            Length = length;
-            Flags = 0;
-            SessionId = 0;
-        }
-
         public void SetSeqNum(ushort seqNum)
         {
             Flags |= ContainsSeq;
@@ -125,6 +118,11 @@ namespace Pixockets
         public void SetNeedAck()
         {
             Flags |= NeedsAck;
+        }
+
+        public void SetConnect()
+        {
+            Flags |= Connect;
         }
 
         public void SetSessionId(ushort sessionId)

@@ -28,6 +28,13 @@ namespace UnitTests
         [Test]
         public void SendFragmented()
         {
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+
+            _sock.Connect(endPoint.Address, endPoint.Port);
+            Utils.SendConnectResponse(_bareSock, endPoint, _bufferPool);
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+
             _sock.MaxPayload = 3;
 
             var ms = new MemoryStream();
@@ -35,11 +42,11 @@ namespace UnitTests
             ms.Write(new byte[] { 77 }, 0, 1);
             ms.Write(BitConverter.GetBytes((ushort)23456), 0, 2);
             var buffer = ms.ToArray();
-            _sock.Send(new IPEndPoint(IPAddress.Loopback, 23452), buffer, 0, buffer.Length, false);
+            _sock.Send(endPoint, buffer, 0, buffer.Length, false);
 
-            Assert.AreEqual(2, _bareSock.Sends.Count);
+            Assert.AreEqual(3, _bareSock.Sends.Count);
 
-            var packetToSend = _bareSock.Sends[0];
+            var packetToSend = _bareSock.Sends[1];
             var header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
@@ -49,7 +56,7 @@ namespace UnitTests
             Assert.IsFalse(header.GetNeedAck());
             Assert.IsTrue(packetToSend.PutBufferToPool, "Unreliable packets should return to pool after send");
 
-            packetToSend = _bareSock.Sends[1];
+            packetToSend = _bareSock.Sends[2];
             header = new PacketHeader();
             header.Init(packetToSend.Buffer, packetToSend.Offset);
 
@@ -64,6 +71,7 @@ namespace UnitTests
         public void ReceiveFragmented()
         {
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, remoteEndPoint, _bufferPool);
 
             var buffer1 = CreateFirstFragment();
             _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
@@ -78,6 +86,7 @@ namespace UnitTests
         public void DuplicateFragmentsIgnored()
         {
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, remoteEndPoint, _bufferPool);
 
             var buffer1 = CreateFirstFragment();
             _bareSock.FakeReceive(buffer1.Array, buffer1.Offset, buffer1.Count, remoteEndPoint);
@@ -94,6 +103,7 @@ namespace UnitTests
         public void ReceiveSwappedFragments()
         {
             var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            Utils.SendConnectRequest(_bareSock, remoteEndPoint, _bufferPool);
 
             var buffer2 = CreateSecondFragment();
             _bareSock.FakeReceive(buffer2.Array, buffer2.Offset, buffer2.Count, remoteEndPoint);

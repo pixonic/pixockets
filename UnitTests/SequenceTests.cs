@@ -24,6 +24,8 @@ namespace UnitTests
             _bufferPool = new CoreBufferPool();
             _sock = new SmartSock(_bufferPool, _bareSock, _cbs);
             _endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+
+            Utils.SendConnectRequest(_bareSock, _endPoint, _bufferPool);
         }
 
         [TearDown]
