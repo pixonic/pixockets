@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{020224D1-A12F-497A-AB0C-1F6B0511A898}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pixockets", "Pixockets\Pixockets.csproj", "{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServer", "TestServer\TestServer.csproj", "{6A3793C1-1A4D-4510-A83D-E6C732A255B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\TestClient.csproj", "{8D26AC31-A6D8-4286-A0F9-8CCEE667AFFD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestWithUdpClient", "TestWithUdpClient\TestWithUdpClient.csproj", "{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplicatorServer", "ReplicatorServer\ReplicatorServer.csproj", "{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReplicatorClient", "ReplicatorClient\ReplicatorClient.csproj", "{0B787A0A-AD50-4411-B492-E187BE98BBE2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{020224D1-A12F-497A-AB0C-1F6B0511A898}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{020224D1-A12F-497A-AB0C-1F6B0511A898}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{020224D1-A12F-497A-AB0C-1F6B0511A898}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{020224D1-A12F-497A-AB0C-1F6B0511A898}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A3793C1-1A4D-4510-A83D-E6C732A255B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A3793C1-1A4D-4510-A83D-E6C732A255B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A3793C1-1A4D-4510-A83D-E6C732A255B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A3793C1-1A4D-4510-A83D-E6C732A255B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D26AC31-A6D8-4286-A0F9-8CCEE667AFFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D26AC31-A6D8-4286-A0F9-8CCEE667AFFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D26AC31-A6D8-4286-A0F9-8CCEE667AFFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D26AC31-A6D8-4286-A0F9-8CCEE667AFFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92CB1ABB-ECC2-487B-B2D5-BB90A726C529}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB28928F-AF37-4D57-8EF5-17DD04C73A6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B787A0A-AD50-4411-B492-E187BE98BBE2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

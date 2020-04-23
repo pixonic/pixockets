@@ -1,0 +1,11 @@
+﻿<Window x:Class="ReplicatorClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Replicator" Height="350" Width="525" Background="#FF2D2D30" MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Canvas x:Name="Scene" Width="{Binding ElementName=MainWindow, Path=ActualWidth}" Height="{Binding ElementName=MainWindow, Path=ActualHeight}" Margin="0,0,0,0" VerticalAlignment="Top" PreviewMouseLeftButtonDown="Scene_PreviewMouseLeftButtonDown" PreviewMouseRightButtonDown="Scene_PreviewMouseRightButtonDown" PreviewMouseMove="Scene_PreviewMouseMove" PreviewMouseLeftButtonUp="Scene_PreviewMouseLeftButtonUp" PreviewMouseRightButtonUp="Scene_PreviewMouseRightButtonUp">
+        <!--Ellipse x:Name="_1"  Fill="#FF0000" Height="64" Canvas.Left="62" Stroke="Black" Canvas.Top="60" Width="64" StrokeThickness="3"/>
+        <Ellipse x:Name="_2"  Fill="#009999" Height="64" Canvas.Left="378" Stroke="Black" Canvas.Top="60" Width="64" StrokeThickness="3"/>
+        <Ellipse x:Name="_3"  Fill="#9FEE00" Height="64" Canvas.Left="221" Stroke="Black" Canvas.Top="191" Width="64" StrokeThickness="3"/-->
+    </Canvas>
+</Window>
