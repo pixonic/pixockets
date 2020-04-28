@@ -13,6 +13,7 @@ It is specialized for soft realtime applications with heavy per-connection traff
 * Platfroms:
    * Unity3d support
    * .NET Framework, Mono, .NET Core
+   * Windows, macOS, Linux, iOS, Android 
 
 ## Usage:
 ### Client
