@@ -25,8 +25,6 @@ var cnt = 0;
 var packet = new ReceivedSmartPacket();
 while (!Console.KeyAvailable)
 {
-    var buffer = BitConverter.GetBytes(cnt++);
-    sock.Send(buffer, 0, buffer.Length, false);
     while (sock.Receive(ref packet))
     {
         if (sock.State == PixocketState.Connected)
