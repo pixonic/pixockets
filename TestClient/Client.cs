@@ -71,6 +71,13 @@ namespace TestClient
             byte[] initMsg = CreateMessage(count);
             Console.WriteLine("Sending message with {0} numbers", count);
             sock.Send(initMsg, 0, initMsg.Length, true);
+
+            var packet = new ReceivedSmartPacket();
+            while (sock.State == PixocketState.Connecting)
+            {
+                sock.Tick();
+                sock.Receive(ref packet);
+            }
         }
 
         private static byte[] CreateMessage(int count)

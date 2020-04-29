@@ -29,12 +29,17 @@ while (!Console.KeyAvailable)
     sock.Send(buffer, 0, buffer.Length, false);
     while (sock.Receive(ref packet))
     {
+        if (sock.State == PixocketState.Connected)
+        {
+            var buffer = BitConverter.GetBytes(cnt++);
+            sock.Send(buffer, 0, buffer.Length, false);
+        }
         if (!packet.InOrder)
         {
             Console.WriteLine("!!! OutOfOrder !!!");
         }
         var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-        Console.WriteLine("Recv: {0}", recv);
+        Console.WriteLine("Client Received: {0}", recv);
         bufferPool.Put(packet.Buffer);
     }
 
@@ -61,7 +66,7 @@ while (!Console.KeyAvailable)
         }
 
         var recv = BitConverter.ToInt32(packet.Buffer, packet.Offset);
-        Console.WriteLine("Recv: {0}", recv);
+        Console.WriteLine("Server Received: {0}", recv);
         sock.Send(packet.EndPoint, packet.Buffer, packet.Offset, packet.Length, false);
         bufferPool.Put(packet.Buffer);
     }

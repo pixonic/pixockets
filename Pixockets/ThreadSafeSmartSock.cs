@@ -7,6 +7,17 @@ namespace Pixockets
         private readonly SmartSock _socket;
         private readonly object _syncObject = new object();
 
+        public PixocketState State
+        {
+            get
+            {
+                lock (_syncObject)
+                {
+                    return _socket.State;
+                }
+            }
+        }
+
         public ThreadSafeSmartSock(SmartSock socket)
         {
             _socket = socket;

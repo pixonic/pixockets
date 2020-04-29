@@ -82,6 +82,12 @@ namespace ReplicatorClient
             _socket = new ThreadSafeSmartSock(smartSock);
             // Todo: pass address from command line
             _socket.Connect(IPAddress.Loopback, 2345);
+            var receivedPacket = new ReceivedSmartPacket();
+            while (_socket.State == PixocketState.Connecting)
+            {
+                _socket.Tick();
+                _socket.Receive(ref receivedPacket);
+            }
 
             var ms = new MemoryStream();
             ms.WriteByte(0);  // Init request packet
