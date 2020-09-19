@@ -10,4 +10,14 @@ namespace Pixockets
         public byte[] Buffer;
         public bool PutBufferToPool;
     };
+
+    public struct SmartPacketToSend
+    {
+        public IPEndPoint EndPoint;
+        public int Offset;
+        public int Length;
+        public byte[] Buffer;
+        public bool PutBufferToPool;
+        public bool Reliable;
+    };
 }

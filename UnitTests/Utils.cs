@@ -85,6 +85,13 @@ namespace UnitTests
             return new ArraySegment<byte>(buffer, 0, array.Length);
         }
 
+        public static ArraySegment<byte> ToBuffer(byte[] array, BufferPoolBase bufferPool)
+        {
+            var buffer = bufferPool.Get(array.Length);
+            Array.Copy(array, buffer, array.Length);
+            return new ArraySegment<byte>(buffer, 0, array.Length);
+        }
+
         public static void SendConnectRequest(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
         {
             var header = new PacketHeader();
@@ -110,6 +117,18 @@ namespace UnitTests
             header.WriteTo(buffer, 0);
 
             bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
+        }
+
+        public static byte[] CreatePacket(int payload)
+        {
+            var header = new PacketHeader();
+            header.SetSeqNum(427);
+            header.Length = (ushort)(header.HeaderLength + 4);
+            var ms = new MemoryStream();
+            header.WriteTo(ms);
+            ms.Write(BitConverter.GetBytes(payload), 0, 4);  // Payload
+            var array = ms.ToArray();
+            return array;
         }
     }
 }

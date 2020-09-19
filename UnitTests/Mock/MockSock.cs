@@ -10,6 +10,7 @@ namespace UnitTests.Mock
         public List<PacketToSend> Sends = new List<PacketToSend>();
         public List<ReceivedPacket> Recvs = new List<ReceivedPacket>();
         public List<int> ReceiveOnPortCalls = new List<int>();
+        public int CloseCalls;
 
         public PacketToSend LastSend
         {
@@ -77,6 +78,11 @@ namespace UnitTests.Mock
                 Offset = offset,
                 Length = length,
             });
+        }
+
+        public override void Close()
+        {
+            CloseCalls++;
         }
     }
 }

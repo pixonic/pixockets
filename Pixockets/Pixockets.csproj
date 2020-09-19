@@ -60,6 +60,7 @@
     <Compile Include="Pools\ArrayPool.cs" />
     <Compile Include="Pools\ArrayPoolBucket.cs" />
     <Compile Include="Pools\Utilities.cs" />
+    <Compile Include="ThreadSmartSock.cs" />
     <Compile Include="ThreadSafeSmartSock.cs" />
     <Compile Include="ThreadSock.cs" />
   </ItemGroup>
