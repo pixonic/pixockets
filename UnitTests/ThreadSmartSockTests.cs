@@ -41,10 +41,14 @@ namespace UnitTests
 
             _threadSmartSock.Connect(endPoint.Address, endPoint.Port);  // NotConnected -> Connecting
 
+            Thread.Sleep(50);
+
             Assert.AreEqual(PixocketState.Connecting, _threadSmartSock.State);
             Assert.AreEqual(_bareSock.RemoteEndPoint, endPoint); 
 
             _threadSmartSock.Close();
+
+            Thread.Sleep(50);
 
             Assert.AreEqual(1, _bareSock.CloseCalls);
         }
@@ -53,8 +57,8 @@ namespace UnitTests
         public void ThreadSmartSockSends()
         {
             var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
+            _threadSmartSock.Listen(9876);
             Utils.SendConnectRequest(_bareSock, endPoint, _bufferPool);
-
             WaitSend(1);
 
             var buffer = Utils.ToBuffer(BitConverter.GetBytes(1234567890), _bufferPool);
@@ -73,14 +77,7 @@ namespace UnitTests
             var endPoint = new IPEndPoint(IPAddress.Loopback, 23452);
             _threadSmartSock.Connect(endPoint.Address, endPoint.Port);  // NotConnected -> Connecting
             Utils.SendConnectResponse(_bareSock, endPoint, _bufferPool);
-
-            for (int i = 0; i < 1000; i++)
-            {
-                if (_threadSmartSock.State == PixocketState.Connected)
-                    break;
-
-                Thread.Sleep(1);
-            }
+            WaitConnect();
 
             var buffer = Utils.CreatePacket(1234567890);
 
@@ -107,6 +104,17 @@ namespace UnitTests
                     Thread.Sleep(1);
                 else
                     break;
+            }
+        }
+
+        private void WaitConnect()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                if (_threadSmartSock.State == PixocketState.Connected)
+                    break;
+
+                Thread.Sleep(1);
             }
         }
     }
