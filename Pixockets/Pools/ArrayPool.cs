@@ -2,7 +2,7 @@ using System;
 
 namespace Pixockets.Pools
 {
-    public sealed partial class ArrayPool<T>
+    public class ArrayPool<T>
     {
         // The default maximum length of each array in the pool
         private const int DefaultMaxArrayLength = 1024 * 64;
@@ -11,7 +11,7 @@ namespace Pixockets.Pools
         // Lazily-allocated empty array used when arrays of length 0 are requested.
         private static T[] _sEmptyArray;
 
-        private readonly Bucket[] _buckets;
+        private readonly ArrayPoolBucket<T>[] _buckets;
 
         public ArrayPool() : this(DefaultMaxArrayLength, DefaultNumberOfArraysPerBucket)
         {
@@ -42,10 +42,10 @@ namespace Pixockets.Pools
 
             // Create the buckets.
             int maxBuckets = Utilities.SelectBucketIndex(maxArrayLength);
-            var buckets = new Bucket[maxBuckets + 1];
+            var buckets = new ArrayPoolBucket<T>[maxBuckets + 1];
             for (int i = 0; i < buckets.Length; i++)
             {
-                buckets[i] = new Bucket(Utilities.GetMaxSizeForBucket(i), arraysPerBucket);
+                buckets[i] = new ArrayPoolBucket<T>(Utilities.GetMaxSizeForBucket(i), arraysPerBucket);
             }
             _buckets = buckets;
         }
