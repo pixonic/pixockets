@@ -82,6 +82,70 @@ namespace Pixockets
             SubSock.Listen(port);
         }
 
+        public void Disconnect(string reason, IPEndPoint endPoint)
+        {
+            if (endPoint == null)
+                endPoint = SubSock.RemoteEndPoint;
+
+            if (!_seqStates.TryGetValue(endPoint, out var seqState))
+                return;
+
+            if (seqState.DisconnectRequestSent)
+                return;
+
+            if (reason == null)
+            {
+                reason = string.Empty;
+            }
+
+            if (reason.Length > 255)
+            {
+                reason = reason.Substring(0, 255);
+            }
+
+            while (System.Text.Encoding.UTF8.GetByteCount(reason) > 255)
+            {
+                reason = reason.Substring(0, reason.Length - 1);
+            }
+
+            // TODO: optimize
+            var reasonBuffer = System.Text.Encoding.UTF8.GetBytes(reason);
+
+            var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
+            header.SetNeedAck();
+            header.SetDisconnect();
+            header.Length = (ushort)(header.HeaderLength + 1 + reasonBuffer.Length);  // +1 for length
+
+            var fullBuffer = _buffersPool.Get(header.Length);
+            header.WriteTo(fullBuffer, 0);
+            fullBuffer[header.HeaderLength] = (byte)reasonBuffer.Length;
+            Array.Copy(reasonBuffer, 0, fullBuffer, header.HeaderLength + 1, reasonBuffer.Length);
+
+            var putBufferToPool = true;
+            SubSock.Send(fullBuffer, 0, header.Length, putBufferToPool);
+
+            _headersPool.Put(header);
+
+            seqState.DisconnectRequestSent = true;
+        }
+
+        public void SendDisconnectResponse(IPEndPoint endPoint, SequenceState seqState)
+        {
+            var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
+            header.SetDisconnect();
+            header.Length = (ushort)(header.HeaderLength);
+
+            var fullBuffer = _buffersPool.Get(header.Length);
+            header.WriteTo(fullBuffer, 0);
+
+            var putBufferToPool = true;
+            SubSock.Send(endPoint, fullBuffer, 0, header.Length, putBufferToPool);
+
+            _headersPool.Put(header);
+        }
+
         public bool Receive(ref ReceivedSmartPacket receivedPacket)
         {
             bool haveResult = false;
@@ -118,6 +182,9 @@ namespace Pixockets
         public void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool reliable)
         {
             var seqState = GetSeqStateOnSend(endPoint);
+            if (seqState.DisconnectRequestSent)
+                return;
+
             // Don't send until connected
             if (seqState.SessionId == PacketHeader.EmptySessionId)
             {
@@ -159,6 +226,9 @@ namespace Pixockets
         {
             var endPoint = SubSock.RemoteEndPoint;
             var seqState = GetSeqStateOnSend(endPoint);
+            if (seqState.DisconnectRequestSent)
+                return;
+
             // Don't send until connected
             if (seqState.SessionId == PacketHeader.EmptySessionId)
             {
@@ -326,6 +396,17 @@ namespace Pixockets
                     seqState.RegisterIncoming(header.SeqNum);
                 }
             }
+            else if ((header.Flags & PacketHeader.Disconnect) != 0)
+            {
+                // Disconnect request received, send response
+                if (!seqState.DisconnectRequestSent)
+                {
+                    SendDisconnectResponse(endPoint, seqState);
+                }
+                _callbacks.OnDisconnect(endPoint);
+                _seqStates.Remove(endPoint);
+                _seqStatesPool.Put(seqState);
+            }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)
             {
                 bool isDuplicate = seqState.IsDuplicate(header.SeqNum);
@@ -339,10 +420,19 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
-                seqState.ReceiveAck(header.Acks);
+                if ((header.Flags & PacketHeader.Disconnect) != 0)
+                {
+                    _callbacks.OnDisconnect(endPoint);
+                    _seqStates.Remove(endPoint);
+                    _seqStatesPool.Put(seqState);
+                }
+                else
+                {
+                    seqState.ReceiveAck(header.Acks);
+                }
             }
 
-            if ((header.Flags & PacketHeader.NeedsAck) != 0)
+            if ((header.Flags & PacketHeader.NeedsAck) != 0 && (header.Flags & PacketHeader.Disconnect) == 0)
             {
                 seqState.EnqueueAck(header.SeqNum);
             }

@@ -44,6 +44,8 @@ namespace Pixockets
             get { return SessionId != PacketHeader.EmptySessionId; }
         }
 
+        public bool DisconnectRequestSent { get; set; }
+
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
             Init(buffersPool, fragPacketsPool, headersPool, (ushort)(Rnd.Next(ushort.MaxValue) + 1));
@@ -258,7 +260,9 @@ namespace Pixockets
             _frags.Clear();
 
             _lastReceivedSeqNum = -1;
+            _lastReceivedSeqNumIdx = 0;
             _receivedSeqNumBufferSize = 0;
+            DisconnectRequestSent = false;
             Array.Clear(_lastReceivedSeqNums, 0, _lastReceivedSeqNums.Length);
         }
 

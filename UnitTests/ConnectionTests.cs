@@ -133,5 +133,47 @@ namespace UnitTests
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _cbs.OnDisconnectCalls.Count);
         }
+
+        [Test]
+        public void DisconnectedRequestSent()
+        {
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 54321);
+            _sock.Connect(remoteEndPoint.Address, remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, remoteEndPoint, _bufferPool);
+
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+            // Now we are connected
+
+            _sock.Disconnect("Just", remoteEndPoint);
+            Utils.SendDisconnectResponse(_bareSock, remoteEndPoint, _bufferPool);
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+            // Now we are disconnected
+
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(1, _cbs.OnDisconnectCalls.Count);
+        }
+
+        [Test]
+        public void DisconnectedRequestReceived()
+        {
+            var remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 54321);
+            _sock.Connect(remoteEndPoint.Address, remoteEndPoint.Port);
+            Utils.SendConnectResponse(_bareSock, remoteEndPoint, _bufferPool);
+
+            var receivedPacket = new ReceivedSmartPacket();
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+            // Now we are connected
+
+            Assert.AreEqual(1, _bareSock.Sends.Count);
+
+            Utils.SendDisconnectRequest(_bareSock, remoteEndPoint, _bufferPool);
+            Assert.IsFalse(_sock.Receive(ref receivedPacket));
+            // Now we are disconnected
+
+            Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
+            Assert.AreEqual(1, _cbs.OnDisconnectCalls.Count);
+            Assert.AreEqual(2, _bareSock.Sends.Count);
+        }
     }
 }

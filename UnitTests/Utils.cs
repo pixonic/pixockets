@@ -119,6 +119,25 @@ namespace UnitTests
             bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
         }
 
+        public static void SendDisconnectRequest(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        {
+            SendDisconnectResponse(bareSock, endPoint, bufferPool);
+        }
+
+        public static void SendDisconnectResponse(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        {
+            ushort sessionId = 427;
+            var header = new PacketHeader();
+            header.SetSessionId(sessionId);
+            header.SetDisconnect();
+
+            var buffer = bufferPool.Get(header.HeaderLength);
+            header.Length = (ushort)header.HeaderLength;
+            header.WriteTo(buffer, 0);
+
+            bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
+        }
+
         public static byte[] CreatePacket(int payload)
         {
             var header = new PacketHeader();

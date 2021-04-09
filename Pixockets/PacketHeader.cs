@@ -36,7 +36,8 @@ namespace Pixockets
         public const byte ContainsFrag = 0x4;
         public const byte Connect = 0x8;
         public const byte NeedsAck = 0x10;
-        public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | Connect | NeedsAck);
+        public const byte Disconnect = 0x20;
+        public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | Connect | NeedsAck | Disconnect);
 
         public byte Flags;
         // We need this to detect truncated datagrams
@@ -124,6 +125,11 @@ namespace Pixockets
         public void SetConnect()
         {
             Flags |= Connect;
+        }
+
+        public void SetDisconnect()
+        {
+            Flags |= Disconnect;
         }
 
         public void SetSessionId(ushort sessionId)
