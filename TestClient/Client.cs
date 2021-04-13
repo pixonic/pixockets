@@ -20,24 +20,21 @@ namespace TestClient
 
             callbacks.Connecting = true;
             Connect(address, sock);
+            var packet = new ReceivedSmartPacket();
+            while (sock.State == PixocketState.Connecting)
+            {
+                if (sock.Receive(ref packet))
+                    break;
+                sock.Tick();
+            }
 
-            Thread.Sleep(1000);
-
-            int cnt = 0;
-            while (true)
+            for (int i = 1; i < 11; i++)
             {
                 Thread.Sleep(1000);
 
-                cnt++;
-                if (cnt > 32)
-                {
-                    cnt = 1;
-                }
-
-                var buffer = CreateMessage(cnt);
+                var buffer = CreateMessage(i);
                 sock.Send(buffer, 0, buffer.Length, false);
                 sock.Tick();
-                var packet = new ReceivedSmartPacket();
                 while (true)
                 {
                     if (sock.Receive(ref packet))
@@ -57,27 +54,30 @@ namespace TestClient
                     continue;
                 }
             }
+
+            sock.Disconnect("Enough");
         }
 
         private static void Connect(string addr, SmartSock sock)
         {
             sock.Connect(IPAddress.Parse(addr), 2345);
 
-            var ep = (IPEndPoint)sock.LocalEndPoint;
+            var ep = sock.LocalEndPoint;
             Console.WriteLine("{0}:{1}", ep.Address, ep.Port);
+
+            var packet = new ReceivedSmartPacket();
+            while (sock.State == PixocketState.Connecting)
+            {
+                sock.Tick();
+                if (sock.Receive(ref packet))
+                    break;
+            }
 
             var rnd = new Random(Guid.NewGuid().GetHashCode());
             var count = 700 + rnd.Next(500);
             byte[] initMsg = CreateMessage(count);
             Console.WriteLine("Sending message with {0} numbers", count);
             sock.Send(initMsg, 0, initMsg.Length, true);
-
-            var packet = new ReceivedSmartPacket();
-            while (sock.State == PixocketState.Connecting)
-            {
-                sock.Tick();
-                sock.Receive(ref packet);
-            }
         }
 
         private static byte[] CreateMessage(int count)

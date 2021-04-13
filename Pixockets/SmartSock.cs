@@ -82,7 +82,7 @@ namespace Pixockets
             SubSock.Listen(port);
         }
 
-        public void Disconnect(string reason, IPEndPoint endPoint)
+        public void Disconnect(string reason, IPEndPoint endPoint = null)
         {
             if (endPoint == null)
                 endPoint = SubSock.RemoteEndPoint;
