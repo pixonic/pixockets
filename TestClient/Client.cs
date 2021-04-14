@@ -55,7 +55,14 @@ namespace TestClient
                 }
             }
 
-            sock.Disconnect("Enough");
+            sock.Disconnect();
+
+            while (sock.State == PixocketState.Connected)
+            {
+                sock.Tick();
+                sock.Receive(ref packet);
+                Thread.Sleep(100);
+            }
         }
 
         private static void Connect(string addr, SmartSock sock)

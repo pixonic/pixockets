@@ -47,10 +47,6 @@ namespace TestServer
             {
                 var count = BitConverter.ToInt32(buffer, offset);
                 Console.WriteLine("Received initial packet with {0} numbers", count);
-                if (count == 1)
-                {
-                    int a = 1;
-                }
                 for (int i = 0; i < count; ++i)
                 {
                     var num = BitConverter.ToInt32(buffer, offset + 4 + i * 4);
@@ -129,9 +125,9 @@ namespace TestServer
             _clients.Add(endPoint, -1);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
         {
-            Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
+            Console.WriteLine("Disconnected: {0}:{1}. Reason: {2}", endPoint.Address, endPoint.Port, reason);
             _clients.Remove(endPoint);
         }
     }

@@ -12,6 +12,13 @@ namespace Pixockets
         Connected,
     }
 
+    public enum DisconnectReason
+    {
+        InitiatedByPeer = 0,
+        Timeout,
+        SocketClose,
+    }
+
     public class SmartSock
     {
         public int ConnectionTimeout = 10000;
@@ -82,7 +89,7 @@ namespace Pixockets
             SubSock.Listen(port);
         }
 
-        public void Disconnect(string reason, IPEndPoint endPoint = null)
+        public void Disconnect(IPEndPoint endPoint = null)
         {
             if (endPoint == null)
                 endPoint = SubSock.RemoteEndPoint;
@@ -93,34 +100,14 @@ namespace Pixockets
             if (seqState.DisconnectRequestSent)
                 return;
 
-            if (reason == null)
-            {
-                reason = string.Empty;
-            }
-
-            if (reason.Length > 255)
-            {
-                reason = reason.Substring(0, 255);
-            }
-
-            while (System.Text.Encoding.UTF8.GetByteCount(reason) > 255)
-            {
-                reason = reason.Substring(0, reason.Length - 1);
-            }
-
-            // TODO: optimize
-            var reasonBuffer = System.Text.Encoding.UTF8.GetBytes(reason);
-
             var header = _headersPool.Get();
             header.SetSessionId(seqState.SessionId);
             header.SetNeedAck();
             header.SetDisconnect();
-            header.Length = (ushort)(header.HeaderLength + 1 + reasonBuffer.Length);  // +1 for length
+            header.Length = (ushort)header.HeaderLength;
 
             var fullBuffer = _buffersPool.Get(header.Length);
             header.WriteTo(fullBuffer, 0);
-            fullBuffer[header.HeaderLength] = (byte)reasonBuffer.Length;
-            Array.Copy(reasonBuffer, 0, fullBuffer, header.HeaderLength + 1, reasonBuffer.Length);
 
             var putBufferToPool = true;
             SubSock.Send(fullBuffer, 0, header.Length, putBufferToPool);
@@ -288,7 +275,7 @@ namespace Pixockets
             {
                 var seqState = _toDelete[i];
                 _seqStates.Remove(seqState.Key);
-                _callbacks.OnDisconnect(seqState.Key);
+                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.Timeout);
                 _seqStatesPool.Put(seqState.Value);
             }
 
@@ -300,7 +287,7 @@ namespace Pixockets
             SubSock.Close();
             foreach (var seqState in _seqStates)
             {
-                _callbacks.OnDisconnect(seqState.Key);
+                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.SocketClose);
                 _seqStatesPool.Put(seqState.Value);
             }
 
@@ -403,7 +390,8 @@ namespace Pixockets
                 {
                     SendDisconnectResponse(endPoint, seqState);
                 }
-                _callbacks.OnDisconnect(endPoint);
+
+                _callbacks.OnDisconnect(endPoint, DisconnectReason.InitiatedByPeer);
                 _seqStates.Remove(endPoint);
                 _seqStatesPool.Put(seqState);
             }
@@ -420,16 +408,7 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
-                if ((header.Flags & PacketHeader.Disconnect) != 0)
-                {
-                    _callbacks.OnDisconnect(endPoint);
-                    _seqStates.Remove(endPoint);
-                    _seqStatesPool.Put(seqState);
-                }
-                else
-                {
-                    seqState.ReceiveAck(header.Acks);
-                }
+                seqState.ReceiveAck(header.Acks);
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0 && (header.Flags & PacketHeader.Disconnect) == 0)

@@ -6,7 +6,7 @@ namespace Pixockets
     {
         public abstract void OnConnect(IPEndPoint endPoint);
 
-        public abstract void OnDisconnect(IPEndPoint endPoint);
+        public abstract void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason);
     }
 
     public class NullSmartReceiver : SmartReceiverBase
@@ -15,7 +15,7 @@ namespace Pixockets
         {
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
         {
         }
     }
