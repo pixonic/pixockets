@@ -251,6 +251,14 @@ namespace Pixockets
             _toDelete.Clear();
         }
 
+        public void DisconnectAll()
+        {
+            foreach (var seqState in _seqStates)
+            {
+                Disconnect(seqState.Key);
+            }
+        }
+
         public void Close()
         {
             SubSock.Close();
@@ -262,7 +270,6 @@ namespace Pixockets
 
             _seqStates.Clear();
         }
-
 
         private void SendConnectionRequest()
         {
