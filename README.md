@@ -45,6 +45,7 @@ while (!Console.KeyAvailable)
     Thread.Sleep(50);
 }
 
+sock.Disconnect();
 sock.Close();
 
 ```
@@ -73,6 +74,7 @@ while (!Console.KeyAvailable)
     Thread.Sleep(50);
 }
 
+sock.DisconnectAll();
 sock.Close();
 
 ```
