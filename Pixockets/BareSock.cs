@@ -67,6 +67,14 @@ namespace Pixockets
                 else
                     SysSock.Send(buffer, offset, length, SocketFlags.None);
             }
+            catch (SocketException se)
+            {
+                // Ignore harmless errors
+                if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                {
+                    _logger.Exception(se);
+                }
+            }
             catch (Exception e)
             {
                 _logger.Exception(e);
@@ -84,6 +92,14 @@ namespace Pixockets
             {
                 // It uses Send instead of SendTo because SendTo seems not implemented in Unity on iOS
                 SysSock.Send(buffer, offset, length, SocketFlags.None);
+            }
+            catch (SocketException se)
+            {
+                // Ignore harmless errors
+                if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                {
+                    _logger.Exception(se);
+                }
             }
             catch (Exception e)
             {
@@ -105,30 +121,49 @@ namespace Pixockets
                     return false;
                 }
             }
+            catch (SocketException se)
+            {
+                // Ignore harmless errors
+                if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                {
+                    _logger.Exception(se);
+                }
+            }
             catch (Exception e)
             {
                 _logger.Exception(e);
                 return false;
             }
 
-            var buffer = _buffersPool.Get(MTU);
+            var buffer = _buffersPool.Get(MTUSafe);
             EndPoint remoteEP = _remoteEndPoint;
             try
             {
                 int bytesReceived = 0;
                 if (_connectedMode)
-                    bytesReceived = SysSock.Receive(buffer, MTU, SocketFlags.None);
+                    bytesReceived = SysSock.Receive(buffer, MTUSafe, SocketFlags.None);
                 else
-                    bytesReceived = SysSock.ReceiveFrom(buffer, MTU, SocketFlags.None, ref remoteEP);
+                    bytesReceived = SysSock.ReceiveFrom(buffer, MTUSafe, SocketFlags.None, ref remoteEP);
 
-                if (bytesReceived > 0)
+                //ntrf: On windows we will get EMSGSIZE error if message was truncated, but Mono on Unix will fill up the
+                //      whole buffer silently. We detect this case by allowing buffer to be slightly larger, than our typical
+                //      packet, and dropping any packet, that did fill the whole thing.
+                if (bytesReceived > 0 && bytesReceived <= MTU)
                 {
                     packet.Buffer = buffer;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
-                    packet.EndPoint = (IPEndPoint)remoteEP;
+                    packet.EndPoint = (IPEndPoint) remoteEP;
 
                     return true;
+                }
+            }
+            catch (SocketException se)
+            {
+                // Ignore harmless errors
+                if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                {
+                    _logger.Exception(se);
                 }
             }
             catch (Exception e)
@@ -142,7 +177,12 @@ namespace Pixockets
 
         public override void Close()
         {
-            SysSock.Close();
+            if (SysSock != null)
+            {
+                SysSock.Close();
+                SysSock = null;
+            }
+            _remoteEndPoint = null;
         }
     }
 }
