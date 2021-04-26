@@ -30,12 +30,12 @@ namespace ReplicatorServer
             }
 
             ClientState cliVal = null;
-            
+
             if (!_clients.TryGetValue(endPoint, out cliVal))
             {
             //    Console.WriteLine("Received packet from not connected {0}:{1}", endPoint.Address, endPoint.Port);
             }
-            
+
             int packetId = buffer[offset];
 
             if (cliVal == null)
@@ -103,7 +103,7 @@ namespace ReplicatorServer
             }
 
             _servSock.Tick();
-            
+
             var ms = new MemoryStream();
             ms.WriteByte(1);  // Tick packet
             ms.Write(BitConverter.GetBytes(_clients.Count), 0, 4);
@@ -133,7 +133,7 @@ namespace ReplicatorServer
             Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
         {
             Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
             ClientState ts;
