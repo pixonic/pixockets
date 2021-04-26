@@ -21,11 +21,11 @@ namespace TestClient
             Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
         {
             Connected = false;
             Connecting = false;
-            Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
+            Console.WriteLine("Disconnected: {0}:{1}. Reason: {2}", endPoint.Address, endPoint.Port, reason);
         }
 
         public void OnReceive(byte[] buffer, int offset, int length, IPEndPoint endPoint, bool inOrder)

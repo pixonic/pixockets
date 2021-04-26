@@ -62,13 +62,6 @@ namespace UnitTests
         {
             TestGarbage(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
             TestGarbage(new byte[] {9, 8, 7, 6, 5, 4, 3, 2, 1});
-
-            var buffer = new byte[64];
-            for (int i = 0; i < 16; ++i)
-            {
-                _rnd.NextBytes(buffer);
-                TestGarbage(buffer);
-            }
         }
 
         private void TestGarbage(byte[] buffer)
