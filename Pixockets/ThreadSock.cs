@@ -28,10 +28,11 @@ namespace Pixockets
 
         private readonly object _syncObj = new object();
         private volatile bool _closing;
+        private bool _connectedMode;
 
         private const int SendQueueLimit = 10000;
         private const int RecvQueueLimit = 10000;
-
+        
         public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily, ILogger logger)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -50,7 +51,7 @@ namespace Pixockets
         {
             if (_closing)
                 return;
-
+            
             _remoteEndPoint = new IPEndPoint(address, port);
             AddressFamily addressFamily;
             lock (_syncObj)
@@ -64,7 +65,9 @@ namespace Pixockets
             }
 
             _receiveEndPoint = new IPEndPoint(AnyAddress(addressFamily), 0);
-
+            
+            _connectedMode = true;
+            
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
                 _receiveThread.Start();
@@ -125,8 +128,11 @@ namespace Pixockets
                 var packet = _sendQueue.Take();
                 try
                 {
-                    // This seems not implemented in Unity for iOS
-                    SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
+                    if (!_connectedMode)
+                        // This is not working for iOS/MacOS after connect call
+                        SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
+                    else
+                        SysSock.Send(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None);
                 }
                 catch (SocketException se)
                 {
