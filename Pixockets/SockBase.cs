@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
@@ -7,6 +8,16 @@ namespace Pixockets
     public abstract class SockBase
     {
         public const int MTU = 1200;
+
+        protected const int MTUSafe = 1500;
+        protected static readonly HashSet<SocketError> HarmlessErrors = new HashSet<SocketError>
+        {
+            SocketError.Interrupted,
+            SocketError.MessageSize,
+            SocketError.TryAgain,
+            SocketError.Success,
+            SocketError.WouldBlock
+        };
 
         public abstract IPEndPoint LocalEndPoint { get; }
         public abstract IPEndPoint RemoteEndPoint { get; }

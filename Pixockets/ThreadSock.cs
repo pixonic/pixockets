@@ -128,6 +128,14 @@ namespace Pixockets
                     // This seems not implemented in Unity for iOS
                     SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
                 }
+                catch (SocketException se)
+                {
+                    // Ignore harmless errors
+                    if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                    {
+                        _logger.Exception(se);
+                    }
+                }
                 catch (Exception e)
                 {
                     _logger.Exception(e);
@@ -144,13 +152,16 @@ namespace Pixockets
         {
             while (!_closing)
             {
-                var buffer = _buffersPool.Get(MTU);
+                var buffer = _buffersPool.Get(MTUSafe);
                 var bufferUsed = false;
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {
-                    var bytesReceived = SysSock.ReceiveFrom(buffer, MTU, SocketFlags.None, ref remoteEP);
-                    if (bytesReceived > 0)
+                    var bytesReceived = SysSock.ReceiveFrom(buffer, MTUSafe, SocketFlags.None, ref remoteEP);
+                    //ntrf: On windows we will get EMSGSIZE error if message was truncated, but Mono on Unix will fill up the
+                    //      whole buffer silently. We detect this case by allowing buffer to be slightly larger, than our typical
+                    //      packet, and dropping any packet, that did fill the whole thing.
+                    if (bytesReceived > 0 && bytesReceived <= MTU)
                     {
                         var packet = new ReceivedPacket();
                         packet.Buffer = buffer;
@@ -175,6 +186,14 @@ namespace Pixockets
                         Thread.Sleep(10);
                     }
                 }
+                catch (SocketException se)
+                {
+                    // Ignore harmless errors
+                    if (!HarmlessErrors.Contains(se.SocketErrorCode))
+                    {
+                        _logger.Exception(se);
+                    }
+                }
                 catch (Exception e)
                 {
                     _logger.Exception(e);
@@ -195,7 +214,8 @@ namespace Pixockets
         public override void Close()
         {
             _closing = true;
-            SysSock.Close();
+            SysSock?.Close();
+            SysSock = null;
             _sendThread.Abort();
             _receiveThread.Abort();
             _sendThread.Join();

@@ -37,6 +37,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncSock.cs" />
     <Compile Include="DebugTools\ILogger.cs" />
     <Compile Include="DebugTools\LoggerStub.cs" />
     <Compile Include="FragmentBuffer.cs" />
