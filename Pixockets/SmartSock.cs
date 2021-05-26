@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Sockets;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -165,14 +166,28 @@ namespace Pixockets
                     // It should be done after using fragmentOffset to cut fragment
                     fragmentOffset += fragmentSize;
 
-                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                    try
+                    {
+                        SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                    }
+                    catch (SocketException)
+                    {
+                        Close(endPoint, seqState);
+                        break;
+                    }
                 }
             }
             else
             {
                 var fullBuffer = Wrap(seqState, buffer, offset, length, reliable);
-
-                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                try
+                {
+                    SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                }
+                catch (SocketException)
+                {
+                    Close(endPoint, seqState);
+                }
             }
         }
 
@@ -209,14 +224,29 @@ namespace Pixockets
                     // It should be done after using fragmentOffset to cut fragment
                     fragmentOffset += fragmentSize;
 
-                    SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                    try
+                    {
+                        SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                    }
+                    catch (SocketException)
+                    {
+                        Close(endPoint, seqState);
+                        break;
+                    }
                 }
             }
             else
             {
                 var fullBuffer = Wrap(seqState, buffer, offset, length, reliable);
 
-                SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                try
+                {
+                    SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                }
+                catch (SocketException)
+                {
+                    Close(endPoint, seqState);
+                }
             }
         }
 
@@ -571,6 +601,13 @@ namespace Pixockets
             SubSock.Send(endPoint, fullBuffer, 0, header.Length, putBufferToPool);
 
             _headersPool.Put(header);
+        }
+
+        private void Close(IPEndPoint endPoint, SequenceState seqState)
+        {
+            _seqStates.Remove(endPoint);
+            _callbacks.OnDisconnect(endPoint, DisconnectReason.SocketClose);
+            _seqStatesPool.Put(seqState);
         }
     }
 }
