@@ -73,11 +73,8 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
             }
             finally
             {
@@ -99,11 +96,8 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
             }
             finally
             {
@@ -127,12 +121,8 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
-                return false;
             }
 
             var buffer = _buffersPool.Get(MTUSafe);
@@ -164,14 +154,14 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
             }
-            catch (Exception e)
+            finally
             {
-                _logger.Exception(e);
+                _buffersPool.Put(buffer);
             }
 
-            _buffersPool.Put(buffer);
             return false;
         }
 

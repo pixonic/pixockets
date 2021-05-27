@@ -7,7 +7,6 @@ using Pixockets.Pools;
 
 namespace Pixockets
 {
-    // WARNING: this class uses Socket.SendTo method which is not working in Unity for iOS
     public class ThreadSock : SockBase
     {
         public Socket SysSock;
@@ -26,6 +25,7 @@ namespace Pixockets
         private readonly Thread _receiveThread;
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
+        private readonly ThreadSafeQueue<SocketException> _excQueue = new ThreadSafeQueue<SocketException>();
         private readonly object _syncObj = new object();
         private volatile bool _closing;
         private bool _connectedMode;
@@ -99,6 +99,12 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
+            if (_excQueue.TryTake(out var e))
+            {
+                _logger.Exception(e);
+                throw e;
+            }
+            
             ValidateLength(length);
 
             var packet = new PacketToSend();
@@ -139,12 +145,9 @@ namespace Pixockets
                     // Ignore harmless errors
                     if (!HarmlessErrors.Contains(se.SocketErrorCode))
                     {
-                        _logger.Exception(se);
+                        _excQueue.Add(se);
+                        break;
                     }
-                }
-                catch (Exception e)
-                {
-                    _logger.Exception(e);
                 }
                 finally
                 {
@@ -197,14 +200,11 @@ namespace Pixockets
                     // Ignore harmless errors
                     if (!HarmlessErrors.Contains(se.SocketErrorCode))
                     {
-                        _logger.Exception(se);
+                        _excQueue.Add(se);
+                        break;
                     }
                 }
-                catch (Exception e)
-                {
-                    _logger.Exception(e);
-                }
-
+ 
                 if (!bufferUsed)
                 {
                     _buffersPool.Put(buffer);
@@ -214,6 +214,12 @@ namespace Pixockets
 
         public override bool Receive(ref ReceivedPacket packet)
         {
+            if (_excQueue.TryTake(out var e))
+            {
+                _logger.Exception(e);
+                throw e;
+            }
+
             return _recvQueue.TryTake(out packet);
         }
 

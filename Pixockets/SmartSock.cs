@@ -109,22 +109,34 @@ namespace Pixockets
             var packet = new ReceivedPacket();
             while (true)
             {
-                if (SubSock.Receive(ref packet))
+                try
                 {
-                    try
+                    packet.EndPoint = null;
+                    if (SubSock.Receive(ref packet))
                     {
-                        haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
-                            ref receivedPacket);
+                        try
+                        {
+                            haveResult = OnReceive(packet.Buffer, packet.Offset, packet.Length, packet.EndPoint,
+                                ref receivedPacket);
+                        }
+                        catch (SocketException)
+                        {
+                            haveResult = false;
+                            _buffersPool.Put(packet.Buffer);
+                            if (packet.EndPoint != null && _seqStates.ContainsKey(packet.EndPoint))
+                            {
+                                Close(packet.EndPoint, _seqStates[packet.EndPoint]);
+                            }
+                        }
                     }
-                    catch (Exception)
+                    else
                     {
-                        haveResult = false;
-                        _buffersPool.Put(packet.Buffer);
+                        break;
                     }
                 }
-                else
+                catch (SocketException)
                 {
-                    break;
+                    Close();
                 }
 
                 if (haveResult)
@@ -315,7 +327,14 @@ namespace Pixockets
 
             var putBufferToPool = true;
 
-            SubSock.Send(buffer, 0, header.HeaderLength, putBufferToPool);
+            try
+            {
+                SubSock.Send(buffer, 0, header.HeaderLength, putBufferToPool);
+            }
+            catch (SocketException)
+            {
+                Close(endPoint, seqState);
+            }
 
             _headersPool.Put(header);
 
@@ -335,8 +354,15 @@ namespace Pixockets
 
             var putBufferToPool = true;
 
-            SubSock.Send(endPoint, buffer, 0, header.HeaderLength, putBufferToPool);
-
+            try
+            {
+                SubSock.Send(endPoint, buffer, 0, header.HeaderLength, putBufferToPool);
+            }
+            catch (SocketException)
+            {
+                Close(endPoint, seqState);
+            }
+            
             _headersPool.Put(header);
         }
 
@@ -596,9 +622,16 @@ namespace Pixockets
 
             var fullBuffer = _buffersPool.Get(header.Length);
             header.WriteTo(fullBuffer, 0);
-
-            var putBufferToPool = true;
-            SubSock.Send(endPoint, fullBuffer, 0, header.Length, putBufferToPool);
+            
+            try
+            {
+                var putBufferToPool = true;
+                SubSock.Send(endPoint, fullBuffer, 0, header.Length, putBufferToPool);
+            }
+            catch (SocketException)
+            {
+                Close(endPoint, seqState);
+            }
 
             _headersPool.Put(header);
         }
