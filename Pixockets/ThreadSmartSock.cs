@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using Pixockets.Pools;
 
@@ -12,7 +13,7 @@ namespace Pixockets
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
         private readonly ThreadSafeQueue<ReceivedSmartPacket> _recvQueue = new ThreadSafeQueue<ReceivedSmartPacket>();
         private readonly ThreadSafeQueue<IPEndPoint> _connectQueue = new ThreadSafeQueue<IPEndPoint>();
-        private readonly ThreadSafeQueue<IPEndPoint> _disconnectQueue = new ThreadSafeQueue<IPEndPoint>();
+        private readonly ThreadSafeQueue<KeyValuePair<IPEndPoint, DisconnectReason>> _disconnectQueue = new ThreadSafeQueue<KeyValuePair<IPEndPoint, DisconnectReason>>();
         private readonly BufferPoolBase _buffersPool;
         private readonly SmartReceiverBase _callbacks;
 
@@ -49,8 +50,8 @@ namespace Pixockets
 
         public void Tick()
         {
-            while (_disconnectQueue.TryTake(out var disconnectEndPoint))
-                _callbacks.OnDisconnect(disconnectEndPoint);
+            while (_disconnectQueue.TryTake(out var disconnectPair))
+                _callbacks.OnDisconnect(disconnectPair.Key, disconnectPair.Value);
 
             while (_connectQueue.TryTake(out var connectEndPoint))
                 _callbacks.OnConnect(connectEndPoint);
@@ -132,9 +133,9 @@ namespace Pixockets
             _connectQueue.Add(endPoint);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
         {
-            _disconnectQueue.Add(endPoint);
+            _disconnectQueue.Add(new KeyValuePair<IPEndPoint, DisconnectReason>(endPoint, reason));
         }
     }
 }
