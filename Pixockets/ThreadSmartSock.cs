@@ -4,21 +4,32 @@ using Pixockets.Pools;
 
 namespace Pixockets
 {
-    public class ThreadSmartSock
+    public class ThreadSmartSock : SmartReceiverBase
     {
         private readonly SmartSock _socket;
         private volatile bool _closing;
         private readonly Thread _ioThread;
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
         private readonly ThreadSafeQueue<ReceivedSmartPacket> _recvQueue = new ThreadSafeQueue<ReceivedSmartPacket>();
+        private readonly ThreadSafeQueue<IPEndPoint> _connectQueue = new ThreadSafeQueue<IPEndPoint>();
+        private readonly ThreadSafeQueue<IPEndPoint> _disconnectQueue = new ThreadSafeQueue<IPEndPoint>();
         private readonly BufferPoolBase _buffersPool;
+        private readonly SmartReceiverBase _callbacks;
 
         public PixocketState State { get; private set; }
 
-        public ThreadSmartSock(SmartSock socket, BufferPoolBase buffersPool)
+        public ThreadSmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
-            _socket = socket;
+            _socket = new SmartSock(buffersPool, subSock, this);
             _buffersPool = buffersPool;
+            if (callbacks != null)
+            {
+                _callbacks = callbacks;
+            }
+            else
+            {
+                _callbacks = new NullSmartReceiver();
+            }
 
             _ioThread = new Thread(IOLoop);
             _ioThread.IsBackground = true;
@@ -34,6 +45,15 @@ namespace Pixockets
         {
             _socket.Listen(port);
             _ioThread.Start();
+        }
+
+        public void Tick()
+        {
+            while (_disconnectQueue.TryTake(out var disconnectEndPoint))
+                _callbacks.OnDisconnect(disconnectEndPoint);
+
+            while (_connectQueue.TryTake(out var connectEndPoint))
+                _callbacks.OnConnect(connectEndPoint);
         }
 
         public bool Receive(ref ReceivedSmartPacket receivedPacket)
@@ -105,6 +125,16 @@ namespace Pixockets
             }
 
             _socket.Close();
+        }
+
+        public override void OnConnect(IPEndPoint endPoint)
+        {
+            _connectQueue.Add(endPoint);
+        }
+
+        public override void OnDisconnect(IPEndPoint endPoint)
+        {
+            _disconnectQueue.Add(endPoint);
         }
     }
 }
