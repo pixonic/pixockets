@@ -1,5 +1,4 @@
-﻿
-namespace Pixockets
+﻿namespace Pixockets
 {
     public struct FragmentBuffer
     {

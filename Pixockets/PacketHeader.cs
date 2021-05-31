@@ -10,7 +10,8 @@ namespace Pixockets
         public const int MinHeaderLength = 5;
         public const int EmptySessionId = 0;
 
-        public int HeaderLength {
+        public int HeaderLength
+        {
             get
             {
                 int res = MinHeaderLength;
@@ -70,6 +71,7 @@ namespace Pixockets
                     SeqNum = BitConverter.ToUInt16(buffer, pos);
                     pos += 2;
                 }
+
                 if ((Flags & ContainsAck) != 0)
                 {
                     int acksCount = buffer[pos++];
@@ -80,6 +82,7 @@ namespace Pixockets
                         Acks.Add(ack);
                     }
                 }
+
                 if ((Flags & ContainsFrag) != 0)
                 {
                     FragId = BitConverter.ToUInt16(buffer, pos);
@@ -168,6 +171,7 @@ namespace Pixockets
             {
                 pos = WriteUInt16(SeqNum, buffer, pos);
             }
+
             if ((Flags & ContainsAck) != 0)
             {
                 var acksCount = (byte)Acks.Count;
@@ -177,6 +181,7 @@ namespace Pixockets
                     pos = WriteUInt16(Acks[i], buffer, pos);
                 }
             }
+
             if ((Flags & ContainsFrag) != 0)
             {
                 pos = WriteUInt16(FragId, buffer, pos);

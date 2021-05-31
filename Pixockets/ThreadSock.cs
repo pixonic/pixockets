@@ -32,7 +32,7 @@ namespace Pixockets
 
         private const int SendQueueLimit = 10000;
         private const int RecvQueueLimit = 10000;
-        
+
         public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily, ILogger logger)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -51,7 +51,7 @@ namespace Pixockets
         {
             if (_closing)
                 return;
-            
+
             _remoteEndPoint = new IPEndPoint(address, port);
             AddressFamily addressFamily;
             lock (_syncObj)
@@ -65,9 +65,9 @@ namespace Pixockets
             }
 
             _receiveEndPoint = new IPEndPoint(AnyAddress(addressFamily), 0);
-            
+
             _connectedMode = true;
-            
+
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
                 _receiveThread.Start();
@@ -104,7 +104,7 @@ namespace Pixockets
                 _logger.Exception(e);
                 throw e;
             }
-            
+
             ValidateLength(length);
 
             var packet = new PacketToSend();

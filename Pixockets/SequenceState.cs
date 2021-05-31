@@ -247,6 +247,7 @@ namespace Pixockets
                 var packet = _notAcked[i];
                 _buffersPool.Put(packet.Buffer);
             }
+
             _notAcked.Clear();
 
             _connected = false;
@@ -257,6 +258,7 @@ namespace Pixockets
             {
                 _fragPacketsPool.Put(_frags[i]);
             }
+
             _frags.Clear();
 
             _lastReceivedSeqNum = -1;
@@ -294,6 +296,7 @@ namespace Pixockets
             {
                 delta = -1;
             }
+
             return delta > 0;
         }
 

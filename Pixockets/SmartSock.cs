@@ -622,7 +622,7 @@ namespace Pixockets
 
             var fullBuffer = _buffersPool.Get(header.Length);
             header.WriteTo(fullBuffer, 0);
-            
+
             try
             {
                 var putBufferToPool = true;
