@@ -101,9 +101,9 @@ namespace Pixockets
 				var err = sx.SocketErrorCode;
 
 				// Ignore harmless errors
-				if (err != SocketError.Interrupted && err != SocketError.MessageSize && err != SocketError.TryAgain
-					&& err != SocketError.Success && err != SocketError.WouldBlock)
+				if (!HarmlessErrors.Contains(err))
 				{
+					_logger.Exception(sx);
 					End();
 
 					// Our socket might be killed by iOS
@@ -113,14 +113,6 @@ namespace Pixockets
 						throw sx;
 					}
 				}
-				else
-				{
-					_logger.Exception(sx);
-				}
-			}
-			catch (Exception ex)
-			{
-				throw ex;
 			}
 			finally
 			{
@@ -171,22 +163,21 @@ namespace Pixockets
 				// which causes ECONNRESET on next receive call
 				if (!HarmlessErrors.Contains(err))
 				{
+					_logger.Exception(sx);
 					End();
 
 					// Our socket might be killed by iOS. Recreate the socket.
 					if (err != SocketError.NotConnected)
 					{
-						throw sx;
+						throw;
 					}
 				}
             }
-            catch (Exception ex)
+            finally
             {
-	            throw ex;
-			}
-
-            if (buffer != null)
-                _buffersPool.Put(buffer);
+	            if (buffer != null)
+		            _buffersPool.Put(buffer);
+            }
 
             return false;
         }

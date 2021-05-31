@@ -54,7 +54,7 @@ namespace UnitTests
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(1, _bufferPool.Rented.Count);
-            Assert.AreEqual(0, _bufferPool.Returned.Count);
+            Assert.AreEqual(1, _bufferPool.Returned.Count);
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace UnitTests
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(1, _bufferPool.Rented.Count);
-            Assert.AreEqual(0, _bufferPool.Returned.Count);
+            Assert.AreEqual(1, _bufferPool.Returned.Count);
         }
 
         [Test]
