@@ -166,7 +166,6 @@ namespace Pixockets
                     _buffersPool.Put(buffer);
             }
 
-            
             return false;
         }
 
