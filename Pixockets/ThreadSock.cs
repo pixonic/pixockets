@@ -162,7 +162,7 @@ namespace Pixockets
             while (!_closing)
             {
                 var buffer = _buffersPool.Get(MTUSafe);
-                var bufferUsed = false;
+                var bufferInUse = false;
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {
@@ -178,7 +178,7 @@ namespace Pixockets
                         packet.Length = bytesReceived;
                         packet.EndPoint = (IPEndPoint)remoteEP;
 
-                        bufferUsed = true;
+                        bufferInUse = true;
 
                         _recvQueue.Add(packet);
 
@@ -205,7 +205,7 @@ namespace Pixockets
                     }
                 }
  
-                if (!bufferUsed)
+                if (!bufferInUse)
                 {
                     _buffersPool.Put(buffer);
                 }

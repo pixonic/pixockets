@@ -126,6 +126,7 @@ namespace Pixockets
             }
 
             var buffer = _buffersPool.Get(MTUSafe);
+            var bufferInUse = false;
             EndPoint remoteEP = _remoteEndPoint;
             try
             {
@@ -141,6 +142,7 @@ namespace Pixockets
                 if (bytesReceived > 0 && bytesReceived <= MTU)
                 {
                     packet.Buffer = buffer;
+                    bufferInUse = true;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
                     packet.EndPoint = (IPEndPoint) remoteEP;
@@ -159,9 +161,12 @@ namespace Pixockets
             }
             finally
             {
-                _buffersPool.Put(buffer);
+                // We don't return buffer here if it is to be processed by client
+                if (!bufferInUse)
+                    _buffersPool.Put(buffer);
             }
 
+            
             return false;
         }
 

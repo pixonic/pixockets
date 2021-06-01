@@ -129,6 +129,7 @@ namespace Pixockets
         public override bool Receive(ref ReceivedPacket packet)
         {
             byte[] buffer = null;
+            var bufferInUse = false;
             try
             {
 				if (!Begin())
@@ -147,6 +148,7 @@ namespace Pixockets
                 if (bytesReceived > 0 && bytesReceived <= MTU)
                 {
                     packet.Buffer = buffer;
+                    bufferInUse = true;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
                     packet.EndPoint = (IPEndPoint)remoteEP;
@@ -175,7 +177,8 @@ namespace Pixockets
             }
             finally
             {
-	            if (buffer != null)
+	            // We don't return buffer here if it is to be processed by client
+	            if (!bufferInUse)
 		            _buffersPool.Put(buffer);
             }
 
