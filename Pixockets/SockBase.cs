@@ -13,7 +13,6 @@ namespace Pixockets
         protected static readonly HashSet<SocketError> HarmlessErrors = new HashSet<SocketError>
         {
             SocketError.Interrupted,
-            SocketError.ConnectionReset,
             SocketError.MessageSize,
             SocketError.TryAgain,
             SocketError.Success,
