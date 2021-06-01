@@ -19,10 +19,12 @@ namespace Pixockets
                 {
                     res += 2;
                 }
+
                 if ((Flags & ContainsAck) != 0)
                 {
                     res += 1 + 2 * Acks.Count;
                 }
+
                 if ((Flags & ContainsFrag) != 0)
                 {
                     res += 6;
@@ -41,6 +43,7 @@ namespace Pixockets
         public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | Connect | NeedsAck | Disconnect);
 
         public byte Flags;
+
         // We need this to detect truncated datagrams
         public ushort Length;
         public ushort SeqNum;

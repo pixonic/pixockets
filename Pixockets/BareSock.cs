@@ -177,6 +177,7 @@ namespace Pixockets
                 SysSock.Close();
                 SysSock = null;
             }
+
             _remoteEndPoint = null;
         }
     }
