@@ -29,9 +29,10 @@ namespace Pixockets
 			_logger = logger;
 		}
 
-		public AsyncSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
+        public AsyncSock(BufferPoolBase buffersPool, AddressFamily addressFamily)
 			: this(buffersPool, addressFamily, new LoggerStub())
-		{}
+		{
+		}
 
 		private bool Begin()
 		{
@@ -165,12 +166,12 @@ namespace Pixockets
 				// which causes ECONNRESET on next receive call
 				if (!HarmlessErrors.Contains(err))
 				{
-					_logger.Exception(sx);
 					End();
 
 					// Our socket might be killed by iOS. Recreate the socket.
 					if (err != SocketError.NotConnected)
 					{
+						_logger.Exception(sx);
 						throw;
 					}
 				}
@@ -178,7 +179,7 @@ namespace Pixockets
             finally
             {
 	            // We don't return buffer here if it is to be processed by client
-	            if (!bufferInUse)
+	            if (buffer != null && !bufferInUse)
 		            _buffersPool.Put(buffer);
             }
 
