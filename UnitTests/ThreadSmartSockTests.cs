@@ -13,7 +13,6 @@ namespace UnitTests
         private MockSmartCallbacks _cbs;
         private MockBufferPool _bufferPool;
         private MockSock _bareSock;
-        private SmartSock _smartSock;
         private ThreadSmartSock _threadSmartSock;
 
         [SetUp]
@@ -22,8 +21,7 @@ namespace UnitTests
             _cbs = new MockSmartCallbacks();
             _bareSock = new MockSock();
             _bufferPool = new MockBufferPool();
-            _smartSock = new SmartSock(_bufferPool, _bareSock, _cbs);
-            _threadSmartSock = new ThreadSmartSock(_smartSock, _bufferPool);
+            _threadSmartSock = new ThreadSmartSock(_bufferPool, _bareSock, _cbs);
         }
 
         [TearDown]
@@ -44,7 +42,7 @@ namespace UnitTests
             Thread.Sleep(50);
 
             Assert.AreEqual(PixocketState.Connecting, _threadSmartSock.State);
-            Assert.AreEqual(_bareSock.RemoteEndPoint, endPoint); 
+            Assert.AreEqual(_bareSock.RemoteEndPoint, endPoint);
 
             _threadSmartSock.Close();
 
@@ -89,7 +87,7 @@ namespace UnitTests
             {
                 if (_threadSmartSock.Receive(ref receivedPacket))
                     break;
-                
+
                 Thread.Sleep(1);
             }
 

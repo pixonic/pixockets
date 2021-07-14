@@ -73,11 +73,8 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
             }
             finally
             {
@@ -99,11 +96,8 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
             }
             finally
             {
@@ -127,15 +121,12 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
-            }
-            catch (Exception e)
-            {
-                _logger.Exception(e);
-                return false;
             }
 
             var buffer = _buffersPool.Get(MTUSafe);
+            var bufferInUse = false;
             EndPoint remoteEP = _remoteEndPoint;
             try
             {
@@ -151,6 +142,7 @@ namespace Pixockets
                 if (bytesReceived > 0 && bytesReceived <= MTU)
                 {
                     packet.Buffer = buffer;
+                    bufferInUse = true;
                     packet.Offset = 0;
                     packet.Length = bytesReceived;
                     packet.EndPoint = (IPEndPoint) remoteEP;
@@ -164,14 +156,16 @@ namespace Pixockets
                 if (!HarmlessErrors.Contains(se.SocketErrorCode))
                 {
                     _logger.Exception(se);
+                    throw;
                 }
             }
-            catch (Exception e)
+            finally
             {
-                _logger.Exception(e);
+                // We don't return buffer here if it is to be processed by client
+                if (!bufferInUse)
+                    _buffersPool.Put(buffer);
             }
 
-            _buffersPool.Put(buffer);
             return false;
         }
 
@@ -182,6 +176,7 @@ namespace Pixockets
                 SysSock.Close();
                 SysSock = null;
             }
+
             _remoteEndPoint = null;
         }
     }

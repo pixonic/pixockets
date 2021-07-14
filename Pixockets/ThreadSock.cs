@@ -7,7 +7,6 @@ using Pixockets.Pools;
 
 namespace Pixockets
 {
-    // WARNING: this class uses Socket.SendTo method which is not working in Unity for iOS
     public class ThreadSock : SockBase
     {
         public Socket SysSock;
@@ -26,8 +25,10 @@ namespace Pixockets
         private readonly Thread _receiveThread;
         private readonly ThreadSafeQueue<ReceivedPacket> _recvQueue = new ThreadSafeQueue<ReceivedPacket>();
 
+        private readonly ThreadSafeQueue<SocketException> _excQueue = new ThreadSafeQueue<SocketException>();
         private readonly object _syncObj = new object();
         private volatile bool _closing;
+        private bool _connectedMode;
 
         private const int SendQueueLimit = 10000;
         private const int RecvQueueLimit = 10000;
@@ -65,6 +66,8 @@ namespace Pixockets
 
             _receiveEndPoint = new IPEndPoint(AnyAddress(addressFamily), 0);
 
+            _connectedMode = true;
+
             if (_receiveThread.ThreadState != ThreadState.Running)
             {
                 _receiveThread.Start();
@@ -96,6 +99,12 @@ namespace Pixockets
 
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
+            if (_excQueue.TryTake(out var e))
+            {
+                _logger.Exception(e);
+                throw e;
+            }
+
             ValidateLength(length);
 
             var packet = new PacketToSend();
@@ -125,20 +134,20 @@ namespace Pixockets
                 var packet = _sendQueue.Take();
                 try
                 {
-                    // This seems not implemented in Unity for iOS
-                    SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
+                    if (!_connectedMode)
+                        // This is not working for iOS/MacOS after connect call
+                        SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
+                    else
+                        SysSock.Send(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None);
                 }
                 catch (SocketException se)
                 {
                     // Ignore harmless errors
                     if (!HarmlessErrors.Contains(se.SocketErrorCode))
                     {
-                        _logger.Exception(se);
+                        _excQueue.Add(se);
+                        break;
                     }
-                }
-                catch (Exception e)
-                {
-                    _logger.Exception(e);
                 }
                 finally
                 {
@@ -153,7 +162,7 @@ namespace Pixockets
             while (!_closing)
             {
                 var buffer = _buffersPool.Get(MTUSafe);
-                var bufferUsed = false;
+                var bufferInUse = false;
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {
@@ -169,7 +178,7 @@ namespace Pixockets
                         packet.Length = bytesReceived;
                         packet.EndPoint = (IPEndPoint)remoteEP;
 
-                        bufferUsed = true;
+                        bufferInUse = true;
 
                         _recvQueue.Add(packet);
 
@@ -191,15 +200,12 @@ namespace Pixockets
                     // Ignore harmless errors
                     if (!HarmlessErrors.Contains(se.SocketErrorCode))
                     {
-                        _logger.Exception(se);
+                        _excQueue.Add(se);
+                        break;
                     }
                 }
-                catch (Exception e)
-                {
-                    _logger.Exception(e);
-                }
-
-                if (!bufferUsed)
+ 
+                if (!bufferInUse)
                 {
                     _buffersPool.Put(buffer);
                 }
@@ -208,6 +214,12 @@ namespace Pixockets
 
         public override bool Receive(ref ReceivedPacket packet)
         {
+            if (_excQueue.TryTake(out var e))
+            {
+                _logger.Exception(e);
+                throw e;
+            }
+
             return _recvQueue.TryTake(out packet);
         }
 

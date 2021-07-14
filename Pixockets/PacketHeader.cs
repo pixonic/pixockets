@@ -10,7 +10,8 @@ namespace Pixockets
         public const int MinHeaderLength = 5;
         public const int EmptySessionId = 0;
 
-        public int HeaderLength {
+        public int HeaderLength
+        {
             get
             {
                 int res = MinHeaderLength;
@@ -18,10 +19,12 @@ namespace Pixockets
                 {
                     res += 2;
                 }
+
                 if ((Flags & ContainsAck) != 0)
                 {
                     res += 1 + 2 * Acks.Count;
                 }
+
                 if ((Flags & ContainsFrag) != 0)
                 {
                     res += 6;
@@ -40,6 +43,7 @@ namespace Pixockets
         public const byte ShouldBeZero = 0xFF ^ (ContainsSeq | ContainsAck | ContainsFrag | Connect | NeedsAck | Disconnect);
 
         public byte Flags;
+
         // We need this to detect truncated datagrams
         public ushort Length;
         public ushort SeqNum;
@@ -70,6 +74,7 @@ namespace Pixockets
                     SeqNum = BitConverter.ToUInt16(buffer, pos);
                     pos += 2;
                 }
+
                 if ((Flags & ContainsAck) != 0)
                 {
                     int acksCount = buffer[pos++];
@@ -80,6 +85,7 @@ namespace Pixockets
                         Acks.Add(ack);
                     }
                 }
+
                 if ((Flags & ContainsFrag) != 0)
                 {
                     FragId = BitConverter.ToUInt16(buffer, pos);
@@ -168,6 +174,7 @@ namespace Pixockets
             {
                 pos = WriteUInt16(SeqNum, buffer, pos);
             }
+
             if ((Flags & ContainsAck) != 0)
             {
                 var acksCount = (byte)Acks.Count;
@@ -177,6 +184,7 @@ namespace Pixockets
                     pos = WriteUInt16(Acks[i], buffer, pos);
                 }
             }
+
             if ((Flags & ContainsFrag) != 0)
             {
                 pos = WriteUInt16(FragId, buffer, pos);

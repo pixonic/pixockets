@@ -56,6 +56,7 @@ namespace Pixockets.Pools
                     var trashIt = RemoveFirst();
                 }
             }
+
             _added.Set();
         }
 
@@ -128,6 +129,7 @@ namespace Pixockets.Pools
                     _head = _tail = _nodesPool.Get();
                 }
             }
+
             return result;
         }
     }

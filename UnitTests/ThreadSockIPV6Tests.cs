@@ -72,9 +72,15 @@ namespace UnitTests
             Assert.AreEqual(0, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
             Assert.AreEqual(0, _bufferPool.Alien);
+        }
 
-            receiveTask = udpClient.ReceiveAsync();
-
+        [Test]
+        public void ThreadSockSendConnected()
+        {
+            UdpClient udpClient = new UdpClient(23469, AddressFamily.InterNetworkV6);
+            var sendEP = new IPEndPoint(IPAddress.IPv6Loopback, 23469);
+            var receiveTask = udpClient.ReceiveAsync();
+            
             // Send to already connected EndPoint, get buffer from pool
             _sock.Connect(sendEP.Address, sendEP.Port);
             var buf = _bufferPool.Get(4);

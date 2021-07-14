@@ -54,6 +54,7 @@ namespace Pixockets
                 _socket.Send(endPoint, buffer, offset, length, reliable);
             }
         }
+
         public void Send(byte[] buffer, int offset, int length, bool reliable)
         {
             lock (_syncObject)
