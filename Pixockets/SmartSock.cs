@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using Pixockets.DebugTools;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -35,6 +36,7 @@ namespace Pixockets
         public IPEndPoint RemoteEndPoint { get { return SubSock.RemoteEndPoint; } }
 
         public readonly SockBase SubSock;
+        private readonly ILogger _logger;
 
         private readonly Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
         private readonly SmartReceiverBase _callbacks;
@@ -64,10 +66,11 @@ namespace Pixockets
             }
         }
 
-        public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
+        public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks, DebugTools.ILogger logger)
         {
             _buffersPool = buffersPool;
             SubSock = subSock;
+            _logger = logger;
             if (callbacks != null)
             {
                 _callbacks = callbacks;
@@ -164,6 +167,7 @@ namespace Pixockets
             var putBufferToPool = !reliable;
             if (length > MaxPayload - seqState.AckLoad)
             {
+	            _logger.Info("Cutting package");
                 ushort fragId = seqState.NextFragId();
                 // Cut packet
                 var fragmentCount = (length + seqState.FullAckLoad + MaxPayload - 1) / MaxPayload;

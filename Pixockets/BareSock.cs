@@ -58,7 +58,7 @@ namespace Pixockets
         public override void Send(IPEndPoint endPoint, byte[] buffer, int offset, int length, bool putBufferToPool)
         {
             ValidateLength(length);
-
+            _logger.Info($"Sending to {endPoint} {Convert.ToBase64String(buffer)} of {offset} len {length}");
             try
             {
                 // Some implementations throw exception if sendto is called on a connected SOCK_DGRAM socket.
@@ -130,25 +130,30 @@ namespace Pixockets
             EndPoint remoteEP = _remoteEndPoint;
             try
             {
-                int bytesReceived = 0;
-                if (_connectedMode)
-                    bytesReceived = SysSock.Receive(buffer, MTUSafe, SocketFlags.None);
-                else
-                    bytesReceived = SysSock.ReceiveFrom(buffer, MTUSafe, SocketFlags.None, ref remoteEP);
+	            int bytesReceived = 0;
+	            if (_connectedMode)
+		            bytesReceived = SysSock.Receive(buffer, MTUSafe, SocketFlags.None);
+	            else
+		            bytesReceived = SysSock.ReceiveFrom(buffer, MTUSafe, SocketFlags.None, ref remoteEP);
 
-                //ntrf: On windows we will get EMSGSIZE error if message was truncated, but Mono on Unix will fill up the
-                //      whole buffer silently. We detect this case by allowing buffer to be slightly larger, than our typical
-                //      packet, and dropping any packet, that did fill the whole thing.
-                if (bytesReceived > 0 && bytesReceived <= MTU)
-                {
-                    packet.Buffer = buffer;
-                    bufferInUse = true;
-                    packet.Offset = 0;
-                    packet.Length = bytesReceived;
-                    packet.EndPoint = (IPEndPoint) remoteEP;
+	            //ntrf: On windows we will get EMSGSIZE error if message was truncated, but Mono on Unix will fill up the
+	            //      whole buffer silently. We detect this case by allowing buffer to be slightly larger, than our typical
+	            //      packet, and dropping any packet, that did fill the whole thing.
+	            if (bytesReceived > 0 && bytesReceived <= MTU)
+	            {
+		            packet.Buffer = buffer;
+		            bufferInUse = true;
+		            packet.Offset = 0;
+		            packet.Length = bytesReceived;
+		            packet.EndPoint = (IPEndPoint) remoteEP;
 
-                    return true;
-                }
+		            return true;
+	            }
+            }
+            catch (NullReferenceException nre)
+            {
+                _logger.Exception(nre);
+                throw;
             }
             catch (SocketException se)
             {
