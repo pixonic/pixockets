@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using Pixockets.Pools;
@@ -97,35 +98,43 @@ namespace Pixockets
         {
             while (!_closing)
             {
-                bool active = false;
-
-                _socket.Tick();
-                State = _socket.State;
-
-                SmartPacketToSend packetToSend = new SmartPacketToSend();
-                if (_sendQueue.Count > 0)
+                try
                 {
-                    active = true;
+                    bool active = false;
 
-                    packetToSend = _sendQueue.Take();
-                    _socket.Send(packetToSend.EndPoint, packetToSend.Buffer, packetToSend.Offset, packetToSend.Length, packetToSend.Reliable);
-                    if (packetToSend.PutBufferToPool)
-                        _buffersPool.Put(packetToSend.Buffer);
+                    _socket.Tick();
+                    State = _socket.State;
+
+                    SmartPacketToSend packetToSend = new SmartPacketToSend();
+                    if (_sendQueue.Count > 0)
+                    {
+                        active = true;
+
+                        packetToSend = _sendQueue.Take();
+                        _socket.Send(packetToSend.EndPoint, packetToSend.Buffer, packetToSend.Offset, packetToSend.Length, packetToSend.Reliable);
+                        if (packetToSend.PutBufferToPool)
+                            _buffersPool.Put(packetToSend.Buffer);
+                    }
+
+                    ReceivedSmartPacket receivedPacket = new ReceivedSmartPacket();
+                    if (_socket.Receive(ref receivedPacket))
+                    {
+                        active = true;
+
+                        _recvQueue.Add(receivedPacket);
+                    }
+
+                    if (!active)
+                        Thread.Sleep(10);
                 }
-
-                ReceivedSmartPacket receivedPacket = new ReceivedSmartPacket();
-                if (_socket.Receive(ref receivedPacket))
+                catch (Exception)
                 {
-                    active = true;
-
-                    _recvQueue.Add(receivedPacket);
+                    _closing = true;
                 }
-
-                if (!active)
-                    Thread.Sleep(10);
             }
 
             _socket.Close();
+            State = PixocketState.NotConnected;
         }
 
         public override void OnConnect(IPEndPoint endPoint)
