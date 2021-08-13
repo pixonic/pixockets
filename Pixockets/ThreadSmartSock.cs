@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using Pixockets.DebugTools;
 using Pixockets.Pools;
 
 namespace Pixockets
 {
     public class ThreadSmartSock : SmartReceiverBase
     {
-        private readonly SmartSock _socket;
+		private readonly PerformanceCounter _requestsCounter;
+		private readonly PerformanceCounter _readRequestsCounter;
+		private readonly SmartSock _socket;
         private volatile bool _closing;
         private readonly Thread _ioThread;
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
@@ -22,6 +26,21 @@ namespace Pixockets
 
         public ThreadSmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
         {
+            if (PerformanceCounterCategory.Exists("benchmarking"))
+            {
+                PerformanceCounterCategory.Delete("benchmarking");
+            }
+
+            var input = new CounterCreationData("Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var read = new CounterCreationData("Read Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var collection = new CounterCreationDataCollection();
+            collection.Add(input);
+            collection.Add(read);
+            PerformanceCounterCategory.Create("benchmarking", string.Empty,
+                PerformanceCounterCategoryType.SingleInstance, collection);
+            _requestsCounter = new PerformanceCounter("benchmarking", "Requests Count Per Sec", false);
+            _readRequestsCounter = new PerformanceCounter("benchmarking", "Read Requests Count Per Sec", false);
+
             _socket = new SmartSock(buffersPool, subSock, this);
             _buffersPool = buffersPool;
             if (callbacks != null)
@@ -63,6 +82,7 @@ namespace Pixockets
             if (_recvQueue.Count > 0)
             {
                 receivedPacket = _recvQueue.Take();
+                _readRequestsCounter.Increment();
                 return true;
             }
 
@@ -120,8 +140,8 @@ namespace Pixockets
                     if (_socket.Receive(ref receivedPacket))
                     {
                         active = true;
-
                         _recvQueue.Add(receivedPacket);
+                        _requestsCounter.Increment();
                     }
 
                     if (!active)
