@@ -73,7 +73,6 @@ namespace Pixockets
 
         public void Tick()
         {
-            _tickCounter.Increment();
             while (_disconnectQueue.TryTake(out var disconnectPair))
                 _callbacks.OnDisconnect(disconnectPair.Key, disconnectPair.Value);
 
