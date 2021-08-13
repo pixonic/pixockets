@@ -12,6 +12,7 @@ namespace Pixockets
     {
 		private readonly PerformanceCounter _requestsCounter;
 		private readonly PerformanceCounter _readRequestsCounter;
+		private readonly PerformanceCounter _tickCounter;
 		private readonly SmartSock _socket;
         private volatile bool _closing;
         private readonly Thread _ioThread;
@@ -33,14 +34,16 @@ namespace Pixockets
 
             var input = new CounterCreationData("Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var read = new CounterCreationData("Read Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var tick = new CounterCreationData("Tick Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var collection = new CounterCreationDataCollection();
             collection.Add(input);
             collection.Add(read);
+            collection.Add(tick);
             PerformanceCounterCategory.Create("benchmarking", string.Empty,
                 PerformanceCounterCategoryType.SingleInstance, collection);
             _requestsCounter = new PerformanceCounter("benchmarking", "Requests Count Per Sec", false);
             _readRequestsCounter = new PerformanceCounter("benchmarking", "Read Requests Count Per Sec", false);
-
+            _tickCounter = new PerformanceCounter("benchmarking", "Tick Per Sec", false);
             _socket = new SmartSock(buffersPool, subSock, this);
             _buffersPool = buffersPool;
             if (callbacks != null)
@@ -70,6 +73,7 @@ namespace Pixockets
 
         public void Tick()
         {
+            _tickCounter.Increment();
             while (_disconnectQueue.TryTake(out var disconnectPair))
                 _callbacks.OnDisconnect(disconnectPair.Key, disconnectPair.Value);
 
