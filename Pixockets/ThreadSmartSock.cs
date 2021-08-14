@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
-using Pixockets.DebugTools;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -12,8 +11,9 @@ namespace Pixockets
     {
 		private readonly PerformanceCounter _requestsCounter;
 		private readonly PerformanceCounter _readRequestsCounter;
-		private readonly PerformanceCounter _tickCounter;
-		private readonly SmartSock _socket;
+        private readonly PerformanceCounter[] _typeCounter = new PerformanceCounter[10];
+
+        private readonly SmartSock _socket;
         private volatile bool _closing;
         private readonly Thread _ioThread;
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
@@ -34,16 +34,29 @@ namespace Pixockets
 
             var input = new CounterCreationData("Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var read = new CounterCreationData("Read Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
-            var tick = new CounterCreationData("Tick Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var join = new CounterCreationData("Join requests Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var leave = new CounterCreationData("Leave requests Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var serView = new CounterCreationData("Serialized view Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var rpc = new CounterCreationData("RPC Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var ping = new CounterCreationData("Ping Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var collection = new CounterCreationDataCollection();
             collection.Add(input);
             collection.Add(read);
-            collection.Add(tick);
+            collection.Add(join);
+            collection.Add(leave);
+            collection.Add(serView);
+            collection.Add(rpc);
+            collection.Add(ping);
             PerformanceCounterCategory.Create("benchmarking", string.Empty,
                 PerformanceCounterCategoryType.SingleInstance, collection);
             _requestsCounter = new PerformanceCounter("benchmarking", "Requests Count Per Sec", false);
             _readRequestsCounter = new PerformanceCounter("benchmarking", "Read Requests Count Per Sec", false);
-            _tickCounter = new PerformanceCounter("benchmarking", "Tick Per Sec", false);
+            _typeCounter[0] = new PerformanceCounter("benchmarking", "Join requests Per Sec", false);
+            _typeCounter[4] = new PerformanceCounter("benchmarking", "Leave requests Per Sec", false);
+            _typeCounter[7] = new PerformanceCounter("benchmarking", "Serialized view Per Sec", false);
+            _typeCounter[8] = new PerformanceCounter("benchmarking", "RPC Per Sec", false);
+            _typeCounter[9] = new PerformanceCounter("benchmarking", "Ping Per Sec", false);
+
             _socket = new SmartSock(buffersPool, subSock, this);
             _buffersPool = buffersPool;
             if (callbacks != null)
@@ -145,6 +158,8 @@ namespace Pixockets
                         active = true;
                         _recvQueue.Add(receivedPacket);
                         _requestsCounter.Increment();
+                        var code = receivedPacket.Buffer[receivedPacket.Offset] - 1;
+                        if (code < 0 || code > _typeCounter.Length - 1) _typeCounter[code]?.Increment();
                     }
 
                     if (!active)
