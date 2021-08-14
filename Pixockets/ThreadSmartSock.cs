@@ -159,7 +159,7 @@ namespace Pixockets
                         _recvQueue.Add(receivedPacket);
                         _requestsCounter.Increment();
                         var code = receivedPacket.Buffer[receivedPacket.Offset] - 1;
-                        if (code < 0 || code > _typeCounter.Length - 1) _typeCounter[code]?.Increment();
+                        if (code >= 0 || code < _typeCounter.Length - 1) _typeCounter[code]?.Increment();
                     }
 
                     if (!active)
