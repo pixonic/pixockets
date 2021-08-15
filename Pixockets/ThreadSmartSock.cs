@@ -11,6 +11,8 @@ namespace Pixockets
     {
 		private readonly PerformanceCounter _requestsCounter;
 		private readonly PerformanceCounter _readRequestsCounter;
+        private readonly PerformanceCounter _responseCounter;
+        private readonly PerformanceCounter _sentResponseCounter;
         private readonly PerformanceCounter[] _typeCounter = new PerformanceCounter[10];
 
         private readonly SmartSock _socket;
@@ -34,12 +36,16 @@ namespace Pixockets
 
             var input = new CounterCreationData("Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var read = new CounterCreationData("Read Requests Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var output = new CounterCreationData("Sent Response Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var send = new CounterCreationData("Response Count Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var join = new CounterCreationData("Join requests Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var leave = new CounterCreationData("Leave requests Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var serView = new CounterCreationData("Serialized view Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var rpc = new CounterCreationData("RPC Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var ping = new CounterCreationData("Ping Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var collection = new CounterCreationDataCollection();
+            collection.Add(output);
+            collection.Add(send);
             collection.Add(input);
             collection.Add(read);
             collection.Add(join);
@@ -51,6 +57,8 @@ namespace Pixockets
                 PerformanceCounterCategoryType.SingleInstance, collection);
             _requestsCounter = new PerformanceCounter("benchmarking", "Requests Count Per Sec", false);
             _readRequestsCounter = new PerformanceCounter("benchmarking", "Read Requests Count Per Sec", false);
+            _responseCounter = new PerformanceCounter("benchmarking", "Response Count Per Sec", false);
+            _sentResponseCounter = new PerformanceCounter("benchmarking", "Sent Response Count Per Sec", false);
             _typeCounter[0] = new PerformanceCounter("benchmarking", "Join requests Per Sec", false);
             _typeCounter[4] = new PerformanceCounter("benchmarking", "Leave requests Per Sec", false);
             _typeCounter[7] = new PerformanceCounter("benchmarking", "Serialized view Per Sec", false);
@@ -116,6 +124,7 @@ namespace Pixockets
             packet.Reliable = reliable;
 
             _sendQueue.Add(packet);
+            _responseCounter.Increment();
         }
 
         public void Send(byte[] buffer, int offset, int length, bool reliable, bool putBufferToPool)
@@ -148,6 +157,7 @@ namespace Pixockets
 
                         packetToSend = _sendQueue.Take();
                         _socket.Send(packetToSend.EndPoint, packetToSend.Buffer, packetToSend.Offset, packetToSend.Length, packetToSend.Reliable);
+                        _sentResponseCounter.Increment();
                         if (packetToSend.PutBufferToPool)
                             _buffersPool.Put(packetToSend.Buffer);
                     }
