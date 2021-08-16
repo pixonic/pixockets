@@ -43,6 +43,13 @@ namespace Pixockets
             var serView = new CounterCreationData("Serialized view Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var rpc = new CounterCreationData("RPC Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var ping = new CounterCreationData("Ping Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+
+            var ackSrv = new CounterCreationData("Need ack from server Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var ackSent = new CounterCreationData("Sent ack Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+
+            var ackClnt = new CounterCreationData("Need ack from client Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var ackReceived = new CounterCreationData("Received ack Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+
             var collection = new CounterCreationDataCollection();
             collection.Add(output);
             collection.Add(send);
@@ -53,6 +60,12 @@ namespace Pixockets
             collection.Add(serView);
             collection.Add(rpc);
             collection.Add(ping);
+
+            collection.Add(ackSrv);
+            collection.Add(ackSent);
+            collection.Add(ackClnt);
+            collection.Add(ackReceived);
+
             PerformanceCounterCategory.Create("benchmarking", string.Empty,
                 PerformanceCounterCategoryType.SingleInstance, collection);
             _requestsCounter = new PerformanceCounter("benchmarking", "Requests Count Per Sec", false);

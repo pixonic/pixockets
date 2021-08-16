@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using Pixockets.Pools;
@@ -45,8 +46,12 @@ namespace Pixockets
         private readonly List<KeyValuePair<IPEndPoint, SequenceState>> _toDelete = new List<KeyValuePair<IPEndPoint, SequenceState>>();
 
         private int _lastConnectRequestSend;
+		private PerformanceCounter _needAckFromServer;
+		private PerformanceCounter _sentAck;
+		private PerformanceCounter _needAckFromClient;
+		private PerformanceCounter _ackRecieved;
 
-        public PixocketState State
+		public PixocketState State
         {
             get
             {
@@ -76,6 +81,12 @@ namespace Pixockets
             {
                 _callbacks = new NullSmartReceiver();
             }
+
+            _needAckFromServer = new PerformanceCounter("benchmarking", "Need ack from server Per Sec", false);
+            _sentAck = new PerformanceCounter("benchmarking", "Sent ack Per Sec", false);
+
+            _needAckFromClient = new PerformanceCounter("benchmarking", "Need ack from client Per Sec", false);
+            _ackRecieved = new PerformanceCounter("benchmarking", "Received ack Per Sec", false);
         }
 
         public void Connect(IPAddress address, int port)
@@ -442,11 +453,13 @@ namespace Pixockets
             if ((header.Flags & PacketHeader.ContainsAck) != 0)
             {
                 seqState.ReceiveAck(header.Acks);
+                _ackRecieved.IncrementBy(header.Acks.Count);
             }
 
             if ((header.Flags & PacketHeader.NeedsAck) != 0)
             {
                 seqState.EnqueueAck(header.SeqNum);
+                _needAckFromServer.Increment();
             }
 
             if (!haveResult && (header.Flags & PacketHeader.ContainsFrag) == 0)
@@ -508,6 +521,7 @@ namespace Pixockets
             }
 
             header.SetSeqNum(seqNum);
+            _sentAck.IncrementBy(seqState.AckLoad / 2);
             seqState.AddAcks(header);
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
@@ -515,6 +529,7 @@ namespace Pixockets
             if (reliable)
             {
                 AddNotAcked(seqState, seqNum, fullBuffer);
+                _needAckFromClient.Increment();
             }
 
             _headersPool.Put(header);
@@ -534,13 +549,15 @@ namespace Pixockets
             ushort seqNum = seqState.NextSeqNum();
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
+            _sentAck.IncrementBy(seqState.AckLoad / 2);
             seqState.AddAcks(header);
-
+            
             var fullBuffer = AttachHeader(buffer, offset, length, header);
 
             if (reliable)
             {
                 AddNotAcked(seqState, seqNum, fullBuffer);
+                _needAckFromClient.Increment();
             }
 
             _headersPool.Put(header);
