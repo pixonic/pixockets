@@ -47,7 +47,6 @@ namespace Pixockets
 
         private int _lastConnectRequestSend;
 		private PerformanceCounter _needAckFromServer;
-		private PerformanceCounter _sentAck;
 		private PerformanceCounter _needAckFromClient;
 		private PerformanceCounter _ackRecieved;
 
@@ -83,7 +82,6 @@ namespace Pixockets
             }
 
             _needAckFromServer = new PerformanceCounter("benchmarking", "Need ack from server Per Sec", false);
-            _sentAck = new PerformanceCounter("benchmarking", "Sent ack Per Sec", false);
 
             _needAckFromClient = new PerformanceCounter("benchmarking", "Need ack from client Per Sec", false);
             _ackRecieved = new PerformanceCounter("benchmarking", "Received ack Per Sec", false);
@@ -521,8 +519,6 @@ namespace Pixockets
             }
 
             header.SetSeqNum(seqNum);
-            for (var i = 0; i < seqState.AckLoad / 2; i++) _sentAck.Increment();
-
             seqState.AddAcks(header);
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
@@ -550,7 +546,6 @@ namespace Pixockets
             ushort seqNum = seqState.NextSeqNum();
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
-            for (var i = 0; i < seqState.AckLoad / 2; i++) _sentAck.Increment();
             seqState.AddAcks(header);
             
             var fullBuffer = AttachHeader(buffer, offset, length, header);

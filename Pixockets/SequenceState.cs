@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using Pixockets.Pools;
 
@@ -28,8 +29,9 @@ namespace Pixockets
         private Pool<FragmentedPacket> _fragPacketsPool;
         private BufferPoolBase _buffersPool;
         private Pool<PacketHeader> _headersPool;
+		private PerformanceCounter _sentAck;
 
-        public int AckLoad
+		public int AckLoad
         {
             get { return Math.Min(_ackQueue.Count, 255) * 2; }
         }
@@ -45,6 +47,11 @@ namespace Pixockets
         }
 
         public bool DisconnectRequestSent { get; set; }
+        
+        public SequenceState()
+		{
+            _sentAck = new PerformanceCounter("benchmarking", "Sent ack Per Sec", false);
+        }
 
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
         {
@@ -203,6 +210,7 @@ namespace Pixockets
             {
                 var seqNum = _ackQueue[i];
                 header.AddAck(seqNum);
+                _sentAck.Increment();
             }
 
             _ackQueue.RemoveRange(0, acksPerPacket);
