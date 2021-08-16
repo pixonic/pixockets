@@ -521,7 +521,8 @@ namespace Pixockets
             }
 
             header.SetSeqNum(seqNum);
-            _sentAck.IncrementBy(seqState.AckLoad / 2);
+            for (var i = 0; i < seqState.AckLoad / 2; i++) _sentAck.Increment();
+
             seqState.AddAcks(header);
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
@@ -549,7 +550,7 @@ namespace Pixockets
             ushort seqNum = seqState.NextSeqNum();
             header.SetSeqNum(seqNum);
             header.SetFrag(fragId, fragNum, fragCount);
-            _sentAck.IncrementBy(seqState.AckLoad / 2);
+            for (var i = 0; i < seqState.AckLoad / 2; i++) _sentAck.Increment();
             seqState.AddAcks(header);
             
             var fullBuffer = AttachHeader(buffer, offset, length, header);
