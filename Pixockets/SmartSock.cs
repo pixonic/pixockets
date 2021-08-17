@@ -49,6 +49,8 @@ namespace Pixockets
 		private PerformanceCounter _needAckFromServer;
 		private PerformanceCounter _needAckFromClient;
 		private PerformanceCounter _ackRecieved;
+		private PerformanceCounter _sentFrags;
+		private PerformanceCounter _recFrags;
 
 		public PixocketState State
         {
@@ -82,9 +84,11 @@ namespace Pixockets
             }
 
             _needAckFromServer = new PerformanceCounter("benchmarking", "Need ack from server Per Sec", false);
-
             _needAckFromClient = new PerformanceCounter("benchmarking", "Need ack from client Per Sec", false);
             _ackRecieved = new PerformanceCounter("benchmarking", "Received ack Per Sec", false);
+
+            _sentFrags = new PerformanceCounter("benchmarking", "Frags sent Per Sec", false);
+            _recFrags = new PerformanceCounter("benchmarking", "Frags recieved Per Sec", false);
         }
 
         public void Connect(IPAddress address, int port)
@@ -190,6 +194,7 @@ namespace Pixockets
                     try
                     {
                         SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                        _sentFrags.Increment();
                     }
                     catch (SocketException)
                     {
@@ -248,6 +253,7 @@ namespace Pixockets
                     try
                     {
                         SubSock.Send(fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+                        _sentFrags.Increment();
                     }
                     catch (SocketException)
                     {
@@ -422,6 +428,7 @@ namespace Pixockets
                 {
                     haveResult = OnReceiveFragment(buffer, offset, length, endPoint, header, ref receivedPacket);
                     seqState.RegisterIncoming(header.SeqNum);
+                    _recFrags.Increment();
                 }
             }
             else if ((header.Flags & PacketHeader.ContainsSeq) != 0)

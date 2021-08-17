@@ -50,6 +50,9 @@ namespace Pixockets
             var ackClnt = new CounterCreationData("Need ack from client Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var ackReceived = new CounterCreationData("Received ack Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
 
+            var sentFrags = new CounterCreationData("Frags sent Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            var recFrags = new CounterCreationData("Frags recieved Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+
             var collection = new CounterCreationDataCollection();
             collection.Add(output);
             collection.Add(send);
@@ -65,6 +68,9 @@ namespace Pixockets
             collection.Add(ackSent);
             collection.Add(ackClnt);
             collection.Add(ackReceived);
+
+            collection.Add(sentFrags);
+            collection.Add(recFrags);
 
             PerformanceCounterCategory.Create("benchmarking", string.Empty,
                 PerformanceCounterCategoryType.SingleInstance, collection);
