@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using Pixockets.DebugTools;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -36,8 +37,8 @@ namespace Pixockets
         public IPEndPoint RemoteEndPoint { get { return SubSock.RemoteEndPoint; } }
 
         public readonly SockBase SubSock;
-
-        private readonly Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
+		private readonly ILogger logger;
+		private readonly Dictionary<IPEndPoint, SequenceState> _seqStates = new Dictionary<IPEndPoint, SequenceState>();
         private readonly SmartReceiverBase _callbacks;
         private readonly BufferPoolBase _buffersPool;
         private readonly Pool<FragmentedPacket> _fragPacketsPool = new Pool<FragmentedPacket>();
@@ -70,11 +71,12 @@ namespace Pixockets
             }
         }
 
-        public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
+        public SmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks, ILogger logger)
         {
             _buffersPool = buffersPool;
             SubSock = subSock;
-            if (callbacks != null)
+			this.logger = logger;
+			if (callbacks != null)
             {
                 _callbacks = callbacks;
             }
@@ -529,7 +531,11 @@ namespace Pixockets
             seqState.AddAcks(header);
 
             var fullBuffer = AttachHeader(buffer, offset, length, header);
-
+            var arr = fullBuffer.Array;
+            if (arr[fullBuffer.Offset] == 8 && arr[fullBuffer.Offset + 1] == 0 && arr[fullBuffer.Offset + 2] == 2 && arr[fullBuffer.Offset + 3] == 110 && arr[fullBuffer.Offset + 4] == 196)
+            {
+                logger.Info($"Strage packet without frag {Convert.ToBase64String(arr)} | {Convert.ToBase64String(buffer, offset, length)}");
+            }
             if (reliable)
             {
                 AddNotAcked(seqState, seqNum, fullBuffer);
@@ -556,7 +562,11 @@ namespace Pixockets
             seqState.AddAcks(header);
             
             var fullBuffer = AttachHeader(buffer, offset, length, header);
-
+            var arr = fullBuffer.Array;
+            if (arr[fullBuffer.Offset + 0] == 8 && arr[fullBuffer.Offset + 1] == 0 && arr[fullBuffer.Offset + 2] == 2 && arr[fullBuffer.Offset + 3] == 110 && arr[fullBuffer.Offset + 4] == 196)
+            {
+                logger.Info($"Strage packet with frag {Convert.ToBase64String(arr)} | {Convert.ToBase64String(buffer, offset, length)}");
+            }
             if (reliable)
             {
                 AddNotAcked(seqState, seqNum, fullBuffer);

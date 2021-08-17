@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
+using Pixockets.DebugTools;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -27,7 +28,7 @@ namespace Pixockets
 
         public PixocketState State { get; private set; }
 
-        public ThreadSmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks)
+        public ThreadSmartSock(BufferPoolBase buffersPool, SockBase subSock, SmartReceiverBase callbacks, ILogger logger)
         {
             if (PerformanceCounterCategory.Exists("benchmarking"))
             {
@@ -84,7 +85,7 @@ namespace Pixockets
             _typeCounter[8] = new PerformanceCounter("benchmarking", "RPC Per Sec", false);
             _typeCounter[9] = new PerformanceCounter("benchmarking", "Ping Per Sec", false);
 
-            _socket = new SmartSock(buffersPool, subSock, this);
+            _socket = new SmartSock(buffersPool, subSock, this, logger);
             _buffersPool = buffersPool;
             if (callbacks != null)
             {
