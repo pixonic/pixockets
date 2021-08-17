@@ -30,8 +30,8 @@ namespace Pixockets
         private BufferPoolBase _buffersPool;
         private Pool<PacketHeader> _headersPool;
 		private PerformanceCounter _sentAck;
-
-		public int AckLoad
+        private PerformanceCounter _resend;
+        public int AckLoad
         {
             get { return Math.Min(_ackQueue.Count, 255) * 2; }
         }
@@ -51,6 +51,7 @@ namespace Pixockets
         public SequenceState()
 		{
             _sentAck = new PerformanceCounter("benchmarking", "Sent ack Per Sec", false);
+            _resend = new PerformanceCounter("benchmarking", "Resend Per Sec", false);
         }
 
         public void Init(BufferPoolBase buffersPool, Pool<FragmentedPacket> fragPacketsPool, Pool<PacketHeader> headersPool)
@@ -173,6 +174,7 @@ namespace Pixockets
                 if (now - packet.SendTicks > ackTimeout)
                 {
                     sock.Send(endPoint, packet.Buffer, packet.Offset, packet.Length, false);
+                    _resend.Increment();
                     packet.SendTicks = now;
                     _notAcked[i] = packet;
                 }

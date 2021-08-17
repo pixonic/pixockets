@@ -53,6 +53,8 @@ namespace Pixockets
             var sentFrags = new CounterCreationData("Frags sent Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
             var recFrags = new CounterCreationData("Frags recieved Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
 
+            var resend = new CounterCreationData("Resend Per Sec", "", PerformanceCounterType.RateOfCountsPerSecond32);
+            
             var collection = new CounterCreationDataCollection();
             collection.Add(output);
             collection.Add(send);
@@ -71,6 +73,8 @@ namespace Pixockets
 
             collection.Add(sentFrags);
             collection.Add(recFrags);
+
+            collection.Add(resend);
 
             PerformanceCounterCategory.Create("benchmarking", string.Empty,
                 PerformanceCounterCategoryType.SingleInstance, collection);
