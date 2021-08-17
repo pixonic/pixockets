@@ -189,17 +189,17 @@ namespace Pixockets
                 }
             }
 
-            while (_ackQueue.Count > 0)
-            {
-                var header = _headersPool.Get();
-                AddAcks(header);
-                header.SetSessionId(SessionId);
-                header.Length = (ushort)header.HeaderLength;
-                var buffer = _buffersPool.Get(header.Length);
-                header.WriteTo(buffer, 0);
-                sock.Send(endPoint, buffer, 0, header.Length, true);
-                _headersPool.Put(header);
-            }
+            //while (_ackQueue.Count > 0)
+            //{
+            //    var header = _headersPool.Get();
+            //    AddAcks(header);
+            //    header.SetSessionId(SessionId);
+            //    header.Length = (ushort)header.HeaderLength;
+            //    var buffer = _buffersPool.Get(header.Length);
+            //    header.WriteTo(buffer, 0);
+            //    sock.Send(endPoint, buffer, 0, header.Length, true);
+            //    _headersPool.Put(header);
+            //}
         }
 
         public void AddAcks(PacketHeader header)
