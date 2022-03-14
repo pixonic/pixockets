@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
+using Pixockets.Extensions;
 using Pixockets.Pools;
 
 namespace Pixockets
@@ -90,7 +92,7 @@ namespace Pixockets
             SubSock.Listen(port);
         }
 
-        public void Disconnect(IPEndPoint endPoint = null)
+        public void Disconnect(IPEndPoint endPoint = null, string comment = null)
         {
             if (endPoint == null)
                 endPoint = SubSock.RemoteEndPoint;
@@ -98,7 +100,7 @@ namespace Pixockets
             if (!_seqStates.TryGetValue(endPoint, out var seqState))
                 return;
 
-            SendDisconnectPacket(endPoint, seqState);
+            SendDisconnectPacket(endPoint, seqState, comment);
 
             seqState.DisconnectRequestSent = true;
         }
@@ -125,7 +127,7 @@ namespace Pixockets
                             _buffersPool.Put(packet.Buffer);
                             if (packet.EndPoint != null && _seqStates.ContainsKey(packet.EndPoint))
                             {
-                                Close(packet.EndPoint, _seqStates[packet.EndPoint]);
+                                Close(packet.EndPoint, _seqStates[packet.EndPoint], "SocketException");
                             }
                         }
                     }
@@ -184,7 +186,7 @@ namespace Pixockets
                     }
                     catch (SocketException)
                     {
-                        Close(endPoint, seqState);
+                        Close(endPoint, seqState, "SocketException");
                         break;
                     }
                 }
@@ -198,7 +200,7 @@ namespace Pixockets
                 }
                 catch (SocketException)
                 {
-                    Close(endPoint, seqState);
+                    Close(endPoint, seqState, "SocketException");
                 }
             }
         }
@@ -242,7 +244,7 @@ namespace Pixockets
                     }
                     catch (SocketException)
                     {
-                        Close(endPoint, seqState);
+                        Close(endPoint, seqState, "SocketException");
                         break;
                     }
                 }
@@ -257,7 +259,7 @@ namespace Pixockets
                 }
                 catch (SocketException)
                 {
-                    Close(endPoint, seqState);
+                    Close(endPoint, seqState, "SocketException");
                 }
             }
         }
@@ -286,7 +288,7 @@ namespace Pixockets
             {
                 var seqState = _toDelete[i];
                 _seqStates.Remove(seqState.Key);
-                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.Timeout);
+                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.Timeout, "TIMEOUT");
                 _seqStatesPool.Put(seqState.Value);
             }
 
@@ -297,7 +299,7 @@ namespace Pixockets
         {
             foreach (var seqState in _seqStates)
             {
-                Disconnect(seqState.Key);
+                Disconnect(seqState.Key, "DisconnectAll");
             }
         }
 
@@ -306,7 +308,7 @@ namespace Pixockets
             SubSock.Close();
             foreach (var seqState in _seqStates)
             {
-                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.SocketClose);
+                _callbacks.OnDisconnect(seqState.Key, DisconnectReason.SocketClose, "Close");
                 _seqStatesPool.Put(seqState.Value);
             }
 
@@ -333,7 +335,7 @@ namespace Pixockets
             }
             catch (SocketException)
             {
-                Close(endPoint, seqState);
+                Close(endPoint, seqState, "SocketException");
             }
 
             _headersPool.Put(header);
@@ -360,7 +362,7 @@ namespace Pixockets
             }
             catch (SocketException)
             {
-                Close(endPoint, seqState);
+                Close(endPoint, seqState, "SocketException");
             }
             
             _headersPool.Put(header);
@@ -428,13 +430,14 @@ namespace Pixockets
 
             if ((header.Flags & PacketHeader.Disconnect) != 0)
             {
+                buffer.ReadString8(out var comment, offset + header.HeaderLength);
                 // Disconnect request received, send response
                 if (!seqState.DisconnectRequestSent)
                 {
-                    SendDisconnectPacket(endPoint, seqState);
+                    SendDisconnectPacket(endPoint, seqState, comment);
                 }
 
-                _callbacks.OnDisconnect(endPoint, DisconnectReason.InitiatedByPeer);
+                _callbacks.OnDisconnect(endPoint, DisconnectReason.InitiatedByPeer, comment);
                 _seqStates.Remove(endPoint);
                 _seqStatesPool.Put(seqState);
             }
@@ -630,16 +633,45 @@ namespace Pixockets
             }
             catch (SocketException)
             {
-                Close(endPoint, seqState);
+                Close(endPoint, seqState, "SocketException");
             }
 
             _headersPool.Put(header);
         }
 
-        private void Close(IPEndPoint endPoint, SequenceState seqState)
+        private void SendDisconnectPacket(IPEndPoint endPoint, SequenceState seqState, string comment)
+        {
+            if (comment == null)
+                comment = string.Empty;
+            if (comment.Length >= 255)
+                comment = comment.Substring(0, 254);
+
+            var commentBytes = Encoding.UTF8.GetBytes(comment);
+
+            var header = _headersPool.Get();
+            header.SetSessionId(seqState.SessionId);
+            header.SetDisconnect();
+            header.Length = (ushort)(header.HeaderLength + 1 + commentBytes.Length);
+
+            var fullBuffer = AttachHeader(commentBytes, 0, commentBytes.Length, header);
+
+            try
+            {
+                var putBufferToPool = true;
+                SubSock.Send(endPoint, fullBuffer.Array, fullBuffer.Offset, fullBuffer.Count, putBufferToPool);
+            }
+            catch (SocketException)
+            {
+                Close(endPoint, seqState, "SocketException");
+            }
+
+            _headersPool.Put(header);
+        }
+
+        private void Close(IPEndPoint endPoint, SequenceState seqState, string comment)
         {
             _seqStates.Remove(endPoint);
-            _callbacks.OnDisconnect(endPoint, DisconnectReason.SocketClose);
+            _callbacks.OnDisconnect(endPoint, DisconnectReason.SocketClose, comment);
             _seqStatesPool.Put(seqState);
         }
     }

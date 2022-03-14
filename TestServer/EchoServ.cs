@@ -125,7 +125,7 @@ namespace TestServer
             _clients.Add(endPoint, -1);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason, string comment)
         {
             Console.WriteLine("Disconnected: {0}:{1}. Reason: {2}", endPoint.Address, endPoint.Port, reason);
             _clients.Remove(endPoint);

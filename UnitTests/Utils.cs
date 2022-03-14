@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
 using Pixockets;
+using Pixockets.Extensions;
 using Pixockets.Pools;
 using UnitTests.Mock;
 
@@ -119,23 +121,26 @@ namespace UnitTests
             bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
         }
 
-        public static void SendDisconnectRequest(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        public static void SendDisconnectRequest(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool, string comment = "")
         {
-            SendDisconnectResponse(bareSock, endPoint, bufferPool);
+            SendDisconnectResponse(bareSock, endPoint, bufferPool, comment);
         }
 
-        public static void SendDisconnectResponse(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool)
+        public static void SendDisconnectResponse(MockSock bareSock, IPEndPoint endPoint, BufferPoolBase bufferPool, string comment = "")
         {
             ushort sessionId = 427;
             var header = new PacketHeader();
             header.SetSessionId(sessionId);
             header.SetDisconnect();
 
-            var buffer = bufferPool.Get(header.HeaderLength);
-            header.Length = (ushort)header.HeaderLength;
-            header.WriteTo(buffer, 0);
+            var commentBytes = Encoding.UTF8.GetBytes(comment);
 
-            bareSock.FakeReceive(buffer, 0, header.HeaderLength, endPoint);
+            var buffer = bufferPool.Get(header.HeaderLength + 256);
+            header.Length = (ushort)(header.HeaderLength + 1 + commentBytes.Length);
+            header.WriteTo(buffer, 0);
+            buffer.WriteString8(comment, header.HeaderLength);
+
+            bareSock.FakeReceive(buffer, 0, header.Length, endPoint);
         }
 
         public static byte[] CreatePacket(int payload)
