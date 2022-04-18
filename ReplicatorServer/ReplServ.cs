@@ -133,7 +133,7 @@ namespace ReplicatorServer
             Console.WriteLine("Connected: {0}:{1}", endPoint.Address, endPoint.Port);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason, string comment)
         {
             Console.WriteLine("Disconnected: {0}:{1}", endPoint.Address, endPoint.Port);
             ClientState ts;

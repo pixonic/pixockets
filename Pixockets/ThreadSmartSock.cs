@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using Pixockets.Pools;
@@ -14,7 +13,7 @@ namespace Pixockets
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
         private readonly ThreadSafeQueue<ReceivedSmartPacket> _recvQueue = new ThreadSafeQueue<ReceivedSmartPacket>();
         private readonly ThreadSafeQueue<IPEndPoint> _connectQueue = new ThreadSafeQueue<IPEndPoint>();
-        private readonly ThreadSafeQueue<KeyValuePair<IPEndPoint, DisconnectReason>> _disconnectQueue = new ThreadSafeQueue<KeyValuePair<IPEndPoint, DisconnectReason>>();
+        private readonly ThreadSafeQueue<ValueTuple<IPEndPoint, DisconnectReason, string>> _disconnectQueue = new ThreadSafeQueue<ValueTuple<IPEndPoint, DisconnectReason, string>>();
         private readonly BufferPoolBase _buffersPool;
         private readonly SmartReceiverBase _callbacks;
 
@@ -51,8 +50,8 @@ namespace Pixockets
 
         public void Tick()
         {
-            while (_disconnectQueue.TryTake(out var disconnectPair))
-                _callbacks.OnDisconnect(disconnectPair.Key, disconnectPair.Value);
+            while (_disconnectQueue.TryTake(out var disconnectInfo))
+                _callbacks.OnDisconnect(disconnectInfo.Item1, disconnectInfo.Item2, disconnectInfo.Item3);
 
             while (_connectQueue.TryTake(out var connectEndPoint))
                 _callbacks.OnConnect(connectEndPoint);
@@ -142,9 +141,9 @@ namespace Pixockets
             _connectQueue.Add(endPoint);
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason, string comment)
         {
-            _disconnectQueue.Add(new KeyValuePair<IPEndPoint, DisconnectReason>(endPoint, reason));
+            _disconnectQueue.Add(new ValueTuple<IPEndPoint, DisconnectReason, string>(endPoint, reason, comment));
         }
     }
 }

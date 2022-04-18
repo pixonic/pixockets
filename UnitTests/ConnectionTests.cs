@@ -147,13 +147,14 @@ namespace UnitTests
             // Now we are connected
 
             _sock.Disconnect(remoteEndPoint);
-            Utils.SendDisconnectResponse(_bareSock, remoteEndPoint, _bufferPool);
+            Utils.SendDisconnectResponse(_bareSock, remoteEndPoint, _bufferPool, "Hmm");
             Assert.IsFalse(_sock.Receive(ref receivedPacket));
             // Now we are disconnected
 
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _cbs.OnDisconnectCalls.Count);
             Assert.AreEqual(DisconnectReason.InitiatedByPeer, _cbs.OnDisconnectCalls[0].Item2);
+            Assert.AreEqual("Hmm", _cbs.OnDisconnectCalls[0].Item3);
         }
 
         [Test]
@@ -169,13 +170,14 @@ namespace UnitTests
 
             Assert.AreEqual(1, _bareSock.Sends.Count);
 
-            Utils.SendDisconnectRequest(_bareSock, remoteEndPoint, _bufferPool);
+            Utils.SendDisconnectRequest(_bareSock, remoteEndPoint, _bufferPool, "UnitTest");
             Assert.IsFalse(_sock.Receive(ref receivedPacket));
             // Now we are disconnected
 
             Assert.AreEqual(1, _cbs.OnConnectCalls.Count);
             Assert.AreEqual(1, _cbs.OnDisconnectCalls.Count);
             Assert.AreEqual(DisconnectReason.InitiatedByPeer, _cbs.OnDisconnectCalls[0].Item2);
+            Assert.AreEqual("UnitTest", _cbs.OnDisconnectCalls[0].Item3);
             Assert.AreEqual(2, _bareSock.Sends.Count);
         }
     }

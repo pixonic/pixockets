@@ -227,7 +227,7 @@ namespace ReplicatorClient
             Console.WriteLine("Connect");
         }
 
-        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason)
+        public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason, string comment)
         {
             Console.WriteLine("Disconnect");
         }
