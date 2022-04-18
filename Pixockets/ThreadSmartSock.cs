@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using Pixockets.Pools;
@@ -14,7 +13,7 @@ namespace Pixockets
         private readonly ThreadSafeQueue<SmartPacketToSend> _sendQueue = new ThreadSafeQueue<SmartPacketToSend>();
         private readonly ThreadSafeQueue<ReceivedSmartPacket> _recvQueue = new ThreadSafeQueue<ReceivedSmartPacket>();
         private readonly ThreadSafeQueue<IPEndPoint> _connectQueue = new ThreadSafeQueue<IPEndPoint>();
-        private readonly ThreadSafeQueue<Tuple<IPEndPoint, DisconnectReason, string>> _disconnectQueue = new ThreadSafeQueue<Tuple<IPEndPoint, DisconnectReason, string>>();
+        private readonly ThreadSafeQueue<ValueTuple<IPEndPoint, DisconnectReason, string>> _disconnectQueue = new ThreadSafeQueue<ValueTuple<IPEndPoint, DisconnectReason, string>>();
         private readonly BufferPoolBase _buffersPool;
         private readonly SmartReceiverBase _callbacks;
 
@@ -144,7 +143,7 @@ namespace Pixockets
 
         public override void OnDisconnect(IPEndPoint endPoint, DisconnectReason reason, string comment)
         {
-            _disconnectQueue.Add(new Tuple<IPEndPoint, DisconnectReason, string>(endPoint, reason, comment));
+            _disconnectQueue.Add(new ValueTuple<IPEndPoint, DisconnectReason, string>(endPoint, reason, comment));
         }
     }
 }
