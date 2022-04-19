@@ -295,11 +295,11 @@ namespace Pixockets
             _toDelete.Clear();
         }
 
-        public void DisconnectAll()
+        public void DisconnectAll(string comment = "DisconnectAll")
         {
             foreach (var seqState in _seqStates)
             {
-                Disconnect(seqState.Key, "DisconnectAll");
+                Disconnect(seqState.Key, comment);
             }
         }
 

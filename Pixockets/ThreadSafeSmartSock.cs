@@ -71,6 +71,22 @@ namespace Pixockets
             }
         }
 
+        public void DisconnectAll(string comment = "DisconnectAll")
+        {
+            lock (_syncObject)
+            {
+                _socket.DisconnectAll(comment);
+            }
+        }
+
+        public void Disconnect(IPEndPoint endPoint = null, string comment = null)
+        {
+            lock (_syncObject)
+            {
+                _socket.Disconnect(endPoint, comment);
+            }
+        }
+
         public void Close()
         {
             lock (_syncObject)
