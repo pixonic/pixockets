@@ -51,7 +51,7 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, 0));
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(4, receivedPacket.Length);
-            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            Assert.AreEqual(1, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
 
@@ -91,7 +91,7 @@ namespace UnitTests
 
             Assert.AreEqual(TaskStatus.RanToCompletion, receiveTask.Status);
             Assert.AreEqual(123456789, BitConverter.ToInt32(receiveTask.Result.Buffer, 0));
-            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            Assert.AreEqual(1, _bufferPool.Rented.Count);
             Utils.WaitOnSet(_bufferPool.Returned);
             Assert.AreEqual(1, _bufferPool.Returned.Count);
             Assert.AreEqual(0, _bufferPool.Alien);
@@ -111,7 +111,7 @@ namespace UnitTests
             Assert.AreEqual(123456789, BitConverter.ToInt32(receivedPacket.Buffer, 0));
             Assert.AreEqual(0, receivedPacket.Offset);
             Assert.AreEqual(4, receivedPacket.Length);
-            Assert.AreEqual(2, _bufferPool.Rented.Count);
+            Assert.AreEqual(1, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count);
         }
     }

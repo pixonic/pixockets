@@ -17,7 +17,6 @@ namespace UnitTests
         private BareSock _sock;
         private ILogger _logger;
 
-
         [SetUp]
         public void Setup()
         {
@@ -55,6 +54,27 @@ namespace UnitTests
             Assert.AreEqual(4, receivedPacket.Length);
             Assert.AreEqual(1, _bufferPool.Rented.Count);
             Assert.AreEqual(0, _bufferPool.Returned.Count, "Buffer should not be returned to pool until processed by client");
+        }
+
+        [Test]
+        public void SockReceiveZeroLength()
+        {
+            _sock.Listen(23459);
+
+            var cliSock = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            var endPoint = new IPEndPoint(IPAddress.Loopback, 23459);
+            //cliSock.Connect(IPAddress.Loopback, 23459);
+            cliSock.SendTo(new byte[0], 0, 0, SocketFlags.None, endPoint);
+            /*UdpClient udpClient = new UdpClient();
+            udpClient.Connect(IPAddress.Loopback, 23459);
+            udpClient.Send(new byte[0], 0);*/
+
+            var receivedPacket = Utils.WaitOnReceive(_sock);
+
+            Assert.AreEqual(0, receivedPacket.Offset);
+            Assert.AreEqual(0, receivedPacket.Length);
+            Assert.AreEqual(1, _bufferPool.Rented.Count);
+            //Assert.AreEqual(0, _bufferPool.Returned.Count, "Buffer should not be returned to pool until processed by client");
         }
 
         [Test]

@@ -1,84 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{CD9CA90F-7997-4C37-BB2E-25808A8FEB93}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pixockets</RootNamespace>
-    <AssemblyName>Pixockets</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyTitle>Pixockets</AssemblyTitle>
+    <Product>Pixockets</Product>
+    <Copyright>Copyright ©  2017</Copyright>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51">
-      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\netstandard1.0\System.ValueTuple.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AsyncSock.cs" />
-    <Compile Include="DebugTools\ILogger.cs" />
-    <Compile Include="DebugTools\LoggerStub.cs" />
-    <Compile Include="FragmentBuffer.cs" />
-    <Compile Include="FragmentedPacket.cs" />
-    <Compile Include="NotAckedPacket.cs" />
-    <Compile Include="Pools\BufferPoolBase.cs" />
-    <Compile Include="Pools\ByteBufferPool.cs" />
-    <Compile Include="Pools\ThreadSafeQueue.cs" />
-    <Compile Include="Pools\FlatStack.cs" />
-    <Compile Include="ReceivedPacket.cs" />
-    <Compile Include="SmartReceiverBase.cs" />
-    <Compile Include="SequenceState.cs" />
-    <Compile Include="SockBase.cs" />
-    <Compile Include="BareSock.cs" />
-    <Compile Include="Pools\IPoolable.cs" />
-    <Compile Include="PacketToSend.cs" />
-    <Compile Include="Pools\Pool.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PacketHeader.cs" />
-    <Compile Include="SmartSock.cs" />
-    <Compile Include="Pools\ArrayPool.cs" />
-    <Compile Include="Pools\ArrayPoolBucket.cs" />
-    <Compile Include="Pools\Utilities.cs" />
-    <Compile Include="ThreadSmartSock.cs" />
-    <Compile Include="ThreadSafeSmartSock.cs" />
-    <Compile Include="ThreadSock.cs" />
-    <Compile Include="Extensions\BitWriter.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

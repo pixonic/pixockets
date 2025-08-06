@@ -5,24 +5,30 @@ namespace UnitTests.Mock
 {
     public class MockBufferPool : BufferPoolBase
     {
-        public HashSet<byte[]> Rented = new HashSet<byte[]>();
-        public HashSet<byte[]> Returned = new HashSet<byte[]>();
+        public readonly HashSet<byte[]> Rented = new HashSet<byte[]>();
+        public readonly HashSet<byte[]> Returned = new HashSet<byte[]>();
         public int Alien;
+        private readonly object _syncObject = new object();
 
         public override byte[] Get(int minLen)
         {
-            var buf = new byte[minLen];
-            Rented.Add(buf);
-            return buf;
+            lock (_syncObject)
+            {
+                var buf = new byte[minLen];
+                Rented.Add(buf);
+                return buf;
+            }
         }
 
         public override void Put(byte[] buf)
         {
-            if (!Rented.Contains(buf))
+            lock (_syncObject)
             {
-                Alien++;
+                if (!Rented.Contains(buf))
+                    Alien++;
+
+                Returned.Add(buf);
             }
-            Returned.Add(buf);
         }
     }
 }

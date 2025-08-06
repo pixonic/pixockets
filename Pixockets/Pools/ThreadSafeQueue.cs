@@ -24,7 +24,7 @@ namespace Pixockets.Pools
         public const int SizeLimit = 50000;
 
         private readonly Pool<ArrayNode> _nodesPool = new Pool<ArrayNode>();
-        private readonly AutoResetEvent _added = new AutoResetEvent(false);
+        private readonly ManualResetEventSlim _added = new ManualResetEventSlim(false);
         private readonly object _syncRoot = new object();
         private ArrayNode _head;
         private ArrayNode _tail;
@@ -63,6 +63,12 @@ namespace Pixockets.Pools
         // Blocking
         public T Take()
         {
+            return Take(CancellationToken.None);
+        }
+
+        // Blocking
+        public T Take(CancellationToken cancelToken)
+        {
             while (true)
             {
                 lock (_syncRoot)
@@ -74,7 +80,8 @@ namespace Pixockets.Pools
                     }
                 }
 
-                _added.WaitOne();
+                _added.Wait(cancelToken);
+                _added.Reset();
             }
         }
 
