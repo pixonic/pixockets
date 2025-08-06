@@ -110,10 +110,8 @@ namespace Pixockets
         {
             try
             {
-                if (SysSock.Available == 0)
-                {
+                if (!SysSock.Poll(0, SelectMode.SelectRead))
                     return false;
-                }
             }
             catch (SocketException se)
             {

@@ -17,6 +17,7 @@ namespace Pixockets
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _receiveEndPoint;
 
+        private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
         private readonly BufferPoolBase _buffersPool;
         private readonly ILogger _logger;
         private readonly Thread _sendThread;
@@ -27,7 +28,6 @@ namespace Pixockets
 
         private readonly ThreadSafeQueue<SocketException> _excQueue = new ThreadSafeQueue<SocketException>();
         private readonly object _syncObj = new object();
-        private volatile bool _closing;
         private bool _connectedMode;
 
         private const int SendQueueLimit = 10000;
@@ -36,7 +36,6 @@ namespace Pixockets
         public ThreadSock(BufferPoolBase buffersPool, AddressFamily addressFamily, ILogger logger)
         {
             SysSock = new Socket(addressFamily, SocketType.Dgram, ProtocolType.Udp);
-            _closing = false;
 
             _buffersPool = buffersPool;
             _logger = logger;
@@ -49,7 +48,7 @@ namespace Pixockets
 
         public override void Connect(IPAddress address, int port)
         {
-            if (_closing)
+            if (_cancel.IsCancellationRequested)
                 return;
 
             _remoteEndPoint = new IPEndPoint(address, port);
@@ -76,7 +75,7 @@ namespace Pixockets
 
         public override void Listen(int port)
         {
-            if (_closing)
+            if (_cancel.IsCancellationRequested)
                 return;
 
             lock (_syncObj)
@@ -129,11 +128,12 @@ namespace Pixockets
 
         private void SendLoop()
         {
-            while (!_closing)
+            while (!_cancel.IsCancellationRequested)
             {
-                var packet = _sendQueue.Take();
+                PacketToSend packet = default;
                 try
                 {
+                    packet = _sendQueue.Take(_cancel.Token);
                     if (!_connectedMode)
                         // This is not working for iOS/MacOS after connect call
                         SysSock.SendTo(packet.Buffer, packet.Offset, packet.Length, SocketFlags.None, packet.EndPoint);
@@ -149,6 +149,11 @@ namespace Pixockets
                         break;
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    // Just quit
+                    break;
+                }
                 finally
                 {
                     if (packet.PutBufferToPool)
@@ -159,13 +164,17 @@ namespace Pixockets
 
         private void ReceiveLoop()
         {
-            while (!_closing)
+            while (!_cancel.IsCancellationRequested)
             {
-                var buffer = _buffersPool.Get(MTUSafe);
                 var bufferInUse = false;
+                byte[] buffer = null;
                 EndPoint remoteEP = _receiveEndPoint;
                 try
                 {
+                    if (!SysSock.Poll(10000, SelectMode.SelectRead))
+                        continue;
+
+                    buffer = _buffersPool.Get(MTUSafe);
                     var bytesReceived = SysSock.ReceiveFrom(buffer, MTUSafe, SocketFlags.None, ref remoteEP);
                     //ntrf: On windows we will get EMSGSIZE error if message was truncated, but Mono on Unix will fill up the
                     //      whole buffer silently. We detect this case by allowing buffer to be slightly larger, than our typical
@@ -204,10 +213,15 @@ namespace Pixockets
                         break;
                     }
                 }
- 
-                if (!bufferInUse)
+                catch (ObjectDisposedException)
                 {
-                    _buffersPool.Put(buffer);
+                    // Just quit
+                    break;
+                }
+                finally
+                {
+                    if (buffer != null && !bufferInUse)
+                        _buffersPool.Put(buffer);
                 }
             }
         }
@@ -225,11 +239,9 @@ namespace Pixockets
 
         public override void Close()
         {
-            _closing = true;
+            _cancel.Cancel();
             SysSock?.Close();
             SysSock = null;
-            _sendThread.Abort();
-            _receiveThread.Abort();
             _sendThread.Join();
             if (_receiveThread.IsAlive)
             {

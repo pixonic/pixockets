@@ -5,6 +5,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Point = System.Windows.Point;
 
 namespace ReplicatorClient
 {
